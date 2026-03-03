@@ -57,7 +57,7 @@ Mention architecture as:
 # SECTION 2 — Unrealistic Reward Economy
 
 ## File Concerned:
-user_engagement_strategy.md
+[user_engagement_strategy.md](docs/user_engagement_strategy.md)
 
 ---
 
