@@ -28,6 +28,7 @@
 -   Time filter (Last 7 days / 30 days / Custom range).
 -   Trend forecasting for potential future problem areas.
 
+unnecessary - instead of a heatmap a bar graph would be more suitable as not everyone would be a programmer and would understand what a heatmap is as we would be targetting common people. -Ry
 ------------------------------------------------------------------------
 
 ## 3. WhatsApp & Voice-Based Complaint System
