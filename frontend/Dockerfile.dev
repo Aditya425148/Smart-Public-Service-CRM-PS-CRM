@@ -1,0 +1,18 @@
+# Development Dockerfile for faster iteration with hot reload
+FROM node:18-alpine
+
+WORKDIR /app
+
+# Copy package files
+COPY package*.json ./
+
+# Install dependencies
+RUN npm install
+
+# Copy source code (will be mounted as volume in dev)
+COPY . .
+
+EXPOSE 3000
+
+# Run development server with hot reload
+CMD ["npm", "start"]
