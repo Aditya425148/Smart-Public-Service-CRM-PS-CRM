@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { MapContainer, TileLayer, Marker, Popup } from 'react-leaflet';
-import L, { LatLngExpression } from 'leaflet';
+import { MapContainer, TileLayer, Popup, CircleMarker } from 'react-leaflet';
+import { LatLngExpression } from 'leaflet';
 import { getComplaints } from '../api';
 import 'leaflet/dist/leaflet.css';
 
@@ -56,35 +56,37 @@ export const MapView: React.FC<{ center?: [number, number] }> = ({ center = [28.
           url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
           attribution='&copy; OpenStreetMap contributors'
         />
-        
-        {complaints.map(complaint => (
-          <Marker
-            key={complaint.complaint_id}
-            position={[complaint.latitude, complaint.longitude] as LatLngExpression}
-            icon={L.circleMarker([complaint.latitude, complaint.longitude], {
-              radius: 6,
-              fillColor: getMarkerColor(complaint.status),
-              color: getMarkerColor(complaint.status),
-              weight: 1,
-              opacity: 1,
-              fillOpacity: 0.8,
-            } as any)}
-          >
-            <Popup>
-              <div className="w-48">
-                <h3 className="font-semibold text-sm">{complaint.title}</h3>
-                <p className="text-xs text-gray-600">{complaint.complaint_id}</p>
-                <div className="flex gap-2 mt-2">
-                  <span className="text-xs bg-gray-100 px-2 py-1 rounded">{complaint.category}</span>
-                  <span className="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded">
-                    {complaint.status}
-                  </span>
+
+        {complaints
+          .filter(c => c.latitude != null && c.longitude != null)
+          .map(complaint => (
+            <CircleMarker
+              key={complaint.complaint_id}
+              center={[complaint.latitude, complaint.longitude] as LatLngExpression}
+              radius={6}
+              pathOptions={{
+                fillColor: getMarkerColor(complaint.status),
+                color: getMarkerColor(complaint.status),
+                weight: 1,
+                opacity: 1,
+                fillOpacity: 0.8,
+              }}
+            >
+              <Popup>
+                <div className="w-48">
+                  <h3 className="font-semibold text-sm">{complaint.title}</h3>
+                  <p className="text-xs text-gray-600">{complaint.complaint_id}</p>
+                  <div className="flex gap-2 mt-2">
+                    <span className="text-xs bg-gray-100 px-2 py-1 rounded">{complaint.category}</span>
+                    <span className="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded">
+                      {complaint.status}
+                    </span>
+                  </div>
                 </div>
-              </div>
-            </Popup>
-          </Marker>
-        ))}
+              </Popup>
+            </CircleMarker>
+          ))}
       </MapContainer>
-    </div>
+    </div >
   );
 };

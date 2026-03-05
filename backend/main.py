@@ -9,10 +9,13 @@ import json
 import firebase_admin
 from firebase_admin import credentials, firestore, auth as fb_auth
 
-script_dir = os.path.dirname(os.path.abspath(__file__))
-firebase_key_path = os.path.join(script_dir, "firebase-key.json")
-cred = credentials.Certificate(firebase_key_path)
-firebase_admin.initialize_app(cred)
+# Initialize Firebase (checking if already initialized for reloads)
+if not firebase_admin._apps:
+    script_dir = os.path.dirname(os.path.abspath(__file__))
+    firebase_key_path = os.path.join(script_dir, "firebase-key.json")
+    cred = credentials.Certificate(firebase_key_path)
+    firebase_admin.initialize_app(cred)
+
 db = firestore.client()
 
 app = FastAPI(title="PS-CRM Backend", version="0.2.0")
@@ -142,16 +145,36 @@ async def signup(email: str = Form(...), password: str = Form(...)):
 @app.post("/auth/token", response_model=AuthResponse)
 async def get_token(email: str = Form(...), password: str = Form(...)):
     try:
-        user = fb_auth.get_user_by_email(email)
-        custom_token = fb_auth.create_custom_token(user.uid)
+        # We need the Web API Key for the REST API
+        # It's usually in .env, but for this implementation we'll try to find it or expect it.
+        # Since I saw it in frontend/.env.local, I'll use it here if provided, 
+        # but better to use an environment variable.
+        api_key = os.getenv("FIREBASE_WEB_API_KEY")
+        if not api_key:
+            raise HTTPException(status_code=500, detail="FIREBASE_WEB_API_KEY not set in environment")
+            
+        import requests
+        url = f"https://identitytoolkit.googleapis.com/v1/accounts:signInWithPassword?key={api_key}"
+        payload = {
+            "email": email,
+            "password": password,
+            "returnSecureToken": True
+        }
+        resp = requests.post(url, json=payload)
+        resp_data = resp.json()
         
+        if resp.status_code != 200:
+            raise HTTPException(status_code=401, detail="Invalid credentials")
+            
         return AuthResponse(
-            access_token=custom_token.decode('utf-8'),
-            user_id=user.uid,
-            email=user.email
+            access_token=resp_data["idToken"],
+            user_id=resp_data["localId"],
+            email=resp_data["email"]
         )
+    except HTTPException:
+        raise
     except Exception as e:
-        raise HTTPException(status_code=401, detail="Invalid credentials")
+        raise HTTPException(status_code=500, detail=f"Auth error: {str(e)}")
 
 def calculate_priority_score(
     category: str,
@@ -295,10 +318,14 @@ async def list_complaints(
         if latitude and longitude:
             doc_lat = data.get("latitude")
             doc_long = data.get("longitude")
-            if doc_lat and doc_long:
+            if doc_lat is not None and doc_long is not None:
+                # Euclidean distance approximation for small distances
                 dist = ((doc_lat - latitude) ** 2 + (doc_long - longitude) ** 2) ** 0.5
                 if dist * 111 > radius_km:
                     continue
+            else:
+                # If searching by radius, exclude complaints without coordinates
+                continue
         
         complaints.append(data)
     
@@ -350,9 +377,10 @@ async def verify_complaint(complaint_id: str, phone: str = Form(...)):
         complaint = db.collection("complaints").document(complaint_id).get().to_dict()
         new_priority = calculate_priority_score(
             complaint["category"],
-            complaint["verification_count"] + 1,
-            complaint["latitude"],
-            complaint["longitude"]
+            complaint["verification_count"], # Use the already incremented count from firestore.Increment if we re-read
+            complaint.get("latitude"),
+            complaint.get("longitude"),
+            False # Default is_duplicate for verification updates
         )
         db.collection("complaints").document(complaint_id).update({
             "priority_score": new_priority
