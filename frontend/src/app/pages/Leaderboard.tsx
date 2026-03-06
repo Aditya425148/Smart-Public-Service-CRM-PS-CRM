@@ -16,10 +16,10 @@ import { appwriteService } from "../appwriteService";
 import { account } from "../appwrite";
 
 export default function Leaderboard() {
-  const [activeTab, setActiveTab] = useState("Local (5km)");
+  const [activeTab, setActiveTab] = useState<"National" | "District" | "Local">("National");
   const [loading, setLoading] = useState(true);
-  const [userLocation, setUserLocation] = useState<string>("Detecting...");
-  const [complaints, setComplaints] = useState<any[]>([]);
+  const [leaders, setLeaders] = useState<any[]>([]);
+  const [summary, setSummary] = useState({ totalResolved: 0, activeCitizens: 0 });
   const [currentUser, setCurrentUser] = useState<any>({});
 
   useEffect(() => {
@@ -31,85 +31,25 @@ export default function Leaderboard() {
           email: user.email,
           uid: user.$id,
         });
-        setUserLocation("Your City");
       })
-      .catch(() => {});
-
-    // Real-time subscription instead of async fetch
-    const unsubscribe = appwriteService.subscribeToComplaints((data) => {
-      setComplaints(data);
-      setLoading(false);
-    });
-
-    return () => unsubscribe();
+      .catch(() => { });
   }, []);
 
-  // Calculate rankings from live data with radius/district logic
-  const calculateRankings = () => {
-    const user = currentUser;
-    const userStats: Record<
-      string,
-      {
-        name: string;
-        avatar: string;
-        impact: number;
-        streak: number;
-        resolved: number;
-        district?: string;
-      }
-    > = {};
+  useEffect(() => {
+    setLoading(true);
+    Promise.all([
+      appwriteService.getLeaderboard(activeTab),
+      appwriteService.getLeaderboardSummary(),
+    ])
+      .then(([ranked, sum]) => {
+        setLeaders(ranked);
+        setSummary(sum);
+      })
+      .catch(() => setLeaders([]))
+      .finally(() => setLoading(false));
+  }, [activeTab]);
 
-    // Filter complaints based on active tab
-    const filteredComplaints = complaints.filter((c) => {
-      if (activeTab === "Local (5km)") {
-        // In a real app, calculate distance using lat/lng. For now, matching user's address/city
-        return (
-          c.location?.address?.includes(user.location?.split(",")[0]) ||
-          c.address?.includes(user.location?.split(",")[0])
-        );
-      }
-      if (activeTab === "District") {
-        // Match by district field
-        return c.district === user.district;
-      }
-      return true; // National
-    });
-
-    filteredComplaints.forEach((c) => {
-      const uid = c.userId || c.reporterId;
-      if (!uid) return;
-
-      if (!userStats[uid]) {
-        userStats[uid] = {
-          name: c.userName || "Citizen",
-          avatar:
-            c.userAvatar ||
-            `https://api.dicebear.com/7.x/avataaars/svg?seed=${uid}`,
-          impact: 0,
-          streak: 1,
-          resolved: 0,
-          district: c.district || "Default District",
-        };
-      }
-
-      if (c.status === "Resolved") {
-        userStats[uid].impact += 50;
-        userStats[uid].resolved += 1;
-      } else if (c.status === "Verified") {
-        userStats[uid].impact += 20;
-      } else {
-        userStats[uid].impact += 10;
-      }
-    });
-
-    return Object.values(userStats)
-      .sort((a, b) => b.impact - a.impact)
-      .slice(0, 10);
-  };
-
-  const leaders = calculateRankings();
-
-  if (loading && complaints.length === 0) {
+  if (loading) {
     return (
       <div className="min-h-screen bg-[#f1f5f9] flex flex-col items-center justify-center">
         <div className="w-12 h-12 border-4 border-blue-600/20 border-t-blue-600 rounded-full animate-spin mb-4" />
@@ -144,20 +84,19 @@ export default function Leaderboard() {
           </div>
 
           <div className="flex gap-1 p-1 bg-white/60 backdrop-blur-md rounded-2xl w-fit border border-white/50 shadow-sm">
-            {["Local (5km)", "District", "National"].map((tab) => (
+            {(["Local", "District", "National"] as const).map((tab) => (
               <button
                 key={tab}
                 onClick={() => setActiveTab(tab)}
-                className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-black transition-all ${
-                  activeTab === tab
-                    ? "bg-white text-indigo-600 shadow-sm"
-                    : "text-slate-500 hover:text-slate-700"
-                }`}
+                className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-black transition-all ${activeTab === tab
+                  ? "bg-white text-indigo-600 shadow-sm"
+                  : "text-slate-500 hover:text-slate-700"
+                  }`}
               >
-                {tab === "Local (5km)" && <MapPin className="w-3.5 h-3.5" />}
+                {tab === "Local" && <MapPin className="w-3.5 h-3.5" />}
                 {tab === "District" && <Users className="w-3.5 h-3.5" />}
                 {tab === "National" && <Globe className="w-3.5 h-3.5" />}
-                {tab}
+                {tab === "Local" ? "Local (5km)" : tab}
               </button>
             ))}
           </div>
@@ -338,7 +277,7 @@ export default function Leaderboard() {
                       Total Issues Resolved
                     </div>
                     <div className="text-4xl font-[900]">
-                      {complaints.filter((c) => c.status === "Resolved").length}
+                      {summary.totalResolved}
                     </div>
                   </div>
                   <div>
@@ -346,10 +285,7 @@ export default function Leaderboard() {
                       Active Citizens
                     </div>
                     <div className="text-4xl font-[900]">
-                      {
-                        new Set(complaints.map((c) => c.userId || c.reporterId))
-                          .size
-                      }
+                      {summary.activeCitizens}
                     </div>
                   </div>
                 </div>

@@ -1,11 +1,10 @@
 import { Client, Account, Databases, Storage } from "appwrite";
 
-// Appwrite configuration
-// Replace these with your actual Appwrite project values
+// Appwrite configuration — set these in .env.local to enable Appwrite features
 const APPWRITE_ENDPOINT =
   import.meta.env.VITE_APPWRITE_ENDPOINT || "https://cloud.appwrite.io/v1";
 const APPWRITE_PROJECT_ID =
-  import.meta.env.VITE_APPWRITE_PROJECT_ID || "YOUR_PROJECT_ID";
+  import.meta.env.VITE_APPWRITE_PROJECT_ID || "";
 
 // Database & collection IDs — create these in the Appwrite Console
 export const DATABASE_ID =
@@ -17,7 +16,9 @@ export const BUCKET_ID =
 
 // Initialize Appwrite client
 const client = new Client();
-client.setEndpoint(APPWRITE_ENDPOINT).setProject(APPWRITE_PROJECT_ID);
+if (APPWRITE_PROJECT_ID) {
+  client.setEndpoint(APPWRITE_ENDPOINT).setProject(APPWRITE_PROJECT_ID);
+}
 
 // Export services
 export const account = new Account(client);

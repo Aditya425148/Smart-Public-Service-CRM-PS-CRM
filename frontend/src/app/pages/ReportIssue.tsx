@@ -281,10 +281,7 @@ export default function ReportIssue() {
         ward: area || "General",
         reporterName: user.name || "Anonymous",
         reporterId: user.$id || "anon",
-        status: "Submitted",
-        priorityScore: 0.87,
-        slaHours: 72,
-        createdAt: new Date(),
+        // priorityScore + slaHours computed server-side by FastAPI based on category
       };
 
       console.log("Submitting complaint with payload:", payload);
@@ -341,13 +338,12 @@ export default function ReportIssue() {
             <div key={s.num} className="flex items-center flex-1">
               <div className="flex flex-col items-center">
                 <div
-                  className={`w-10 h-10 rounded-full flex items-center justify-center text-sm font-[700] transition-all duration-500 ${
-                    step > s.num
+                  className={`w-10 h-10 rounded-full flex items-center justify-center text-sm font-[700] transition-all duration-500 ${step > s.num
                       ? "bg-emerald-500 text-white shadow-[0_0_15px_rgba(16,185,129,0.4)]"
                       : step === s.num
                         ? "bg-blue-600 text-white ring-4 ring-blue-500/20 shadow-[0_0_20px_rgba(37,99,235,0.4)]"
                         : "bg-white/10 text-white/40 border border-white/10"
-                  }`}
+                    }`}
                 >
                   {step > s.num ? <CheckCircle className="w-5 h-5" /> : s.num}
                 </div>
@@ -389,18 +385,16 @@ export default function ReportIssue() {
                     <button
                       key={id}
                       onClick={() => handleCategorySelect(id)}
-                      className={`p-4 rounded-2xl border transition-all duration-300 group ${
-                        selectedCategory === id
+                      className={`p-4 rounded-2xl border transition-all duration-300 group ${selectedCategory === id
                           ? "bg-blue-600/30 border-blue-500 ring-2 ring-blue-500/50 shadow-lg"
                           : "bg-white/5 border-white/10 hover:bg-white/10 hover:border-white/20"
-                      }`}
+                        }`}
                     >
                       <div
-                        className={`w-12 h-12 rounded-xl mx-auto mb-3 flex items-center justify-center transition-transform group-hover:scale-110 ${
-                          selectedCategory === id
+                        className={`w-12 h-12 rounded-xl mx-auto mb-3 flex items-center justify-center transition-transform group-hover:scale-110 ${selectedCategory === id
                             ? "bg-blue-500 text-white"
                             : "bg-white/10 text-blue-400"
-                        }`}
+                          }`}
                       >
                         <Icon className="w-6 h-6" />
                       </div>
@@ -425,11 +419,10 @@ export default function ReportIssue() {
                         <button
                           key={sub}
                           onClick={() => setSelectedSubcategory(sub)}
-                          className={`px-4 py-2 rounded-xl text-sm font-[600] border transition-all ${
-                            selectedSubcategory === sub
+                          className={`px-4 py-2 rounded-xl text-sm font-[600] border transition-all ${selectedSubcategory === sub
                               ? "bg-blue-600 text-white border-blue-500 shadow-md"
                               : "bg-white/5 text-blue-100/70 border-white/10 hover:bg-white/10"
-                          }`}
+                            }`}
                         >
                           {sub}
                         </button>
