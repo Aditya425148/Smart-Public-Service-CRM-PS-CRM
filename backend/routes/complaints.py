@@ -125,7 +125,6 @@ async def create_complaint(body: ComplaintCreate):
             "timeline": timeline,
             "priorityScore": priority,
             "slaHours": sla_hours,
-            "slaDeadline": sla_deadline,
             "coordinates": json.dumps(body.coordinates) if body.coordinates else None,
             "photos": json.dumps(body.photos) if body.photos else "[]",
         }
