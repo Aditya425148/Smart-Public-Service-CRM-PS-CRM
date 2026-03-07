@@ -1,0 +1,5 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Fira+Code:wght@400;500&display=swap');
+
+/* Override Appwrite SDK fonts to prevent CORS errors from assets.appwrite.io.
+   By importing Inter & Fira Code from Google Fonts first, the browser uses
+   these declarations instead of the ones the SDK injects. */
