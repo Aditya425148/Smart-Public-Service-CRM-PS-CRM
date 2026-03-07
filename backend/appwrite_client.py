@@ -1,7 +1,7 @@
 import os
 from dotenv import load_dotenv
 from appwrite.client import Client
-from appwrite.services.databases import Databases
+from appwrite.services.tables_db import TablesDB
 from appwrite.services.storage import Storage
 from appwrite.services.users import Users
 
@@ -19,6 +19,6 @@ client.set_endpoint(ENDPOINT)
 client.set_project(PROJECT_ID)
 client.set_key(API_KEY)
 
-databases = Databases(client)
+tablesDB  = TablesDB(client)
 storage   = Storage(client)
 users     = Users(client)
