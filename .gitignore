@@ -1,9 +1,11 @@
 .env
 node_modules
 .env.local
-backend/__pycache__/appwrite_client.cpython-314.pyc
-backend/__pycache__/main.cpython-314.pyc
-backend/routes/__pycache__/complaints.cpython-314.pyc
-backend/routes/__pycache__/leaderboard.cpython-314.pyc
-backend/routes/__pycache__/stats.cpython-314.pyc
-backend/routes/__pycache__/uploads.cpython-314.pyc
+setup_schema.py
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.pytest_cache/
+.coverage
+htmlcov/
