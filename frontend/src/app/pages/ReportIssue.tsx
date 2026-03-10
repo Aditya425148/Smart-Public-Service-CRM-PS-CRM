@@ -22,6 +22,7 @@ import {
 } from "lucide-react";
 import { appwriteService } from "../appwriteService";
 import { account } from "../appwrite";
+import { toast } from "sonner";
 
 const categories = [
   {
@@ -153,7 +154,9 @@ export default function ReportIssue() {
             `Individual file upload failed: ${file.name}`,
             uploadInnerErr,
           );
-          alert(`Could not upload ${file.name}: ${uploadInnerErr.message}`);
+          toast.error(
+            `Could not upload ${file.name}: ${uploadInnerErr.message}`,
+          );
           // Continue with next file instead of breaking completely
         }
       }
@@ -163,7 +166,7 @@ export default function ReportIssue() {
       }
     } catch (error: any) {
       console.error("Core upload process error:", error);
-      alert("Upload system encountered an error. Please try one by one.");
+      toast.error("Upload system encountered an error. Please try one by one.");
     } finally {
       setIsUploadingPhoto(false);
       // Clear the input value so the same file can be selected again if needed
@@ -173,6 +176,29 @@ export default function ReportIssue() {
 
   const removePhoto = (photoUrl: string) => {
     setUploadedPhotos((prev) => prev.filter((url) => url !== photoUrl));
+  };
+
+  const handleManualGeocode = async (
+    manualAddr: string,
+    manualArea: string,
+  ) => {
+    if (!manualAddr && !manualArea) return;
+    const fullSearch = `${manualAddr} ${manualArea}`.trim();
+    if (fullSearch.length < 5) return;
+
+    try {
+      const response = await fetch(
+        `https://maps.googleapis.com/maps/api/geocode/json?address=${encodeURIComponent(fullSearch)}&key=AIzaSyAc0wUSsARYzaJZUWX15rgxtvTS0Wd8mMs`,
+      );
+      const data = await response.json();
+      if (data.status === "OK" && data.results.length > 0) {
+        const { lat, lng } = data.results[0].geometry.location;
+        setCoords({ lat, lng });
+        console.log("Auto-fetched coordinates for manual entry:", lat, lng);
+      }
+    } catch (err) {
+      console.error("Manual geocoding failed:", err);
+    }
   };
 
   const handleDetectLocation = () => {
@@ -243,20 +269,36 @@ export default function ReportIssue() {
 
           setLocationDetected(true);
           setIsDetectingLocation(false);
+          toast.success("Location locked successfully!");
         },
         (error) => {
           console.error("Error detecting location:", error);
-          alert(
-            "Could not detect location automatically. Please enter it manually.",
-          );
+          let errorMsg =
+            "Could not detect location automatically. Please enter it manually.";
+          if (error.code === error.PERMISSION_DENIED) {
+            errorMsg =
+              "Location access was denied. Please enable location permissions in your browser settings.";
+          } else if (error.code === error.POSITION_UNAVAILABLE) {
+            errorMsg =
+              "Location information is unavailable. Please try again or enter manually.";
+          } else if (error.code === error.TIMEOUT) {
+            errorMsg =
+              "Location detection timed out. Please try again or enter manually.";
+          }
+          toast.error(errorMsg);
           setIsDetectingLocation(false);
-          setLocationDetected(true);
+          // Don't setLocationDetected(true) on error so they can try again or see the manual state
+          setLocationDetected(false);
+        },
+        {
+          enableHighAccuracy: true,
+          timeout: 10000,
+          maximumAge: 0,
         },
       );
     } else {
-      alert("Geolocation is not supported by your browser.");
+      toast.error("Geolocation is not supported by your browser.");
       setIsDetectingLocation(false);
-      setLocationDetected(true);
     }
   };
 
@@ -274,9 +316,7 @@ export default function ReportIssue() {
         subcategory: selectedSubcategory || "",
         description: description.trim() || "No description provided",
         address: `${address}${area ? ", " + area : ""}${pincode ? " - " + pincode : ""}`,
-        coordinates: coords
-          ? { latitude: coords.lat, longitude: coords.lng }
-          : null,
+        coordinates: coords ? { lat: coords.lat, lng: coords.lng } : null,
         photos: uploadedPhotos || [],
         ward: area || "General",
         reporterName: user.name || "Anonymous",
@@ -290,9 +330,10 @@ export default function ReportIssue() {
 
       setComplaintId(newId);
       setStep(5);
+      toast.success("Complaint submitted successfully!");
     } catch (error: any) {
       console.error("Failed to submit:", error);
-      alert(`Submission failed: ${error.message || "Unknown error"}`);
+      toast.error(`Submission failed: ${error.message || "Unknown error"}`);
     } finally {
       setIsSubmitting(false);
     }
@@ -338,12 +379,13 @@ export default function ReportIssue() {
             <div key={s.num} className="flex items-center flex-1">
               <div className="flex flex-col items-center">
                 <div
-                  className={`w-10 h-10 rounded-full flex items-center justify-center text-sm font-[700] transition-all duration-500 ${step > s.num
+                  className={`w-10 h-10 rounded-full flex items-center justify-center text-sm font-[700] transition-all duration-500 ${
+                    step > s.num
                       ? "bg-emerald-500 text-white shadow-[0_0_15px_rgba(16,185,129,0.4)]"
                       : step === s.num
                         ? "bg-blue-600 text-white ring-4 ring-blue-500/20 shadow-[0_0_20px_rgba(37,99,235,0.4)]"
                         : "bg-white/10 text-white/40 border border-white/10"
-                    }`}
+                  }`}
                 >
                   {step > s.num ? <CheckCircle className="w-5 h-5" /> : s.num}
                 </div>
@@ -385,16 +427,18 @@ export default function ReportIssue() {
                     <button
                       key={id}
                       onClick={() => handleCategorySelect(id)}
-                      className={`p-4 rounded-2xl border transition-all duration-300 group ${selectedCategory === id
+                      className={`p-4 rounded-2xl border transition-all duration-300 group ${
+                        selectedCategory === id
                           ? "bg-blue-600/30 border-blue-500 ring-2 ring-blue-500/50 shadow-lg"
                           : "bg-white/5 border-white/10 hover:bg-white/10 hover:border-white/20"
-                        }`}
+                      }`}
                     >
                       <div
-                        className={`w-12 h-12 rounded-xl mx-auto mb-3 flex items-center justify-center transition-transform group-hover:scale-110 ${selectedCategory === id
+                        className={`w-12 h-12 rounded-xl mx-auto mb-3 flex items-center justify-center transition-transform group-hover:scale-110 ${
+                          selectedCategory === id
                             ? "bg-blue-500 text-white"
                             : "bg-white/10 text-blue-400"
-                          }`}
+                        }`}
                       >
                         <Icon className="w-6 h-6" />
                       </div>
@@ -419,10 +463,11 @@ export default function ReportIssue() {
                         <button
                           key={sub}
                           onClick={() => setSelectedSubcategory(sub)}
-                          className={`px-4 py-2 rounded-xl text-sm font-[600] border transition-all ${selectedSubcategory === sub
+                          className={`px-4 py-2 rounded-xl text-sm font-[600] border transition-all ${
+                            selectedSubcategory === sub
                               ? "bg-blue-600 text-white border-blue-500 shadow-md"
                               : "bg-white/5 text-blue-100/70 border-white/10 hover:bg-white/10"
-                            }`}
+                          }`}
                         >
                           {sub}
                         </button>
@@ -475,7 +520,7 @@ export default function ReportIssue() {
                         className="group flex flex-col items-center gap-4 p-8 rounded-3xl bg-blue-600/20 border border-blue-500/30 hover:bg-blue-600/30 transition-all hover:scale-105"
                       >
                         <div className="w-16 h-16 rounded-2xl bg-blue-600 flex items-center justify-center shadow-[0_0_30px_rgba(37,99,235,0.5)]">
-                          <Navigation className="w-8 h-8 text-white animate-pulse" />
+                          <Navigation className="w-8 h-8 text-white group-hover:animate-bounce" />
                         </div>
                         <div className="text-center">
                           <div className="text-lg font-[900] text-white">
@@ -488,34 +533,68 @@ export default function ReportIssue() {
                       </button>
                     </div>
                   )}
-                  {isDetectingLocation && (
+                  {(isDetectingLocation || (locationDetected && coords)) && (
                     <div className="absolute inset-0 flex flex-col items-center justify-center bg-black/60 backdrop-blur-md z-30">
-                      <div className="relative w-24 h-24 mb-6">
-                        <motion.div
-                          animate={{ rotate: 360, scale: [1, 1.1, 1] }}
-                          transition={{
-                            duration: 3,
-                            repeat: Infinity,
-                            ease: "linear",
-                          }}
-                          className="absolute inset-0 border-t-2 border-r-2 border-blue-500 rounded-full"
-                        />
-                        <motion.div
-                          animate={{ rotate: -360, scale: [1, 1.2, 1] }}
-                          transition={{
-                            duration: 2,
-                            repeat: Infinity,
-                            ease: "linear",
-                          }}
-                          className="absolute inset-4 border-b-2 border-l-2 border-indigo-500 rounded-full opacity-50"
-                        />
-                        <div className="absolute inset-0 flex items-center justify-center">
-                          <div className="w-4 h-4 bg-blue-500 rounded-full animate-ping" />
+                      {isDetectingLocation ? (
+                        <>
+                          <div className="relative w-24 h-24 mb-6">
+                            <motion.div
+                              animate={{ rotate: 360, scale: [1, 1.1, 1] }}
+                              transition={{
+                                duration: 3,
+                                repeat: Infinity,
+                                ease: "linear",
+                              }}
+                              className="absolute inset-0 border-t-2 border-r-2 border-blue-500 rounded-full"
+                            />
+                            <motion.div
+                              animate={{ rotate: -360, scale: [1, 1.2, 1] }}
+                              transition={{
+                                duration: 2,
+                                repeat: Infinity,
+                                ease: "linear",
+                              }}
+                              className="absolute inset-4 border-b-2 border-l-2 border-indigo-500 rounded-full opacity-50"
+                            />
+                            <div className="absolute inset-0 flex items-center justify-center">
+                              <div className="w-4 h-4 bg-blue-500 rounded-full animate-ping" />
+                            </div>
+                          </div>
+                          <div className="text-blue-200 font-[900] tracking-[0.2em] uppercase text-[10px] animate-pulse text-center">
+                            Syncing with Satellites...
+                            <br />
+                            <span className="text-[8px] opacity-60">
+                              Please allow location access if prompted
+                            </span>
+                          </div>
+                        </>
+                      ) : (
+                        <div className="relative flex flex-col items-center">
+                          <motion.div
+                            initial={{ scale: 0 }}
+                            animate={{ scale: 1 }}
+                            className="w-20 h-20 bg-emerald-500 rounded-full flex items-center justify-center shadow-[0_0_30px_rgba(16,185,129,0.4)] mb-4"
+                          >
+                            <CheckCircle className="w-10 h-10 text-white" />
+                          </motion.div>
+                          <div className="text-emerald-400 font-[900] tracking-[0.2em] uppercase text-[10px] text-center">
+                            Coordinates Locked
+                            <br />
+                            <span className="text-white/60 font-mono text-[9px] lowercase">
+                              {coords?.lat.toFixed(6)}, {coords?.lng.toFixed(6)}
+                            </span>
+                          </div>
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleDetectLocation();
+                            }}
+                            className="mt-4 text-[9px] font-bold text-blue-400 hover:text-blue-300 uppercase tracking-widest bg-blue-500/10 px-3 py-1.5 rounded-lg border border-blue-500/20"
+                          >
+                            Re-sync GPS
+                          </button>
                         </div>
-                      </div>
-                      <div className="text-blue-200 font-[900] tracking-[0.2em] uppercase text-[10px] animate-pulse">
-                        Syncing with Satellites...
-                      </div>
+                      )}
                     </div>
                   )}
                   <div className="absolute inset-0 flex items-center justify-center">
@@ -545,7 +624,9 @@ export default function ReportIssue() {
                         </div>
                         <div className="flex-1 min-w-0">
                           <div className="text-[10px] text-blue-200 uppercase font-[700] tracking-wider flex items-center gap-2">
-                            Coordinates Locked
+                            {coords
+                              ? "Coordinates Locked"
+                              : "Manual Entry Mode"}
                             {coords && (
                               <span className="text-emerald-400 font-mono lower-case opacity-60">
                                 ({coords.lat.toFixed(4)},{" "}
@@ -554,7 +635,7 @@ export default function ReportIssue() {
                             )}
                           </div>
                           <div className="text-sm text-white font-[500] truncate">
-                            {address || "Location Found"}
+                            {address || area || "Location Entered"}
                           </div>
                         </div>
                       </div>
@@ -573,7 +654,10 @@ export default function ReportIssue() {
                         type="text"
                         placeholder="House No, Building, Landmark..."
                         value={address}
-                        onChange={(e) => setAddress(e.target.value)}
+                        onChange={(e) => {
+                          setAddress(e.target.value);
+                          if (!locationDetected) setLocationDetected(true);
+                        }}
                         className="w-full text-lg text-white font-[600] bg-transparent border-none focus:ring-0 placeholder:text-white/20"
                       />
                     </div>
@@ -586,7 +670,10 @@ export default function ReportIssue() {
                       <input
                         type="text"
                         value={area}
-                        onChange={(e) => setArea(e.target.value)}
+                        onChange={(e) => {
+                          setArea(e.target.value);
+                          if (!locationDetected) setLocationDetected(true);
+                        }}
                         required
                         className="w-full bg-white/5 border border-white/10 rounded-xl p-3 text-white focus:outline-none focus:border-blue-500/50"
                         placeholder="Required"
@@ -599,7 +686,10 @@ export default function ReportIssue() {
                       <input
                         type="text"
                         value={pincode}
-                        onChange={(e) => setPincode(e.target.value)}
+                        onChange={(e) => {
+                          setPincode(e.target.value);
+                          if (!locationDetected) setLocationDetected(true);
+                        }}
                         className="w-full bg-white/5 border border-white/10 rounded-xl p-3 text-white focus:outline-none focus:border-blue-500/50"
                         placeholder="122001"
                       />
@@ -615,8 +705,13 @@ export default function ReportIssue() {
                   <ArrowLeft className="w-4 h-4" /> Go Back
                 </button>
                 <button
-                  onClick={() => setStep(3)}
-                  disabled={!locationDetected || !area.trim()}
+                  onClick={async () => {
+                    if (!coords) {
+                      await handleManualGeocode(address, area);
+                    }
+                    setStep(3);
+                  }}
+                  disabled={!area.trim()}
                   className="flex items-center gap-2 px-10 py-4 bg-blue-600 hover:bg-blue-500 disabled:opacity-20 disabled:cursor-not-allowed text-white text-sm font-[800] rounded-2xl transition-all shadow-[0_0_20px_rgba(37,99,235,0.3)] hover:shadow-blue-500/50"
                 >
                   Next Step <ArrowRight className="w-4 h-4" />
@@ -805,7 +900,7 @@ export default function ReportIssue() {
                   disabled={isSubmitting}
                   className="flex items-center gap-3 px-10 py-4 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white text-base font-[900] rounded-2xl transition-all shadow-[0_0_30px_rgba(37,99,235,0.4)]"
                 >
-                  {isSubmitting ? "Processing..." : "Submit Mission"}{" "}
+                  {isSubmitting ? "Processing..." : "Submit Issue"}{" "}
                   <Zap className="w-5 h-5 fill-current" />
                 </button>
               </div>
@@ -879,9 +974,13 @@ export default function ReportIssue() {
 
                 <div className="flex flex-col md:flex-row gap-4 px-4 md:px-0">
                   <button
-                    onClick={() =>
-                      navigate(`/dashboard/complaints/${complaintId}`)
-                    }
+                    onClick={() => {
+                      if (complaintId) {
+                        navigate(`/dashboard/complaints/${complaintId}`);
+                      } else {
+                        navigate("/dashboard/complaints");
+                      }
+                    }}
                     className="flex-1 py-4 bg-white text-blue-900 text-sm font-[800] rounded-2xl transition-all hover:bg-blue-50 active:scale-95 shadow-xl"
                   >
                     Track Progress

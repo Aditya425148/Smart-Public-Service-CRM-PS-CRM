@@ -19,13 +19,13 @@ export default function LoginPage() {
   const [mode, setMode] = useState<"choose" | "email-login" | "email-signup">(
     "choose",
   );
-  
+
   // Form State
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [name, setName] = useState("");
   const [showPassword, setShowPassword] = useState(false);
-  
+
   // UI State
   const [error, setError] = useState("");
   const [isLoading, setIsLoading] = useState(false);
@@ -62,7 +62,11 @@ export default function LoginPage() {
       if (err.code === 401) {
         setError("Invalid email or password. Please try again.");
       } else {
-        setError(getNetworkErrorMessage(err.code?.toString()) || err.message || "Login failed.");
+        setError(
+          getNetworkErrorMessage(err.code?.toString()) ||
+            err.message ||
+            "Login failed.",
+        );
       }
     } finally {
       setIsLoading(false);
@@ -166,7 +170,9 @@ export default function LoginPage() {
           className="group flex flex-col items-center justify-center p-4 rounded-xl border border-slate-800/50 bg-slate-900/30 hover:bg-blue-600/10 hover:border-blue-500/30 transition-all duration-200 disabled:opacity-50"
         >
           <Zap className="w-6 h-6 text-blue-400 mb-2 group-hover:scale-110 transition-transform" />
-          <span className="text-sm font-[600] text-slate-300">Demo Citizen</span>
+          <span className="text-sm font-[600] text-slate-300">
+            Demo Citizen
+          </span>
         </button>
         <button
           onClick={() => handleDemoLogin("admin")}
@@ -202,7 +208,9 @@ export default function LoginPage() {
 
       {type === "signup" && (
         <div className="space-y-2">
-          <label className="text-sm font-[500] text-slate-300 ml-1">Full Name</label>
+          <label className="text-sm font-[500] text-slate-300 ml-1">
+            Full Name
+          </label>
           <input
             type="text"
             value={name}
@@ -214,7 +222,9 @@ export default function LoginPage() {
       )}
 
       <div className="space-y-2">
-        <label className="text-sm font-[500] text-slate-300 ml-1">Email Address</label>
+        <label className="text-sm font-[500] text-slate-300 ml-1">
+          Email Address
+        </label>
         <input
           type="email"
           value={email}
@@ -285,12 +295,16 @@ export default function LoginPage() {
           <div className="w-16 h-16 bg-blue-600/10 text-blue-500 rounded-2xl flex items-center justify-center mx-auto mb-6 border border-blue-500/10">
             <Shield size={32} />
           </div>
-          <h1 className="text-3xl font-[800] text-white tracking-tight">CivicPulse</h1>
-          <p className="text-slate-400 mt-2 font-[500]">Secure access to community pulse</p>
+          <h1 className="text-3xl font-[800] text-white tracking-tight">
+            CivicPulse
+          </h1>
+          <p className="text-slate-400 mt-2 font-[500]">
+            Secure access to community pulse
+          </p>
         </div>
 
         {error && (
-          <motion.div 
+          <motion.div
             initial={{ opacity: 0, y: -10 }}
             animate={{ opacity: 1, y: 0 }}
             className="bg-red-500/10 border border-red-500/20 text-red-200 text-sm p-4 rounded-2xl mb-8 flex gap-3 backdrop-blur-sm"
@@ -300,7 +314,9 @@ export default function LoginPage() {
           </motion.div>
         )}
 
-        {mode === "choose" ? renderChooseMode() : renderEmailForm(mode === "email-login" ? "login" : "signup")}
+        {mode === "choose"
+          ? renderChooseMode()
+          : renderEmailForm(mode === "email-login" ? "login" : "signup")}
       </motion.div>
     </div>
   );

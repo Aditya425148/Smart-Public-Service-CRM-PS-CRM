@@ -84,31 +84,47 @@ function ProgressRing({
 }
 
 // City Map Component with pins
-function FixMap({ complaints }: { complaints: any[] }) {
+function FixMap({
+  complaints,
+  userId,
+}: {
+  complaints: any[];
+  userId?: string;
+}) {
   const [hovered, setHovered] = useState<string | null>(null);
   const navigate = useNavigate();
 
   // Filter and map real complaints to radar coordinates
-  // Only show complaints that are within the 5km monitoring range
   const pins = complaints
     .filter((c) => {
-      // In a real app, you'd calculate this using lat/lng distances.
-      // For this demo, we simulate the "radius check" by checking if the complaint
-      // has a mock 'distance' property < 5 or by randomly distributing nearby ones.
-      const seedFull = c.id.split("-").pop() || "0";
-      const seed = parseInt(seedFull.match(/\d+/)?.[0] || "0");
-      const distKm = c.distance || (seed % 5) + 0.5;
+      const distKm = c.distance_km || 1.0;
       const statusMatch = c.status !== "Resolved" && c.status !== "Closed";
-      return distKm <= 5 && statusMatch;
+
+      // LOGIC: Show if it's within 5km OR if it's reported by the CURRENT USER
+      const isMyReport = userId && c.reporterId === userId;
+      return distKm <= 15 && (distKm <= 5 || isMyReport) && statusMatch;
     })
     .map((c, i) => {
-      const seedFull = c.id.split("-").pop() || i.toString();
-      const seed = parseInt(seedFull.match(/\d+/)?.[0] || i.toString());
-      const angle = (seed * 137.5) % 360; // Golden angle
-      const distKm = c.distance || (seed % 5) + 0.5;
+      const distKm = c.distance_km || 1.0;
+      const idStr = c.id || i.toString();
+      let seed = 0;
+      for (let j = 0; j < idStr.length; j++) {
+        seed += idStr.charCodeAt(j);
+      }
 
-      // Map km to % coordinates (50,50 is center, max radius is ~45% to stay inside 5km circle)
-      const radiusPercent = (distKm / 5) * 45;
+      const angle = (seed * 137.5) % 360;
+
+      // Scale: 5km takes 0-45% radius.
+      // If > 5km, we scale it to stay between 46% and 49% (just outside the regular rings)
+      let radiusPercent;
+      if (distKm <= 5) {
+        radiusPercent = (distKm / 5) * 45;
+      } else {
+        // Map 5.1km - 50km to 46% - 49%
+        const overflowDist = Math.min(distKm, 20); // Cap visual distance at 20km for layout
+        radiusPercent = 46 + ((overflowDist - 5) / 15) * 3;
+      }
+
       const x = 50 + Math.cos((angle * Math.PI) / 180) * radiusPercent;
       const y = 50 + Math.sin((angle * Math.PI) / 180) * radiusPercent;
 
@@ -119,6 +135,9 @@ function FixMap({ complaints }: { complaints: any[] }) {
         status: c.status,
         category: c.category,
         address: c.address,
+        dist: distKm,
+        isFar: distKm > 5,
+        isMyReport: userId && c.reporterId === userId,
       };
     });
 
@@ -206,11 +225,28 @@ function FixMap({ complaints }: { complaints: any[] }) {
         className="absolute z-30"
         style={{ left: "50%", top: "50%", transform: "translate(-50%, -50%)" }}
       >
-        <div className="w-6 h-6 rounded-full bg-blue-500 border-2 border-white shadow-[0_0_20px_rgba(59,130,246,0.6)] relative">
-          <div className="absolute inset-0 rounded-full bg-blue-400 animate-ping opacity-60" />
-        </div>
-        <div className="absolute top-9 left-1/2 -translate-x-1/2 whitespace-nowrap bg-blue-600 text-[10px] text-white px-2.5 py-1 rounded-full font-bold shadow-lg border border-blue-400/30">
-          Central Hub (5km Radius)
+        <div className="group relative flex flex-col items-center">
+          <div className="w-6 h-6 rounded-full bg-blue-500 border-2 border-white shadow-[0_0_20px_rgba(59,130,246,0.6)] relative z-10 cursor-help">
+            <div className="absolute inset-0 rounded-full bg-blue-400 animate-ping opacity-60" />
+          </div>
+
+          <div className="absolute top-9 left-1/2 -translate-x-1/2 opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none">
+            <div className="bg-slate-800 border border-blue-500/30 text-white p-3 rounded-xl shadow-2xl w-56 text-center backdrop-blur-md">
+              <div className="text-blue-400 font-bold text-[10px] uppercase tracking-widest mb-1 flex items-center justify-center gap-1.5">
+                <MapPin className="w-3 h-3" /> Radar Origin
+              </div>
+              <div className="text-sm font-[600] leading-tight">
+                Current Location Hub
+              </div>
+              <div className="text-[10px] text-slate-400 mt-2 border-t border-white/5 pt-2">
+                Scanning 5km radius around your detected GPS coordinates.
+              </div>
+            </div>
+          </div>
+
+          {/* <div className="absolute top-9 left-1/2 -translate-x-1/2 whitespace-nowrap bg-blue-600 text-[10px] text-white px-2.5 py-1 rounded-full font-bold shadow-lg border border-blue-400/30 group-hover:hidden transition-all">
+            Central Hub (5km Radius)
+          </div> */}
         </div>
       </div>
 
@@ -221,7 +257,7 @@ function FixMap({ complaints }: { complaints: any[] }) {
         return (
           <div
             key={pin.id}
-            className="absolute cursor-pointer z-20"
+            className="absolute cursor-pointer z-20 group/pin"
             style={{
               left: `${pin.x}%`,
               top: `${pin.y}%`,
@@ -231,17 +267,41 @@ function FixMap({ complaints }: { complaints: any[] }) {
             onMouseLeave={() => setHovered(null)}
             onClick={() => navigate(`/dashboard/complaints/${pin.id}`)}
           >
+            {pin.isFar && (
+              <div className="absolute -inset-2 rounded-full border border-dashed border-white/30 animate-[spin_10s_linear_infinite] opacity-50" />
+            )}
             <div
-              className="w-5 h-5 rounded-full border-2 border-white shadow-md transition-transform hover:scale-125"
+              className={`w-5 h-5 rounded-full border-2 border-white shadow-md transition-all group-hover/pin:scale-125 ${pin.isFar ? "h-3 w-3 shadow-[0_0_10px_rgba(255,255,255,0.4)]" : ""}`}
               style={{ backgroundColor: color }}
             />
             {isHovered && (
               <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-xs text-white whitespace-nowrap z-30 shadow-xl">
-                <div className="font-[600]">
-                  {pin.category} — {pin.address}
+                <div className="flex items-center gap-2 mb-1">
+                  <div className="font-[600]">{pin.category}</div>
+                  {pin.isFar && (
+                    <span className="bg-amber-500/20 text-amber-400 text-[8px] px-1.5 py-0.5 rounded uppercase font-black border border-amber-500/30">
+                      Far Location ({pin.dist.toFixed(1)}km)
+                    </span>
+                  )}
+                  {pin.isMyReport && (
+                    <span className="bg-blue-500/20 text-blue-400 text-[8px] px-1.5 py-0.5 rounded uppercase font-black border border-blue-500/30">
+                      My Report
+                    </span>
+                  )}
                 </div>
-                <div style={{ color }}>{pin.status}</div>
-                <div className="text-slate-400">{pin.id}</div>
+                <div className="text-[10px] text-slate-300 mb-1">
+                  {pin.address}
+                </div>
+                <div
+                  style={{ color }}
+                  className="font-bold flex items-center gap-2"
+                >
+                  <div
+                    className="w-1.5 h-1.5 rounded-full"
+                    style={{ backgroundColor: color }}
+                  />
+                  {pin.status}
+                </div>
               </div>
             )}
           </div>
@@ -294,6 +354,39 @@ export default function CitizenHome() {
   const [complaints, setComplaints] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [user, setUser] = useState<any>({});
+  const [coords, setCoords] = useState<{ lat: number; lng: number } | null>(
+    null,
+  );
+
+  const [userState, setUserState] = useState<string | null>(null);
+
+  useEffect(() => {
+    // Get user coordinates and State name
+    if (navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition(
+        async (pos) => {
+          const lat = pos.coords.latitude;
+          const lng = pos.coords.longitude;
+          setCoords({ lat, lng });
+
+          // Fetch State Name for point verification filtering
+          try {
+            const res = await fetch(
+              `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}&zoom=10`,
+            );
+            const data = await res.json();
+            const state = data.address?.state;
+            if (state) setUserState(state);
+          } catch (e) {
+            console.error("Failed to fetch state name:", e);
+          }
+        },
+        () => {
+          console.warn("Location access denied or unavailable.");
+        },
+      );
+    }
+  }, []);
 
   // Real stats calculation from DB
   const userComplaints = complaints.filter(
@@ -357,14 +450,19 @@ export default function CitizenHome() {
         return;
       });
 
-    // Subscribe to real-time updates
-    const unsubscribe = appwriteService.subscribeToComplaints((data) => {
-      setComplaints(data);
-      setLoading(false);
-    });
+    // Subscribe to real-time updates with backend filtering if coords available
+    const unsubscribe = appwriteService.subscribeToComplaints(
+      (data) => {
+        setComplaints(data);
+        setLoading(false);
+      },
+      coords?.lat,
+      coords?.lng,
+      5.0, // 5km radius
+    );
 
     return () => unsubscribe();
-  }, [navigate]);
+  }, [navigate, coords]);
 
   const userRecentComplaints = userComplaints.slice(0, 4);
   const progressPercent = Math.min(
@@ -374,18 +472,19 @@ export default function CitizenHome() {
 
   // Complaints visible on the radar (within 5km, not resolved)
   const nearbyComplaints = complaints.filter((c) => {
-    const seedFull = c.id?.split("-").pop() || "0";
-    const seed = parseInt(seedFull.match(/\d+/)?.[0] || "0");
-    const distKm = c.distance || (seed % 5) + 0.5;
+    const distKm = c.distance_km || 1.0;
     return distKm <= 5 && c.status !== "Resolved" && c.status !== "Closed";
   });
 
-  // Complaints that need verification (not the user's own)
+  // Complaints that need verification (not the user's own AND not already verified by user)
+  // FILTER: Only show complaints from the same State as the user
   const verifiableComplaints = complaints.filter(
     (c) =>
       (c.status === "Submitted" || c.status === "Pending Verification") &&
       c.reporterId !== user.uid &&
-      c.userId !== user.uid,
+      c.userId !== user.uid &&
+      !(c.verifiedBy || []).includes(user.uid) &&
+      (userState ? c.state === userState : true),
   );
 
   const categoryIcons: Record<string, string> = {
@@ -426,12 +525,22 @@ export default function CitizenHome() {
               <Zap className="w-3 h-3 fill-current" />
               Citizen Portal
             </div>
-            <h1 className="text-3xl md:text-4xl font-[900] text-slate-900 tracking-tight">
-              Welcome back,{" "}
-              <span className="text-blue-600">
-                {user.name?.split(" ")[0] || "Citizen"}
-              </span>
-            </h1>
+            <div className="flex items-center gap-3">
+              <h1 className="text-3xl md:text-4xl font-[900] text-slate-900 tracking-tight">
+                Welcome back,{" "}
+                <span className="text-blue-600">
+                  {user.name?.split(" ")[0] || "Citizen"}
+                </span>
+              </h1>
+              {coords && (
+                <div className="hidden sm:flex items-center gap-2 px-3 py-1.5 bg-blue-500/10 border border-blue-500/20 rounded-full h-fit mt-1">
+                  <div className="w-2 h-2 rounded-full bg-blue-500 animate-pulse" />
+                  <span className="text-[10px] uppercase font-black text-blue-600 tracking-tighter">
+                    Live Feed: {coords.lat.toFixed(2)}, {coords.lng.toFixed(2)}
+                  </span>
+                </div>
+              )}
+            </div>
             <p className="text-slate-500 text-sm font-medium">
               You have{" "}
               <span className="text-slate-900 font-bold">
@@ -532,9 +641,9 @@ export default function CitizenHome() {
                   </div>
                 </div>
                 <div className="flex gap-2">
-                  <button className="px-4 py-1.5 text-xs font-bold bg-slate-100 text-slate-600 rounded-full hover:bg-slate-200 transition-colors">
+                  {/* <button className="px-4 py-1.5 text-xs font-bold bg-slate-100 text-slate-600 rounded-full hover:bg-slate-200 transition-colors">
                     Satellite
-                  </button>
+                  </button> */}
                   <button className="px-4 py-1.5 text-xs font-bold bg-blue-600 text-white rounded-full">
                     Radar
                   </button>
@@ -542,7 +651,7 @@ export default function CitizenHome() {
               </div>
 
               <div className="relative rounded-[2rem] overflow-hidden border border-slate-200 shadow-inner">
-                <FixMap complaints={complaints} />
+                <FixMap complaints={complaints} userId={user.uid} />
               </div>
 
               {/* Quick Navigation Tags */}
@@ -610,11 +719,27 @@ export default function CitizenHome() {
                               {c.category}
                               {c.subcategory ? ` — ${c.subcategory}` : ""}
                             </div>
-                            <div className="text-[11px] text-slate-400 truncate flex items-center gap-1">
-                              <MapPin size={10} className="shrink-0" />{" "}
-                              {c.address ||
-                                c.location?.address ||
-                                "Unknown location"}
+                            <div className="text-[11px] text-slate-400 truncate flex items-center justify-between gap-2">
+                              <div className="flex items-center gap-1.5 truncate">
+                                <MapPin size={10} className="shrink-0" />{" "}
+                                {c.address || c.location?.address || "Unknown"}
+                              </div>
+                              <div className="flex items-center gap-1 shrink-0 font-bold text-slate-400">
+                                <Clock size={9} />
+                                {c.createdAt
+                                  ? typeof c.createdAt === "string"
+                                    ? new Date(c.createdAt).toLocaleDateString(
+                                        "en-IN",
+                                        { day: "numeric", month: "short" },
+                                      )
+                                    : new Date(
+                                        c.createdAt.seconds * 1000,
+                                      ).toLocaleDateString("en-IN", {
+                                        day: "numeric",
+                                        month: "short",
+                                      })
+                                  : "Today"}
+                              </div>
                             </div>
                           </div>
                           <div className="text-right shrink-0">
@@ -802,9 +927,13 @@ export default function CitizenHome() {
                 </div>
               </div>
               <p className="text-[12px] font-bold text-amber-900/70 leading-snug mb-4">
-                Help your neighborhood by verifying unresolved complaints near
-                you. Each verification earns you{" "}
-                <span className="text-amber-600 font-black">50 points</span>.
+                Help your neighborhood in{" "}
+                <span className="text-amber-600 font-black">
+                  {userState || "your state"}
+                </span>{" "}
+                by verifying unresolved issues. Earn{" "}
+                <span className="text-amber-600 font-black">50 points</span> per
+                verified report.
               </p>
 
               {verifiableComplaints.length > 0 ? (
@@ -835,7 +964,7 @@ export default function CitizenHome() {
               ) : (
                 <div className="text-center py-3 mb-4">
                   <p className="text-[11px] text-amber-600 font-bold">
-                    No complaints pending verification right now
+                    No complaints pending in {userState || "your area"}
                   </p>
                 </div>
               )}
@@ -922,20 +1051,30 @@ export default function CitizenHome() {
                           <MapPin size={9} />{" "}
                           {c.address || c.location?.address || "Unknown"}
                         </div>
-                        <div className="flex items-center gap-2 mt-1.5">
+                        <div className="flex items-center gap-2 mt-1.5 flex-wrap">
                           <span
                             className={`text-[9px] font-bold px-2 py-0.5 rounded-full ${statusColor[c.status] || "bg-slate-100 text-slate-500"}`}
                           >
                             {c.status}
                           </span>
-                          <span className="text-[9px] text-slate-400">
-                            {c.createdAt?.seconds
-                              ? new Date(
-                                  c.createdAt.seconds * 1000,
-                                ).toLocaleDateString("en-IN", {
-                                  day: "numeric",
-                                  month: "short",
-                                })
+                          <span className="text-[9px] font-bold text-slate-500 bg-slate-50 px-2 py-0.5 rounded-full border border-slate-100 flex items-center gap-1">
+                            <Clock size={8} className="text-blue-500" />
+                            {c.slaRemainingHours ?? c.slaHours ?? "24"}h left
+                          </span>
+                          <span className="text-[9px] text-slate-400 flex items-center gap-1 font-medium">
+                            <Clock size={8} />
+                            {c.createdAt
+                              ? typeof c.createdAt === "string"
+                                ? new Date(c.createdAt).toLocaleDateString(
+                                    "en-IN",
+                                    { day: "numeric", month: "short" },
+                                  )
+                                : new Date(
+                                    c.createdAt.seconds * 1000,
+                                  ).toLocaleDateString("en-IN", {
+                                    day: "numeric",
+                                    month: "short",
+                                  })
                               : "Today"}
                           </span>
                         </div>
@@ -985,6 +1124,31 @@ export default function CitizenHome() {
                       </div>
                       <div className="text-[11px] font-bold text-slate-400 mt-1 truncate flex items-center gap-1">
                         <MapPin size={10} /> {c.address}
+                      </div>
+                      <div className="text-[10px] text-slate-400 mt-1 flex items-center gap-1 font-medium">
+                        <Clock size={10} />
+                        {c.createdAt
+                          ? typeof c.createdAt === "string"
+                            ? new Date(c.createdAt).toLocaleDateString(
+                                "en-IN",
+                                {
+                                  day: "numeric",
+                                  month: "short",
+                                  year: "numeric",
+                                  hour: "2-digit",
+                                  minute: "2-digit",
+                                },
+                              )
+                            : new Date(
+                                c.createdAt.seconds * 1000,
+                              ).toLocaleDateString("en-IN", {
+                                day: "numeric",
+                                month: "short",
+                                year: "numeric",
+                                hour: "2-digit",
+                                minute: "2-digit",
+                              })
+                          : "Recently"}
                       </div>
                     </div>
                     <ChevronRight className="w-4 h-4 text-slate-300 group-hover:text-blue-500 self-center" />

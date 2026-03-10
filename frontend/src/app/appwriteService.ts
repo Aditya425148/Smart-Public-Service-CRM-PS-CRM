@@ -38,7 +38,7 @@ export const authService = {
     } catch {
       try {
         await account.deleteSession("current");
-      } catch { }
+      } catch {}
     }
   },
 
@@ -75,28 +75,60 @@ export const authService = {
 
 export const appwriteService = {
   async createComplaint(complaintData: Record<string, any>): Promise<string> {
-    const result = await api.post<{ id: string }>("/api/complaints", complaintData);
+    const result = await api.post<{ id: string }>(
+      "/api/complaints",
+      complaintData,
+    );
     return result.id;
   },
 
-  async getAllComplaints(): Promise<any[]> {
-    return api.get<any[]>("/api/complaints");
+  async getAllComplaints(
+    lat?: number,
+    lng?: number,
+    radius?: number,
+  ): Promise<any[]> {
+    let url = "/api/complaints";
+    const params = new URLSearchParams();
+    if (lat !== undefined) params.append("lat", lat.toString());
+    if (lng !== undefined) params.append("lng", lng.toString());
+    if (radius !== undefined) params.append("radius", radius.toString());
+
+    if (params.toString()) {
+      url += `?${params.toString()}`;
+    }
+    return api.get<any[]>(url);
   },
 
-  subscribeToComplaints(callback: (complaints: any[]) => void) {
+  subscribeToComplaints(
+    callback: (complaints: any[]) => void,
+    lat?: number,
+    lng?: number,
+    radius?: number,
+  ) {
     // Initial fetch
-    this.getAllComplaints().then(callback).catch(() => callback([]));
+    this.getAllComplaints(lat, lng, radius)
+      .then(callback)
+      .catch(() => callback([]));
     // Poll every 15s (Appwrite Realtime replaced by REST polling via FastAPI)
     const interval = setInterval(() => {
-      this.getAllComplaints().then(callback).catch(() => callback([]));
+      this.getAllComplaints(lat, lng, radius)
+        .then(callback)
+        .catch(() => callback([]));
     }, 15_000);
     return () => clearInterval(interval);
   },
 
-  subscribeToUserComplaints(userId: string, callback: (complaints: any[]) => void) {
-    this.getComplaintsByUser(userId).then(callback).catch(() => callback([]));
+  subscribeToUserComplaints(
+    userId: string,
+    callback: (complaints: any[]) => void,
+  ) {
+    this.getComplaintsByUser(userId)
+      .then(callback)
+      .catch(() => callback([]));
     const interval = setInterval(() => {
-      this.getComplaintsByUser(userId).then(callback).catch(() => callback([]));
+      this.getComplaintsByUser(userId)
+        .then(callback)
+        .catch(() => callback([]));
     }, 15_000);
     return () => clearInterval(interval);
   },
@@ -114,6 +146,31 @@ export const appwriteService = {
     await api.patch(`/api/complaints/${id}/status`, { status, note, actor });
   },
 
+  async verifyComplaint(
+    id: string,
+    confirmations: number,
+    status: string,
+    priorityScore: number,
+    note: string,
+    actor: string,
+  ): Promise<void> {
+    await api.patch(`/api/complaints/${id}/verify`, {
+      confirmations,
+      status,
+      priorityScore,
+      note,
+      actor,
+    });
+  },
+
+  async updateUserReputation(userId: string, points: number): Promise<void> {
+    // This updates the user's reputation points in Appwrite Preferences
+    const user = await account.get();
+    const currentPrefs = user.prefs || {};
+    const newPoints = (currentPrefs.reputation || 0) + points;
+    await account.updatePrefs({ ...currentPrefs, reputation: newPoints });
+  },
+
   async getComplaintsByUser(userId: string): Promise<any[]> {
     return api.get<any[]>(`/api/complaints/user/${userId}`);
   },
@@ -122,20 +179,35 @@ export const appwriteService = {
     return api.get<any[]>("/api/stats/wards");
   },
 
-  async getLeaderboard(tab: "National" | "District" | "Local" = "National"): Promise<any[]> {
+  async getLeaderboard(
+    tab: "National" | "District" | "Local" = "National",
+  ): Promise<any[]> {
     return api.get<any[]>(`/api/leaderboard?tab=${tab}`);
   },
 
-  async getLeaderboardSummary(): Promise<{ totalResolved: number; activeCitizens: number }> {
+  async getLeaderboardSummary(): Promise<{
+    totalResolved: number;
+    activeCitizens: number;
+  }> {
     return api.get("/api/leaderboard/summary");
   },
 
   async uploadPhoto(file: File): Promise<string> {
-    const ALLOWED = ["image/jpeg", "image/png", "image/webp", "image/gif", "video/mp4", "video/webm", "video/quicktime"];
+    const ALLOWED = [
+      "image/jpeg",
+      "image/png",
+      "image/webp",
+      "image/gif",
+      "video/mp4",
+      "video/webm",
+      "video/quicktime",
+    ];
     if (!ALLOWED.includes(file.type)) {
       throw new Error("Unsupported file type.");
     }
-    const maxSize = file.type.startsWith("image/") ? 10 * 1024 * 1024 : 60 * 1024 * 1024;
+    const maxSize = file.type.startsWith("image/")
+      ? 10 * 1024 * 1024
+      : 60 * 1024 * 1024;
     if (file.size > maxSize) {
       throw new Error("File too large.");
     }

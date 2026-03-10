@@ -5,10 +5,10 @@ import {
   Shield,
   LogOut,
   ChevronRight,
-  TrendingUp,
   Award,
   Calendar,
   Zap,
+  Clock,
 } from "lucide-react";
 import { useState, useEffect } from "react";
 import { appwriteService } from "../appwriteService";
@@ -69,7 +69,7 @@ export default function Profile() {
   });
   const [currentUser, setCurrentUser] = useState<any>({
     name: "Citizen",
-    ward: "Ward 1",
+    ward: "General",
     joinedDate: "2026",
     tier: 1,
     reputationLevel: "Bronze Citizen",
@@ -79,7 +79,7 @@ export default function Profile() {
         id: 1,
         name: "First Report",
         icon: "🏁",
-        earned: true,
+        earned: false, // Will calculate below
         criteria: "Submit your first complaint",
       },
       {
@@ -117,6 +117,14 @@ export default function Profile() {
           name: user.name || user.email?.split("@")[0] || "Citizen",
           email: user.email || "",
           uid: user.$id,
+          // Calculate badges based on real data
+          badges: prev.badges.map((b: any) => {
+            if (b.id === 1 && complaints.length > 0)
+              return { ...b, earned: true };
+            if (b.id === 2 && userStats.verified >= 5)
+              return { ...b, earned: true };
+            return b;
+          }),
         }));
 
         if (!user.$id) {
@@ -146,7 +154,14 @@ export default function Profile() {
               reputationScore:
                 userComplaints.length * 10 +
                 userComplaints.filter((c) => c.status === "Resolved").length *
-                  50,
+                  50 +
+                userComplaints.reduce((sum, c) => {
+                  const timeline = c.timeline || [];
+                  const verifications = timeline.filter((event: any) =>
+                    event.note?.includes(`Verified by user: ${user.$id}`),
+                  ).length;
+                  return sum + verifications * 20;
+                }, 0),
             });
             setLoading(false);
           },
@@ -166,26 +181,6 @@ export default function Profile() {
   );
   const earnedBadges = currentUser.badges.filter((b) => b.earned);
   const lockedBadges = currentUser.badges.filter((b) => !b.earned);
-
-  const reputationEvents = [
-    {
-      event: "Real-time data synced from Firestore",
-      delta: `+${userStats.reputationScore}`,
-      date: "Today",
-    },
-    {
-      event: "Issue resolved (Pothole #CMP-2026-04828)",
-      delta: "+30",
-      date: "Feb 28",
-    },
-    { event: "Complaint verified as genuine", delta: "+20", date: "Feb 25" },
-    { event: "Witness confirmation given", delta: "+5", date: "Feb 24" },
-    {
-      event: "Referral: friend filed first report",
-      delta: "+50",
-      date: "Feb 20",
-    },
-  ];
 
   if (loading && complaints.length === 0) {
     return (
@@ -223,43 +218,58 @@ export default function Profile() {
             <div className="relative">
               <ProgressRing percent={progressPercent} size={110} />
               <div className="absolute inset-0 flex items-center justify-center">
-                <div className="w-16 h-16 rounded-full bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center text-2xl font-[800]">
-                  RS
+                <div className="w-16 h-16 rounded-full bg-gradient-to-br from-blue-600 to-indigo-700 flex items-center justify-center text-2xl font-[900] shadow-inner border border-white/20">
+                  {currentUser.name?.[0].toUpperCase()}
                 </div>
               </div>
             </div>
             <div className="flex-1">
-              <h2 className="text-2xl font-[800]">{currentUser.name}</h2>
-              <div className="text-slate-400 text-sm mt-1">
-                {currentUser.ward} · Member since {currentUser.joinedDate}
+              <div className="flex items-center gap-2">
+                <h2 className="text-2xl font-[940] tracking-tight">
+                  {currentUser.name}
+                </h2>
+                <div className="w-4 h-4 rounded-full bg-blue-500 flex items-center justify-center">
+                  <div className="w-1.5 h-1.5 rounded-full bg-white animate-pulse" />
+                </div>
               </div>
-              <div className="flex items-center gap-3 mt-3 flex-wrap">
-                <span className="flex items-center gap-1.5 text-sm bg-blue-600/30 text-blue-400 border border-blue-500/20 px-3 py-1 rounded-full font-[600]">
-                  <Shield className="w-3.5 h-3.5" />
-                  Tier {currentUser.tier} Citizen
+              <div className="text-slate-400 text-xs font-bold uppercase tracking-widest mt-1 opacity-80">
+                Authorized Citizen · {currentUser.uid?.slice(-6).toUpperCase()}
+              </div>
+              <div className="flex items-center gap-3 mt-4 flex-wrap">
+                <span className="flex items-center gap-1.5 text-[10px] uppercase tracking-widest bg-blue-500/10 text-blue-400 border border-blue-500/20 px-3 py-1.5 rounded-xl font-[900]">
+                  <Shield className="w-3 h-3" />
+                  Tier {currentUser.tier} Hub
                 </span>
-                <span className="text-sm bg-violet-600/30 text-violet-400 border border-violet-500/20 px-3 py-1 rounded-full font-[600]">
+                <span className="text-[10px] uppercase tracking-widest bg-violet-500/10 text-violet-400 border border-violet-500/20 px-3 py-1.5 rounded-xl font-[900]">
+                  <Award className="w-3 h-3 inline mr-1" />
                   {currentUser.reputationLevel}
                 </span>
               </div>
-              <div className="mt-4">
-                <div className="text-xs text-slate-400 mb-1.5">
-                  {userStats.reputationScore} / {currentUser.nextMilestone} pts
-                  to next milestone ({progressPercent}%)
+              <div className="mt-5">
+                <div className="flex justify-between items-end mb-2">
+                  <div className="text-[10px] font-black text-slate-500 uppercase tracking-tighter">
+                    Milestone Progress
+                  </div>
+                  <div className="text-[10px] font-black text-blue-400 uppercase tracking-widest">
+                    {userStats.reputationScore} / {currentUser.nextMilestone}{" "}
+                    PTS
+                  </div>
                 </div>
-                <div className="w-full h-2 bg-slate-700 rounded-full overflow-hidden">
+                <div className="w-full h-1.5 bg-slate-800/50 rounded-full overflow-hidden border border-white/5">
                   <div
-                    className="h-full bg-gradient-to-r from-blue-500 to-violet-500 rounded-full"
+                    className="h-full bg-gradient-to-r from-blue-500 via-indigo-500 to-violet-500 rounded-full shadow-[0_0_10px_rgba(59,130,246,0.5)]"
                     style={{ width: `${progressPercent}%` }}
                   />
                 </div>
               </div>
             </div>
-            <div className="text-right">
-              <div className="text-4xl font-[800]">
+            <div className="px-5 py-6 bg-white/5 rounded-3xl border border-white/5 backdrop-blur-sm self-center">
+              <div className="text-3xl font-[1000] text-transparent bg-clip-text bg-gradient-to-b from-white to-white/60 leading-none">
                 {userStats.reputationScore}
               </div>
-              <div className="text-slate-400 text-sm">Civic Points</div>
+              <div className="text-[9px] text-blue-400 font-black uppercase tracking-[0.2em] mt-2 text-center">
+                Net Credits
+              </div>
             </div>
           </div>
         </div>
@@ -348,29 +358,6 @@ export default function Profile() {
           )}
         </div>
 
-        {/* Reputation Log */}
-        <div className="bg-white/70 backdrop-blur-lg rounded-[2.5rem] border border-white/50 shadow-xl p-6">
-          <h3 className="text-base font-[700] text-slate-900 mb-5">
-            Recent Reputation Events
-          </h3>
-          <div className="space-y-3">
-            {reputationEvents.map((e, i) => (
-              <div
-                key={i}
-                className="flex items-center gap-4 py-2.5 border-b border-slate-50 last:border-0"
-              >
-                <div className="text-sm text-slate-600 flex-1">{e.event}</div>
-                <span className="text-sm font-[800] text-emerald-500">
-                  {e.delta}
-                </span>
-                <span className="text-xs text-slate-400 w-12 text-right">
-                  {e.date}
-                </span>
-              </div>
-            ))}
-          </div>
-        </div>
-
         {/* Complaint History */}
         <div className="bg-white/70 backdrop-blur-lg rounded-[2.5rem] border border-white/50 shadow-xl overflow-hidden">
           <div className="flex items-center justify-between p-5 border-b border-slate-100/50">
@@ -385,52 +372,84 @@ export default function Profile() {
             </button>
           </div>
           <div className="divide-y divide-slate-100/50">
-            {complaints.slice(0, 4).map((c) => (
-              <div key={c.id} className="flex items-center gap-4 px-5 py-3.5">
-                <div className="text-xl">
-                  {c.category === "Garbage"
-                    ? "🗑️"
-                    : c.category === "Pothole"
-                      ? "🔧"
-                      : c.category === "Streetlight"
-                        ? "💡"
-                        : c.category === "Water"
-                          ? "💧"
-                          : c.category === "Safety"
-                            ? "🛡️"
-                            : c.category === "Sanitation"
-                              ? "⚠️"
-                              : c.category === "Construction"
-                                ? "🏗️"
-                                : "📍"}
-                </div>
-                <div className="flex-1 min-w-0">
-                  <div className="text-sm font-[600] text-slate-800 truncate">
-                    {c.category} — {c.subcategory || "General"}
-                  </div>
-                  <div className="text-xs text-slate-400">
-                    {c.createdAt?.seconds
-                      ? new Date(
-                          c.createdAt.seconds * 1000,
-                        ).toLocaleDateString()
-                      : "Just now"}
-                  </div>
-                </div>
+            {complaints.length > 0 ? (
+              complaints.slice(0, 5).map((c) => (
                 <div
-                  className={`text-xs px-2.5 py-1 rounded-full font-[600] ${
-                    c.status === "Resolved" || c.status === "Closed"
-                      ? "bg-emerald-100 text-emerald-700"
-                      : c.status === "Escalated"
-                        ? "bg-red-100 text-red-700"
-                        : c.status === "In Progress"
-                          ? "bg-amber-100 text-amber-700"
-                          : "bg-blue-100 text-blue-700"
-                  }`}
+                  key={c.id}
+                  className="flex items-center gap-4 px-5 py-4 hover:bg-slate-50/50 transition-colors"
                 >
-                  {c.status}
+                  <div className="text-2xl w-10 h-10 bg-slate-100 rounded-xl flex items-center justify-center">
+                    {c.category === "Garbage"
+                      ? "🗑️"
+                      : c.category === "Pothole"
+                        ? "🔧"
+                        : c.category === "Streetlight"
+                          ? "💡"
+                          : c.category === "Water"
+                            ? "💧"
+                            : c.category === "Safety"
+                              ? "🛡️"
+                              : c.category === "Sanitation"
+                                ? "⚠️"
+                                : c.category === "Construction"
+                                  ? "🏗️"
+                                  : "📍"}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <div className="text-sm font-[800] text-slate-900 truncate flex items-center gap-2">
+                      {c.category}
+                      <span className="w-1 h-1 rounded-full bg-slate-300" />
+                      <span className="text-slate-400 font-bold text-[10px] uppercase tracking-tighter">
+                        {c.subcategory || "General"}
+                      </span>
+                    </div>
+                    <div className="text-[10px] font-black text-blue-500/60 uppercase tracking-widest mt-0.5 flex items-center gap-1.5">
+                      <Calendar className="w-2.5 h-2.5" />
+                      {new Date(c.$createdAt || c.createdAt).toLocaleDateString(
+                        "en-GB",
+                        {
+                          day: "2-digit",
+                          month: "short",
+                          year: "numeric",
+                        },
+                      )}
+                      <span className="opacity-30">|</span>
+                      <Clock className="w-2.5 h-2.5" />
+                      {new Date(c.$createdAt || c.createdAt).toLocaleTimeString(
+                        "en-US",
+                        {
+                          hour: "2-digit",
+                          minute: "2-digit",
+                          hour12: true,
+                        },
+                      )}
+                    </div>
+                  </div>
+                  <div className="text-right">
+                    <div
+                      className={`text-[9px] px-2.5 py-1 rounded-full font-[900] uppercase tracking-wider ${
+                        c.status === "Resolved" || c.status === "Closed"
+                          ? "bg-emerald-500/10 text-emerald-600 border border-emerald-500/20"
+                          : c.status === "Escalated"
+                            ? "bg-red-500/10 text-red-600 border border-red-500/20"
+                            : c.status === "In Progress"
+                              ? "bg-amber-500/10 text-amber-600 border border-amber-500/20"
+                              : "bg-blue-500/10 text-blue-600 border border-blue-500/20"
+                      }`}
+                    >
+                      {c.status}
+                    </div>
+                  </div>
+                </div>
+              ))
+            ) : (
+              <div className="text-center py-10">
+                <div className="text-4xl mb-2 opacity-10">📋</div>
+                <div className="text-sm text-slate-400 font-bold uppercase tracking-widest">
+                  No complaints filed yet
                 </div>
               </div>
-            ))}
+            )}
           </div>
         </div>
 

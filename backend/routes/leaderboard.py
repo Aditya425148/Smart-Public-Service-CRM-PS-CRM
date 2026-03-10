@@ -1,3 +1,4 @@
+import json
 from fastapi import APIRouter, Query as QParam
 from appwrite.query import Query
 from appwrite_client import tablesDB, DATABASE_ID, COLLECTION_ID
@@ -21,23 +22,48 @@ async def leaderboard(tab: str = QParam(default="National")):
 
     user_stats: dict[str, dict] = {}
     for doc in docs:
-        uid = doc.get("reporterId") or doc.get("userId")
-        if not uid:
-            continue
         status = doc.get("status", "")
         district = doc.get("district") or doc.get("ward") or "General"
-        if uid not in user_stats:
-            user_stats[uid] = {
-                "uid": uid,
-                "name": doc.get("reporterName") or "Citizen",
-                "avatar": f"https://api.dicebear.com/7.x/avataaars/svg?seed={uid}",
-                "impact": 0,
-                "resolved": 0,
-                "district": district,
-            }
-        user_stats[uid]["impact"] += _score(status)
-        if status == "Resolved":
-            user_stats[uid]["resolved"] += 1
+        
+        # 1. Handle original reporter points
+        reporter_id = doc.get("reporterId") or doc.get("userId")
+        if reporter_id:
+            if reporter_id not in user_stats:
+                user_stats[reporter_id] = {
+                    "uid": reporter_id,
+                    "name": doc.get("reporterName") or "Citizen",
+                    "avatar": f"https://api.dicebear.com/7.x/avataaars/svg?seed={reporter_id}",
+                    "impact": 0,
+                    "resolved": 0,
+                    "district": district,
+                }
+            user_stats[reporter_id]["impact"] += _score(status)
+            if status == "Resolved":
+                user_stats[reporter_id]["resolved"] += 1
+
+        # 2. Handle verification points (+20 per verify)
+        # Since verifiedBy attribute is missing in the database, we parse it from the timeline
+        timeline_raw = doc.get("timeline")
+        if timeline_raw:
+            try:
+                timeline = json.loads(timeline_raw) if isinstance(timeline_raw, str) else timeline_raw
+                if isinstance(timeline, list):
+                    for event in timeline:
+                        note_content = event.get("note", "")
+                        if "Verified by user:" in note_content:
+                            v_uid = note_content.split("Verified by user:")[1].strip()
+                            if v_uid not in user_stats:
+                                user_stats[v_uid] = {
+                                    "uid": v_uid,
+                                    "name": "Citizen",
+                                    "avatar": f"https://api.dicebear.com/7.x/avataaars/svg?seed={v_uid}",
+                                    "impact": 0,
+                                    "resolved": 0,
+                                    "district": district,
+                                }
+                            user_stats[v_uid]["impact"] += 20
+            except:
+                pass
 
     return sorted(user_stats.values(), key=lambda x: x["impact"], reverse=True)[:10]
 

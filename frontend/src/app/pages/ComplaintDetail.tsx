@@ -1,7 +1,10 @@
 import { useParams, useNavigate } from "react-router";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { appwriteService } from "../appwriteService";
+import { account } from "../appwrite";
 import { motion } from "motion/react";
+import { toast } from "sonner";
+import { toPng } from "html-to-image";
 import {
   ArrowLeft,
   MapPin,
@@ -13,7 +16,7 @@ import {
   Star,
   MessageSquare,
   ThumbsUp,
-  ExternalLink,
+  Download,
   Camera,
 } from "lucide-react";
 
@@ -22,7 +25,7 @@ const statusColors: Record<string, string> = {
   "Pending Verification": "bg-yellow-100 text-yellow-700",
   Verified: "bg-blue-100 text-blue-700",
   Assigned: "bg-indigo-100 text-indigo-700",
-  "In Progress": "bg-amber-100 text-amber-700",
+  "In Progress": "bg-emerald-100 text-emerald-700 font-black animate-pulse",
   Resolved: "bg-emerald-100 text-emerald-700",
   Closed: "bg-slate-100 text-slate-500",
   Escalated: "bg-red-100 text-red-700",
@@ -30,6 +33,7 @@ const statusColors: Record<string, string> = {
 
 const statusSteps = [
   "Submitted",
+  "Pending Verification",
   "Verified",
   "Assigned",
   "In Progress",
@@ -40,27 +44,97 @@ const statusSteps = [
 export default function ComplaintDetail() {
   const { id } = useParams();
   const navigate = useNavigate();
+  const [complaint, setComplaint] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
   const [copied, setCopied] = useState(false);
   const [rating, setRating] = useState(0);
   const [comment, setComment] = useState("");
   const [showEscalate, setShowEscalate] = useState(false);
-  const [complaint, setComplaint] = useState<any>(null);
-  const [loading, setLoading] = useState(true);
+  const [showVerifyModal, setShowVerifyModal] = useState(false);
+  const [isVerifying, setIsVerifying] = useState(false);
+  const [isSharing, setIsSharing] = useState(false);
+  const [currentUser, setCurrentUser] = useState<any>(null);
+  const shareCardRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    const fetchComplaint = async () => {
-      try {
-        const complaints = await appwriteService.getAllComplaints();
-        const found = complaints.find((c) => c.id === id);
-        setComplaint(found || complaints[0]); // Fallback to first one if ID not found for demo stability
-      } catch (error) {
-        console.error("Error fetching complaint:", error);
-      } finally {
-        setLoading(false);
-      }
-    };
-    fetchComplaint();
+    account
+      .get()
+      .then(setCurrentUser)
+      .catch(() => setCurrentUser(null));
+    if (id) {
+      setLoading(true);
+      appwriteService
+        .getComplaintById(id)
+        .then((data) => {
+          setComplaint(data);
+          setLoading(false);
+        })
+        .catch((err) => {
+          console.error("Failed to fetch complaint:", err);
+          setLoading(false);
+        });
+    }
   }, [id]);
+
+  const handleVerify = async () => {
+    if (!currentUser?.$id) {
+      toast.error("Please login to verify issues");
+      return;
+    }
+
+    setIsVerifying(true);
+    try {
+      const newConfirmations = (complaint.confirmations || 0) + 1;
+      let newStatus = complaint.status;
+
+      // Real-time Status Progression Logic
+      // 1-2 verifications: Pending Verification
+      // 3-4 verifications: Verified (Processing)
+      // 5+ verifications: In Progress (Working)
+      if (newConfirmations >= 5) {
+        newStatus = "In Progress";
+      } else if (newConfirmations >= 3) {
+        newStatus = "Verified";
+      } else if (newConfirmations >= 1) {
+        newStatus = "Pending Verification";
+      }
+
+      const newPriorityScore = Math.min(
+        1,
+        (complaint.priorityScore || 0) + 0.05,
+      );
+
+      // Persist to Backend
+      await appwriteService.verifyComplaint(
+        complaint.id,
+        newConfirmations,
+        newStatus,
+        newPriorityScore,
+        "Citizen verified this local issue",
+        currentUser.$id,
+      );
+
+      // Update local state immediately for "Real-time" feel
+      setComplaint((prev: any) => ({
+        ...prev,
+        confirmations: newConfirmations,
+        status: newStatus,
+        priorityScore: newPriorityScore,
+        // Update verifiedBy list locally to immediately disable the button
+        verifiedBy: [...(prev.verifiedBy || []), currentUser.$id],
+      }));
+
+      toast.success(
+        `Verification successful! Issue is now ${newStatus}. +20 Reputation Points earned.`,
+      );
+      setShowVerifyModal(false);
+    } catch (e) {
+      console.error(e);
+      toast.error("Verification failed. Please try again.");
+    } finally {
+      setIsVerifying(false);
+    }
+  };
 
   if (loading) {
     return (
@@ -86,14 +160,173 @@ export default function ComplaintDetail() {
   const canEscalate = isOverdue || complaint.status === "Escalated";
   const canReopen = ["Resolved", "Closed"].includes(complaint.status);
 
+  const isReporter =
+    currentUser &&
+    (complaint.reporterId === currentUser.$id ||
+      complaint.userId === currentUser.$id);
+
   const handleCopyId = () => {
     navigator.clipboard.writeText(complaint.id);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
   };
 
+  const handleShareAsImage = async () => {
+    if (!shareCardRef.current) return;
+    setIsSharing(true);
+    try {
+      // Small delay to ensure styles are ready
+      await new Promise((r) => setTimeout(r, 100));
+      const dataUrl = await toPng(shareCardRef.current, {
+        cacheBust: true,
+        backgroundColor: "#ffffff",
+        quality: 1,
+        style: {
+          opacity: "1",
+          visibility: "visible",
+          position: "static",
+        },
+      });
+
+      const link = document.createElement("a");
+      link.download = `CivicPulse-${complaint.id}.png`;
+      link.href = dataUrl;
+      link.click();
+      toast.success("Shareable image generated and downloaded!");
+    } catch (err) {
+      console.error("oops, something went wrong!", err);
+      toast.error("Failed to generate shareable image.");
+    } finally {
+      setIsSharing(false);
+    }
+  };
+
   return (
     <div className="max-w-3xl mx-auto space-y-6">
+      {/* Hidden Share Card */}
+      <div
+        className="fixed -left-[2000px] top-0 pointer-events-none"
+        aria-hidden="true"
+      >
+        <div
+          ref={shareCardRef}
+          className="w-[800px] bg-white p-12 rounded-[3rem] border-[12px] border-blue-50 shadow-2xl relative overflow-hidden"
+          style={{ fontFamily: "Inter, system-ui, sans-serif" }}
+        >
+          {/* Brand Background Decoration */}
+          <div className="absolute top-0 right-0 w-64 h-64 bg-blue-500/5 rounded-full blur-3xl -mr-32 -mt-32" />
+          <div className="absolute bottom-0 left-0 w-64 h-64 bg-indigo-500/5 rounded-full blur-3xl -ml-32 -mb-32" />
+
+          <div className="relative z-10">
+            {/* Brand Header */}
+            <div className="flex items-center justify-between mb-12 border-b border-slate-100 pb-8">
+              <div className="flex items-center gap-4">
+                <div className="w-16 h-16 bg-blue-600 rounded-[1.5rem] flex items-center justify-center shadow-lg">
+                  <CheckCircle className="w-10 h-10 text-white" />
+                </div>
+                <div>
+                  <h1 className="text-3xl font-black text-slate-900 tracking-tight">
+                    CivicPulse
+                  </h1>
+                  <p className="text-blue-600 font-bold uppercase tracking-widest text-xs">
+                    Official Issue Report
+                  </p>
+                </div>
+              </div>
+              <div className="text-right">
+                <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">
+                  Report ID
+                </span>
+                <p className="text-xl font-bold text-slate-900 leading-tight">
+                  #{complaint.id}
+                </p>
+              </div>
+            </div>
+
+            {/* Core Stats */}
+            <div className="grid grid-cols-2 gap-8 mb-12">
+              <div className="bg-slate-50 p-6 rounded-[2rem] border border-slate-100 flex items-center gap-5">
+                <div className="w-14 h-14 bg-white rounded-2xl flex items-center justify-center text-3xl shadow-sm border border-slate-50">
+                  {complaint.category === "Garbage"
+                    ? "🗑️"
+                    : complaint.category === "Streetlight"
+                      ? "💡"
+                      : complaint.category === "Pothole"
+                        ? "🔧"
+                        : complaint.category === "Water"
+                          ? "💧"
+                          : "📍"}
+                </div>
+                <div>
+                  <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">
+                    Issue Type
+                  </p>
+                  <p className="text-xl font-black text-slate-800">
+                    {complaint.category}
+                  </p>
+                </div>
+              </div>
+              <div className="bg-slate-50 p-6 rounded-[2rem] border border-slate-100 flex items-center gap-5">
+                <div className="w-14 h-14 bg-white rounded-2xl flex items-center justify-center shadow-sm border border-slate-50">
+                  <MapPin className="w-8 h-8 text-blue-600" />
+                </div>
+                <div className="min-w-0">
+                  <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">
+                    Status
+                  </p>
+                  <p className="text-xl font-black text-blue-700">
+                    {complaint.status}
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            {/* Content Body */}
+            <div className="space-y-8">
+              <div className="p-8 bg-white border-2 border-slate-100 rounded-[2.5rem]">
+                <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3">
+                  Report Description
+                </p>
+                <p className="text-2xl font-bold text-slate-900 leading-relaxed italic">
+                  "{complaint.description}"
+                </p>
+              </div>
+
+              <div className="flex items-start gap-5 p-6 border-l-4 border-blue-500 bg-blue-50/50 rounded-r-[2rem]">
+                <MapPin className="w-8 h-8 text-blue-600 mt-1 shrink-0" />
+                <div>
+                  <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">
+                    Full Location
+                  </p>
+                  <p className="text-xl font-bold text-slate-800">
+                    {complaint.address}
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            {/* Footer QR / Link Area */}
+            <div className="mt-16 pt-8 border-t border-slate-100 flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <CheckCircle className="w-5 h-5 text-emerald-500" />
+                <p className="text-sm font-bold text-slate-500">
+                  Validated on{" "}
+                  <span className="text-slate-900 font-black">
+                    {new Date().toLocaleDateString()}
+                  </span>{" "}
+                  via CivicPulse Network
+                </p>
+              </div>
+              <div className="text-right">
+                <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest leading-none">
+                  Scanned via Web App
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
       {/* Header */}
       <div className="flex items-center gap-3">
         <button
@@ -143,9 +376,17 @@ export default function ComplaintDetail() {
               <Copy className="w-3.5 h-3.5" />
               {copied ? "Copied!" : "Copy ID"}
             </button>
-            <button className="flex items-center gap-1.5 text-xs font-[500] text-slate-500 hover:text-slate-900 px-3 py-2 bg-slate-100 hover:bg-slate-200 rounded-lg transition-colors">
-              <Share2 className="w-3.5 h-3.5" />
-              Share
+            <button
+              onClick={handleShareAsImage}
+              disabled={isSharing}
+              className="group flex items-center gap-1.5 text-xs font-black text-blue-600 hover:text-blue-700 px-3 py-2 bg-blue-50 hover:bg-blue-100 rounded-lg transition-all border border-blue-100/50 shadow-sm"
+            >
+              {isSharing ? (
+                <div className="w-3.5 h-3.5 border-2 border-blue-600/30 border-t-blue-600 rounded-full animate-spin" />
+              ) : (
+                <Download className="w-3.5 h-3.5 group-hover:-translate-y-0.5 transition-transform" />
+              )}
+              Share Image
             </button>
           </div>
         </div>
@@ -172,39 +413,100 @@ export default function ComplaintDetail() {
               </div>
             </div>
             <div className="grid grid-cols-2 gap-3">
-              <div className="bg-slate-50 rounded-xl p-3">
-                <div className="text-xs text-slate-400 mb-1">
-                  AI Priority Score
-                </div>
-                <div className="text-lg font-[800] text-slate-900">
-                  {complaint.priorityScore.toFixed(2)}
-                </div>
-                <div
-                  className={`text-xs font-[600] mt-0.5 ${
-                    complaint.priorityScore >= 0.75
-                      ? "text-red-500"
-                      : complaint.priorityScore >= 0.4
-                        ? "text-amber-500"
-                        : "text-slate-500"
-                  }`}
-                >
-                  {complaint.priorityScore >= 0.75
-                    ? "High"
+              <div
+                className={`flex flex-col items-center justify-center p-3 rounded-xl border border-dashed transition-all ${
+                  complaint.priorityScore >= 0.75
+                    ? "bg-red-50 text-red-600 border-red-200 shadow-sm shadow-red-500/10"
                     : complaint.priorityScore >= 0.4
-                      ? "Medium"
+                      ? "bg-amber-50 text-amber-600 border-amber-200"
+                      : "bg-slate-50 text-slate-600 border-slate-200"
+                }`}
+              >
+                <div className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">
+                  Issue Priority
+                </div>
+                <div className="flex items-baseline gap-1">
+                  <span className="text-lg font-black leading-none">
+                    {(complaint.priorityScore * 10).toFixed(1)}
+                  </span>
+                  <span className="text-[10px] font-bold opacity-60">/ 10</span>
+                </div>
+                <div className="text-[9px] font-black uppercase mt-1 px-2 py-0.5 rounded-full bg-white/50">
+                  {complaint.priorityScore >= 0.75
+                    ? "Critical"
+                    : complaint.priorityScore >= 0.4
+                      ? "Standard"
                       : "Low"}
                 </div>
               </div>
-              <div className="bg-slate-50 rounded-xl p-3">
-                <div className="text-xs text-slate-400 mb-1">
-                  Community Confirmations
+
+              <div className="bg-slate-50 border border-slate-100 rounded-xl p-3 shadow-sm flex flex-col items-center justify-center">
+                <div className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">
+                  Issue Type
                 </div>
-                <div className="text-lg font-[800] text-slate-900">
-                  {complaint.confirmations}
+                <div className="text-xl mb-0.5">
+                  {complaint.category === "Garbage"
+                    ? "🗑️"
+                    : complaint.category === "Streetlight"
+                      ? "💡"
+                      : complaint.category === "Pothole"
+                        ? "🔧"
+                        : complaint.category === "Water"
+                          ? "💧"
+                          : "📍"}
                 </div>
-                <div className="text-xs text-blue-500 font-[600] mt-0.5">
-                  neighbors confirmed
+                <div className="text-[10px] font-black text-slate-700 uppercase">
+                  {complaint.category}
                 </div>
+              </div>
+            </div>
+            <div className="bg-slate-50 border border-slate-100 rounded-xl p-3 shadow-sm group hover:border-slate-300 transition-all">
+              <div className="text-[10px] font-[700] text-slate-400 mb-1 uppercase tracking-widest flex items-center gap-1">
+                <ThumbsUp className="w-3 h-3 text-blue-500 fill-blue-500" />
+                Community Verification
+              </div>
+              <div className="flex items-center justify-between">
+                <div className="text-2xl font-[900] text-slate-900 leading-none">
+                  {complaint.confirmations || 0}
+                </div>
+                {["Submitted", "Pending Verification", "Verified"].includes(
+                  complaint.status,
+                ) &&
+                  !isReporter && (
+                    <>
+                      {(complaint.verifiedBy || []).includes(
+                        currentUser?.$id,
+                      ) ? (
+                        <div className="flex items-center gap-1.5 px-3 py-1.5 bg-emerald-50 text-emerald-600 rounded-lg border border-emerald-100">
+                          <CheckCircle className="w-3.5 h-3.5" />
+                          <span className="text-[10px] font-black uppercase">
+                            Verified
+                          </span>
+                        </div>
+                      ) : (
+                        <button
+                          onClick={() => setShowVerifyModal(true)}
+                          className="text-[10px] font-black bg-blue-600 text-white px-2 py-1 rounded-lg hover:bg-blue-700 transition-all shadow-md shadow-blue-500/20"
+                        >
+                          Verify Now
+                        </button>
+                      )}
+                    </>
+                  )}
+                {["Submitted", "Pending Verification", "Verified"].includes(
+                  complaint.status,
+                ) &&
+                  isReporter && (
+                    <div className="text-[10px] font-bold text-slate-400 italic">
+                      Author restricted
+                    </div>
+                  )}
+              </div>
+              <div className="text-[10px] text-blue-600 font-[800] mt-1.5 flex items-center gap-1 bg-blue-50 px-2 py-0.5 rounded-full">
+                <CheckCircle className="w-2.5 h-2.5" />
+                {(complaint.confirmations || 0) === 0
+                  ? "WAITING FOR NEIGHBORS"
+                  : `${complaint.confirmations} CITIZENS CONFIRMED`}
               </div>
             </div>
           </div>
@@ -213,37 +515,93 @@ export default function ComplaintDetail() {
           <div className="space-y-4">
             {/* SLA */}
             <div
-              className={`rounded-xl p-4 border ${
+              className={`rounded-xl p-4 border transition-all ${
                 isOverdue
                   ? "bg-red-50 border-red-100"
-                  : complaint.slaRemainingHours < complaint.slaHours * 0.25
+                  : complaint.status === "Submitted"
                     ? "bg-amber-50 border-amber-100"
-                    : "bg-blue-50 border-blue-100"
+                    : complaint.slaRemainingHours < complaint.slaHours * 0.25
+                      ? "bg-amber-50 border-amber-100"
+                      : "bg-blue-50 border-blue-100"
               }`}
             >
-              <div className="flex items-center gap-2 mb-2">
-                <Clock
-                  className={`w-4 h-4 ${isOverdue ? "text-red-500" : "text-blue-500"}`}
-                />
-                <span className="text-xs font-[700] text-slate-700">
-                  SLA Status
-                </span>
+              <div className="flex items-center justify-between mb-3">
+                <div className="flex items-center gap-2">
+                  <Clock
+                    className={`w-4 h-4 ${
+                      isOverdue
+                        ? "text-red-500"
+                        : complaint.status === "Submitted"
+                          ? "text-amber-500"
+                          : "text-blue-500"
+                    }`}
+                  />
+                  <span className="text-xs font-[700] text-slate-700 uppercase tracking-wider">
+                    SLA status
+                  </span>
+                </div>
+                {["Submitted", "Pending Verification", "Verified"].includes(
+                  complaint.status,
+                ) && (
+                  <span className="text-[10px] font-bold bg-amber-500 text-white px-2 py-0.5 rounded-full animate-pulse">
+                    AWAITING VERIFICATION
+                  </span>
+                )}
               </div>
-              {isOverdue ? (
-                <div className="text-base font-[800] text-red-600">
-                  OVERDUE — {Math.abs(complaint.slaRemainingHours)}h exceeded
+
+              <div className="space-y-1">
+                {isOverdue ? (
+                  <div className="text-xl font-[900] text-red-600">
+                    OVERDUE — {Math.abs(complaint.slaRemainingHours)}h
+                  </div>
+                ) : ["Resolved", "Closed"].includes(complaint.status) ? (
+                  <div className="text-xl font-[800] text-emerald-600">
+                    ✓ Resolved in time
+                  </div>
+                ) : complaint.status === "In Progress" ? (
+                  <div className="flex flex-col gap-1">
+                    <div className="text-2xl font-[900] text-emerald-600 flex items-center gap-2">
+                      {complaint.slaRemainingHours}h
+                      <span className="text-[10px] bg-emerald-100 px-2 py-0.5 rounded-full">
+                        WORKING
+                      </span>
+                    </div>
+                    <div className="w-full bg-slate-200 h-1 rounded-full overflow-hidden">
+                      <motion.div
+                        initial={{ width: 0 }}
+                        animate={{
+                          width: `${(complaint.slaRemainingHours / complaint.slaHours) * 100}%`,
+                        }}
+                        className="bg-emerald-500 h-full transition-all duration-1000"
+                      />
+                    </div>
+                  </div>
+                ) : ["Submitted", "Pending Verification", "Verified"].includes(
+                    complaint.status,
+                  ) ? (
+                  <div className="text-xl font-[900] text-amber-600">
+                    {complaint.confirmations || 0}/5 Verifications
+                  </div>
+                ) : (
+                  <div className="text-2xl font-[900] text-blue-700">
+                    {complaint.slaRemainingHours}h{" "}
+                    <span className="text-sm font-bold">remaining</span>
+                  </div>
+                )}
+
+                <div className="pt-2 border-t border-black/5 mt-2">
+                  <div className="flex justify-between items-center text-xs">
+                    <span className="text-slate-500 font-medium">
+                      Standard SLA
+                    </span>
+                    <span className="text-slate-900 font-bold">
+                      {complaint.slaHours} Hours
+                    </span>
+                  </div>
+                  <div className="text-[9px] text-slate-400 font-bold uppercase mt-1">
+                    * Resolution starts after community verification
+                  </div>
                 </div>
-              ) : ["Resolved", "Closed"].includes(complaint.status) ? (
-                <div className="text-base font-[700] text-emerald-600">
-                  ✓ Resolved within SLA
-                </div>
-              ) : (
-                <div className="text-base font-[800] text-blue-700">
-                  {complaint.slaRemainingHours}h remaining
-                </div>
-              )}
-              <div className="mt-2 text-xs text-slate-500">
-                Category SLA: {complaint.slaHours} hours
               </div>
             </div>
 
@@ -258,7 +616,7 @@ export default function ComplaintDetail() {
                     {complaint.assignedTo
                       .split(" ")
                       .slice(-2)
-                      .map((n) => n[0])
+                      .map((n: string) => n[0])
                       .join("")}
                   </div>
                   <div>
@@ -377,7 +735,7 @@ export default function ComplaintDetail() {
 
         {/* Event log */}
         <div className="space-y-4">
-          {complaint.timeline.map((event, i) => (
+          {(complaint.timeline || []).map((event: any, i: number) => (
             <motion.div
               key={i}
               initial={{ opacity: 0, x: -10 }}
@@ -452,6 +810,86 @@ export default function ComplaintDetail() {
               Share Before/After Card
             </button>
           </div>
+        </div>
+      )}
+
+      {/* Verification Modal */}
+      {showVerifyModal && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-md">
+          <motion.div
+            initial={{ scale: 0.9, opacity: 0, y: 20 }}
+            animate={{ scale: 1, opacity: 1, y: 0 }}
+            className="bg-white rounded-[2.5rem] p-8 max-w-md w-full shadow-2xl border border-slate-100"
+          >
+            <div className="w-16 h-16 bg-blue-500 rounded-3xl flex items-center justify-center mb-6 shadow-xl shadow-blue-500/20 mx-auto">
+              <ThumbsUp className="w-8 h-8 text-white" />
+            </div>
+
+            <h3 className="text-xl font-black text-slate-900 mb-2 text-center tracking-tight">
+              Verify Community Issue
+            </h3>
+            <p className="text-slate-500 text-sm text-center mb-8 font-medium">
+              Your verification helps the administration prioritize this issue.
+              <span className="text-blue-600 font-bold">
+                {" "}
+                +50 Reputation Points
+              </span>{" "}
+              will be added to your profile.
+            </p>
+
+            <div className="space-y-4 mb-8">
+              <div className="p-4 bg-slate-50 rounded-2xl border border-slate-100 flex items-center gap-4">
+                <div className="w-10 h-10 bg-white rounded-xl shadow-sm flex items-center justify-center text-lg">
+                  📍
+                </div>
+                <div className="flex-1 min-w-0">
+                  <div className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-0.5">
+                    Location Verified
+                  </div>
+                  <div className="text-sm font-black text-slate-800 truncate">
+                    {complaint.address}
+                  </div>
+                </div>
+              </div>
+
+              <div className="flex items-center gap-3 p-4 bg-blue-50/50 rounded-2xl border border-blue-100">
+                <input
+                  type="checkbox"
+                  id="confirm"
+                  className="w-5 h-5 rounded-lg border-blue-200 text-blue-600 focus:ring-blue-500"
+                  defaultChecked
+                />
+                <label
+                  htmlFor="confirm"
+                  className="text-xs font-bold text-blue-900/70 leading-relaxed cursor-pointer"
+                >
+                  I confirm that this issue is still present and requires
+                  immediate attention.
+                </label>
+              </div>
+            </div>
+
+            <div className="flex flex-col gap-3">
+              <button
+                onClick={handleVerify}
+                disabled={isVerifying}
+                className="w-full py-4 bg-blue-600 hover:bg-blue-700 text-white text-sm font-black uppercase tracking-[0.1em] rounded-2xl transition-all shadow-xl shadow-blue-500/20 disabled:opacity-50 flex items-center justify-center gap-2"
+              >
+                {isVerifying ? (
+                  <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                ) : (
+                  <CheckCircle size={18} />
+                )}
+                Confirm Verification
+              </button>
+              <button
+                onClick={() => setShowVerifyModal(false)}
+                className="w-full py-4 bg-slate-100 hover:bg-slate-200 text-slate-500 text-sm font-bold uppercase tracking-[0.1em] rounded-2xl transition-all"
+              >
+                Cancel
+              </button>
+            </div>
+          </motion.div>
         </div>
       )}
 

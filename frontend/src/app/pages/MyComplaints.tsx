@@ -355,20 +355,34 @@ export default function MyComplaints() {
                           <div className="text-xs font-black text-emerald-600 bg-emerald-50/60 border border-emerald-100/50 px-2.5 py-1.5 rounded-xl backdrop-blur-sm">
                             ✓ Done
                           </div>
+                        ) : c.status === "Submitted" ? (
+                          <div className="text-xs font-black text-amber-600 bg-amber-50/60 border border-amber-100/50 px-2.5 py-1.5 rounded-xl backdrop-blur-sm">
+                            Pending
+                          </div>
                         ) : c.slaRemainingHours != null ? (
                           <div className="text-xs font-bold text-slate-500 bg-slate-50/60 border border-slate-100/50 px-2.5 py-1.5 rounded-xl backdrop-blur-sm">
                             <Clock className="w-3 h-3 inline mr-1" />
-                            {c.slaRemainingHours}h left
+                            {c.slaRemainingHours ?? c.slaHours ?? "24"}h left
                           </div>
                         ) : null}
-                        <div className="text-xs text-slate-400 mt-2">
-                          {c.createdAt?.seconds
-                            ? new Date(
-                                c.createdAt.seconds * 1000,
-                              ).toLocaleDateString("en-IN", {
-                                day: "numeric",
-                                month: "short",
-                              })
+                        <div className="text-xs text-slate-400 mt-2 flex items-center gap-1 justify-end font-medium">
+                          <Clock className="w-3 h-3" />
+                          {c.createdAt
+                            ? typeof c.createdAt === "string"
+                              ? new Date(c.createdAt).toLocaleString("en-IN", {
+                                  day: "numeric",
+                                  month: "short",
+                                  hour: "2-digit",
+                                  minute: "2-digit",
+                                })
+                              : new Date(
+                                  c.createdAt.seconds * 1000,
+                                ).toLocaleString("en-IN", {
+                                  day: "numeric",
+                                  month: "short",
+                                  hour: "2-digit",
+                                  minute: "2-digit",
+                                })
                             : "Just now"}
                         </div>
                       </div>
@@ -388,7 +402,7 @@ export default function MyComplaints() {
                             >
                               {isOverdue
                                 ? `${Math.abs(c.slaRemainingHours)}h overdue`
-                                : `${c.slaRemainingHours}h / ${c.slaHours}h`}
+                                : `${c.slaRemainingHours ?? c.slaHours ?? "24"}h / ${c.slaHours ?? "24"}h`}
                             </span>
                           </div>
                           <div className="w-full h-1.5 bg-slate-100/50 rounded-full overflow-hidden">

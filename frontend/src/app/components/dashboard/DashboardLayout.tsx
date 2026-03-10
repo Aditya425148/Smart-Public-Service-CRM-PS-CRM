@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { Outlet, useNavigate, useLocation, NavLink } from "react-router";
 import { account } from "../../appwrite";
+import { authService } from "../../appwriteService";
 import {
   LayoutDashboard,
   Plus,
@@ -96,10 +97,23 @@ export default function DashboardLayout() {
     try {
       await account.deleteSessions();
     } catch (_) {
-      try { await account.deleteSession("current"); } catch (_) {}
+      try {
+        await account.deleteSession("current");
+      } catch (_) {}
     }
     navigate("/login");
   };
+
+  const [isAdmin, setIsAdmin] = useState(false);
+
+  useEffect(() => {
+    authService.getCurrentUser().then((user) => {
+      // Show admin link if user has label OR is anonymous (for demo purposes)
+      if (user && (user.labels?.includes("admin") || !user.email)) {
+        setIsAdmin(true);
+      }
+    });
+  }, []);
 
   const SidebarContent = () => (
     <div className="flex flex-col h-full">
@@ -155,19 +169,21 @@ export default function DashboardLayout() {
           </NavLink>
         ))}
 
-        <div className="pt-4 mt-4 border-t border-slate-800">
-          <div className="text-xs font-[600] text-slate-600 uppercase tracking-wider px-3 mb-2">
-            Quick Access
+        {isAdmin && (
+          <div className="pt-4 mt-4 border-t border-slate-800">
+            <div className="text-xs font-[600] text-slate-600 uppercase tracking-wider px-3 mb-2">
+              Management
+            </div>
+            <button
+              onClick={() => navigate("/admin")}
+              className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-[500] text-slate-400 hover:bg-slate-800 hover:text-white transition-all transition-all"
+            >
+              <Shield className="w-4 h-4" />
+              Admin Panel
+              <ChevronRight className="w-3 h-3 ml-auto" />
+            </button>
           </div>
-          <button
-            onClick={() => navigate("/admin")}
-            className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-[500] text-slate-400 hover:bg-slate-800 hover:text-white transition-all"
-          >
-            <Shield className="w-4 h-4" />
-            Admin View
-            <ChevronRight className="w-3 h-3 ml-auto" />
-          </button>
-        </div>
+        )}
       </nav>
 
       {/* Bottom Actions */}
