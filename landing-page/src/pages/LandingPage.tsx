@@ -767,7 +767,7 @@ export default function LandingPage() {
               Every Civic Problem, One Platform
             </h2>
             <p className="text-slate-500 max-w-xl mx-auto">
-              Report any neighborhood issue with AI-assisted category detection.
+              Report any neighbourhood issue with AI-assisted category detection.
               Our system knows exactly where to route it.
             </p>
           </div>
@@ -1064,7 +1064,7 @@ export default function LandingPage() {
                   </div>
                   <div>
                     <div className="text-sm font-[700] text-slate-900">
-                      3 neighbors confirmed this
+                      3 neighbours confirmed this
                     </div>
                     <div className="text-xs text-slate-500">
                       Pothole · MG Road
@@ -1098,10 +1098,10 @@ export default function LandingPage() {
                 Community Power
               </div>
               <h2 className="text-3xl md:text-4xl font-[800] text-slate-900 mb-6">
-                Neighbors Helping Neighbors Build a Better City
+                Neighbours Helping Neighbours Build a Better City
               </h2>
               <p className="text-slate-500 mb-8 leading-relaxed">
-                When you report an issue, citizens within 250m get notified and
+                When you report an issue, citizens within 5km get notified and
                 can confirm it — boosting priority and credibility. Earn Civic
                 Credits for every verified contribution.
               </p>
@@ -1125,7 +1125,7 @@ export default function LandingPage() {
                   {
                     icon: "🏆",
                     title: "Ward Champion",
-                    desc: "Top contributor in ward for 3 months",
+                    desc: "Top contributor in city for 3 months",
                   },
                 ].map(({ icon, title, desc }) => (
                   <div
