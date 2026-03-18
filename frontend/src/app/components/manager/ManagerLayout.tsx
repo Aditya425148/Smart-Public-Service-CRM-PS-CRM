@@ -1,6 +1,14 @@
 import { useState, useEffect } from "react";
 import { useNavigate, Outlet, NavLink } from "react-router";
-import { LayoutDashboard, Users, LogOut, Shield, Menu, X, Bell } from "lucide-react";
+import {
+  LayoutDashboard,
+  Users,
+  LogOut,
+  Shield,
+  Menu,
+  X,
+  Bell,
+} from "lucide-react";
 import { account } from "../../appwrite";
 import { mockManagers } from "../../data/mockData";
 
@@ -15,20 +23,25 @@ export default function ManagerLayout() {
   const [manager, setManager] = useState<any>(null);
 
   useEffect(() => {
-    account.get().then((user) => {
-      // Prioritize the name from mockManagers for consistent branding
-      const mockConfig = mockManagers.find(m => m.email.toLowerCase() === user.email.toLowerCase());
-      setManager({
-        ...user,
-        name: mockConfig?.name || user.name || "Sanjay Sharma"
+    account
+      .get()
+      .then((user) => {
+        // Prioritize the name from mockManagers for consistent branding
+        const mockConfig = mockManagers.find(
+          (m) => m.email.toLowerCase() === user.email.toLowerCase(),
+        );
+        setManager({
+          ...user,
+          name: mockConfig?.name || user.name || "Sanjay Sharma",
+        });
+      })
+      .catch(() => {
+        // Fallback for demo/dev purposes
+        setManager({
+          name: "Sanjay Sharma",
+          email: "sanjay@pscrm.gov.in",
+        });
       });
-    }).catch(() => {
-      // Fallback for demo/dev purposes
-      setManager({
-        name: "Sanjay Sharma",
-        email: "sanjay@pscrm.gov.in"
-      });
-    });
   }, [navigate]);
 
   const handleLogout = async () => {
@@ -44,9 +57,11 @@ export default function ManagerLayout() {
           <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-sky-600 text-white shadow-sm">
             <Shield className="h-5 w-5" />
           </div>
-          <span className="text-lg font-bold text-slate-900 tracking-tight">ManagerPortal</span>
+          <span className="text-lg font-bold text-slate-900 tracking-tight">
+            ManagerPortal
+          </span>
         </div>
-        
+
         <nav className="p-4 space-y-1">
           {navItems.map((item) => (
             <NavLink
@@ -106,7 +121,10 @@ export default function ManagerLayout() {
       {/* Mobile Drawer */}
       {mobileMenuOpen && (
         <div className="fixed inset-0 z-50 lg:hidden">
-          <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm" onClick={() => setMobileMenuOpen(false)}></div>
+          <div
+            className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm"
+            onClick={() => setMobileMenuOpen(false)}
+          ></div>
           <div className="fixed inset-y-0 left-0 w-64 bg-white shadow-2xl">
             <div className="flex h-16 items-center justify-between border-b border-slate-100 px-6">
               <div className="flex items-center gap-2 font-bold text-slate-900">

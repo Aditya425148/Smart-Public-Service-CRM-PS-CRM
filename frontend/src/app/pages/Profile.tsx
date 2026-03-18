@@ -1,13 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router";
-import {
-  Bell,
-  ChevronRight,
-  LogOut,
-  Mail,
-  MapPin,
-  Shield,
-} from "lucide-react";
+import { Bell, ChevronRight, LogOut, Mail, MapPin, Shield } from "lucide-react";
 import { appwriteService } from "../appwriteService";
 import { account } from "../appwrite";
 
@@ -196,7 +189,10 @@ export default function Profile() {
         {[
           { label: "Reported", value: userStats.reported },
           { label: "Resolved", value: userStats.resolved },
-          { label: "Completion rate", value: `${userStats.reported ? Math.round((userStats.resolved / userStats.reported) * 100) : 0}%` },
+          {
+            label: "Completion rate",
+            value: `${userStats.reported ? Math.round((userStats.resolved / userStats.reported) * 100) : 0}%`,
+          },
         ].map((item) => (
           <div
             key={item.label}
@@ -227,13 +223,17 @@ export default function Profile() {
               complaints.slice(0, 5).map((complaint) => (
                 <button
                   key={complaint.id}
-                  onClick={() => navigate(`/dashboard/complaints/${complaint.id}`)}
+                  onClick={() =>
+                    navigate(`/dashboard/complaints/${complaint.id}`)
+                  }
                   className="flex w-full items-start justify-between gap-4 px-6 py-4 text-left hover:bg-sky-50/50"
                 >
                   <div className="min-w-0 flex-1">
                     <div className="text-sm font-semibold text-slate-900">
                       {complaint.category}
-                      {complaint.subcategory ? ` - ${complaint.subcategory}` : ""}
+                      {complaint.subcategory
+                        ? ` - ${complaint.subcategory}`
+                        : ""}
                     </div>
                     <div className="mt-1 text-sm text-slate-500">
                       {complaint.address || "Address unavailable"}

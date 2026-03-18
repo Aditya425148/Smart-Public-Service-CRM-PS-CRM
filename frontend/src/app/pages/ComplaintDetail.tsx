@@ -602,7 +602,7 @@ export default function ComplaintDetail() {
                       done
                         ? "bg-emerald-500 border-emerald-500 text-white"
                         : active
-                        ? "bg-orange-500 border-orange-500 text-white ring-4 ring-orange-100"
+                          ? "bg-orange-500 border-orange-500 text-white ring-4 ring-orange-100"
                           : "bg-white border-slate-200 text-slate-400"
                     }`}
                   >

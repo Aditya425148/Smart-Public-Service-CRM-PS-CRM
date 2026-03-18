@@ -84,7 +84,8 @@ export default function CitizenHome() {
       .get()
       .then((currentUser) => {
         setUser({
-          name: currentUser.name || currentUser.email?.split("@")[0] || "Citizen",
+          name:
+            currentUser.name || currentUser.email?.split("@")[0] || "Citizen",
           email: currentUser.email,
           uid: currentUser.$id,
         });
@@ -179,9 +180,7 @@ export default function CitizenHome() {
             <div className="flex flex-wrap gap-3 text-sm text-slate-600">
               <span className="inline-flex items-center gap-2 rounded-full bg-white px-3 py-1.5 ring-1 ring-slate-200">
                 <LocateFixed className="h-4 w-4 text-sky-600" />
-                {coords
-                  ? "Nearby updates enabled"
-                  : "Location not shared yet"}
+                {coords ? "Nearby updates enabled" : "Location not shared yet"}
               </span>
               <span className="inline-flex items-center gap-2 rounded-full bg-white px-3 py-1.5 ring-1 ring-slate-200">
                 <ShieldCheck className="h-4 w-4 text-sky-600" />
@@ -340,7 +339,9 @@ export default function CitizenHome() {
                 <div className="mt-2 flex items-end gap-2">
                   <div className="text-2xl font-semibold text-slate-900">
                     {userComplaints.length
-                      ? Math.round((resolvedCount / userComplaints.length) * 100)
+                      ? Math.round(
+                          (resolvedCount / userComplaints.length) * 100,
+                        )
                       : 0}
                     %
                   </div>

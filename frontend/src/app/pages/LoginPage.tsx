@@ -58,8 +58,10 @@ export default function LoginPage() {
       setIsLoading(true);
 
       // Check if this is a manager demo account
-      const manager = mockManagers.find(m => m.email.toLowerCase() === email.toLowerCase());
-      
+      const manager = mockManagers.find(
+        (m) => m.email.toLowerCase() === email.toLowerCase(),
+      );
+
       if (manager) {
         // Mock manager login (using anonymous auth for backend connection)
         // For demo purposes, we accept any password for these specific emails
@@ -188,7 +190,9 @@ export default function LoginPage() {
           <div className="w-8 h-8 rounded-xl bg-sky-50 flex items-center justify-center mb-2 group-hover:scale-110 transition-transform">
             <Zap className="w-4 h-4 text-sky-600" />
           </div>
-          <span className="text-[10px] font-[700] uppercase text-slate-500">Citizen</span>
+          <span className="text-[10px] font-[700] uppercase text-slate-500">
+            Citizen
+          </span>
         </button>
         <button
           onClick={() => handleDemoLogin("admin")}
@@ -198,7 +202,9 @@ export default function LoginPage() {
           <div className="w-8 h-8 rounded-xl bg-purple-50 flex items-center justify-center mb-2 group-hover:scale-110 transition-transform">
             <Shield className="w-4 h-4 text-purple-600" />
           </div>
-          <span className="text-[10px] font-[700] uppercase text-slate-500">Admin</span>
+          <span className="text-[10px] font-[700] uppercase text-slate-500">
+            Admin
+          </span>
         </button>
       </div>
 
