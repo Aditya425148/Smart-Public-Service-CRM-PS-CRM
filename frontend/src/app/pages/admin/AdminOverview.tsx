@@ -226,11 +226,11 @@ export default function AdminOverview() {
             ok: kpiData.mttr < 72,
           },
           {
-            label: "Verification Rate",
-            value: kpiData.verificationRate,
+            label: "SLA Compliance",
+            value: kpiData.slaCompliance,
             suffix: "%",
-            target: "> 60%",
-            ok: kpiData.verificationRate > 60,
+            target: "> 80%",
+            ok: kpiData.slaCompliance > 80,
           },
           {
             label: "Citizen Satisfaction",

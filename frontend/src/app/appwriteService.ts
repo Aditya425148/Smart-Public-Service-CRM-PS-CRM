@@ -6,8 +6,6 @@ import { api } from "./api";
 
 export type ComplaintStatus =
   | "Submitted"
-  | "Pending Verification"
-  | "Verified"
   | "Assigned"
   | "In Progress"
   | "Resolved"
@@ -144,23 +142,6 @@ export const appwriteService = {
     actor: string,
   ): Promise<void> {
     await api.patch(`/api/complaints/${id}/status`, { status, note, actor });
-  },
-
-  async verifyComplaint(
-    id: string,
-    confirmations: number,
-    status: string,
-    priorityScore: number,
-    note: string,
-    actor: string,
-  ): Promise<void> {
-    await api.patch(`/api/complaints/${id}/verify`, {
-      confirmations,
-      status,
-      priorityScore,
-      note,
-      actor,
-    });
   },
 
   async updateUserReputation(userId: string, points: number): Promise<void> {

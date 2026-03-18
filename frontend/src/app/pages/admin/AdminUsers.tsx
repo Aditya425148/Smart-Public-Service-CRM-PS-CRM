@@ -3,14 +3,14 @@ import { motion } from "motion/react";
 import { Search, Shield, AlertTriangle, Ban, CheckCircle, Eye, MoreHorizontal, Filter } from "lucide-react";
 
 const mockUsers = [
-  { id: "USR-001", name: "Rahul Sharma", phone: "+91 98765 43210", tier: 2, reputation: 420, complaints: 18, verified: 15, status: "Active", ward: "Ward 4", badges: 3 },
-  { id: "USR-002", name: "Anjali Desai", phone: "+91 87654 32109", tier: 1, reputation: 285, complaints: 12, verified: 10, status: "Active", ward: "Ward 7", badges: 2 },
-  { id: "USR-003", name: "Mohammed Farouk", phone: "+91 76543 21098", tier: 1, reputation: 150, complaints: 6, verified: 5, status: "Active", ward: "Ward 2", badges: 1 },
-  { id: "USR-004", name: "Priya Singh", phone: "+91 65432 10987", tier: 2, reputation: 380, complaints: 15, verified: 14, status: "Active", ward: "Ward 3", badges: 2 },
-  { id: "USR-005", name: "Kiran Patel", phone: "+91 54321 09876", tier: 1, reputation: 90, complaints: 3, verified: 2, status: "Active", ward: "Ward 1", badges: 1 },
-  { id: "USR-006", name: "Anonymous User", phone: "N/A", tier: 0, reputation: 20, complaints: 2, verified: 0, status: "Active", ward: "Ward 5", badges: 0 },
-  { id: "USR-007", name: "Suresh Nair", phone: "+91 43210 98765", tier: 2, reputation: -10, complaints: 8, verified: 2, status: "Flagged", ward: "Ward 6", badges: 0 },
-  { id: "USR-008", name: "Meena Kumari", phone: "+91 32109 87654", tier: 1, reputation: 520, complaints: 22, verified: 20, status: "Active", ward: "Ward 4", badges: 4 },
+  { id: "USR-001", name: "Rahul Sharma", phone: "+91 98765 43210", tier: 2, reputation: 420, complaints: 18, resolved: 15, status: "Active", ward: "Ward 4", badges: 3 },
+  { id: "USR-002", name: "Anjali Desai", phone: "+91 87654 32109", tier: 1, reputation: 285, complaints: 12, resolved: 10, status: "Active", ward: "Ward 7", badges: 2 },
+  { id: "USR-003", name: "Mohammed Farouk", phone: "+91 76543 21098", tier: 1, reputation: 150, complaints: 6, resolved: 5, status: "Active", ward: "Ward 2", badges: 1 },
+  { id: "USR-004", name: "Priya Singh", phone: "+91 65432 10987", tier: 2, reputation: 380, complaints: 15, resolved: 14, status: "Active", ward: "Ward 3", badges: 2 },
+  { id: "USR-005", name: "Kiran Patel", phone: "+91 54321 09876", tier: 1, reputation: 90, complaints: 3, resolved: 2, status: "Active", ward: "Ward 1", badges: 1 },
+  { id: "USR-006", name: "Anonymous User", phone: "N/A", tier: 0, reputation: 20, complaints: 2, resolved: 0, status: "Active", ward: "Ward 5", badges: 0 },
+  { id: "USR-007", name: "Suresh Nair", phone: "+91 43210 98765", tier: 2, reputation: -10, complaints: 8, resolved: 2, status: "Flagged", ward: "Ward 6", badges: 0 },
+  { id: "USR-008", name: "Meena Kumari", phone: "+91 32109 87654", tier: 1, reputation: 520, complaints: 22, resolved: 20, status: "Active", ward: "Ward 4", badges: 4 },
 ];
 
 export default function AdminUsers() {
@@ -121,7 +121,7 @@ export default function AdminUsers() {
                   </td>
                   <td className="px-4 py-4 text-right">
                     <span className="text-slate-700">{user.complaints}</span>
-                    <span className="text-slate-400 text-xs ml-1">({user.verified} verified)</span>
+                    <span className="text-slate-400 text-xs ml-1">({user.resolved} resolved)</span>
                   </td>
                   <td className="px-4 py-4 text-center text-xs text-slate-600 font-[500]">{user.ward}</td>
                   <td className="px-4 py-4 text-center">
@@ -195,7 +195,7 @@ export default function AdminUsers() {
               {[
                 { label: "Reputation", value: selectedUser.reputation },
                 { label: "Total Complaints", value: selectedUser.complaints },
-                { label: "Verified Reports", value: selectedUser.verified },
+                { label: "Resolved Reports", value: selectedUser.resolved },
                 { label: "Badges Earned", value: selectedUser.badges },
               ].map(({ label, value }) => (
                 <div key={label} className="bg-slate-50 rounded-xl p-3">

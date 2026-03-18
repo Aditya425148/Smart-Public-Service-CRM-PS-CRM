@@ -22,8 +22,6 @@ import {
 
 const statusColors: Record<string, string> = {
   Submitted: "bg-slate-100 text-slate-600",
-  "Pending Verification": "bg-yellow-100 text-yellow-700",
-  Verified: "bg-orange-100 text-orange-700",
   Assigned: "bg-emerald-100 text-emerald-700",
   "In Progress": "bg-emerald-100 text-emerald-700 font-black animate-pulse",
   Resolved: "bg-emerald-100 text-emerald-700",
@@ -33,8 +31,6 @@ const statusColors: Record<string, string> = {
 
 const statusSteps = [
   "Submitted",
-  "Pending Verification",
-  "Verified",
   "Assigned",
   "In Progress",
   "Resolved",
@@ -50,8 +46,6 @@ export default function ComplaintDetail() {
   const [rating, setRating] = useState(0);
   const [comment, setComment] = useState("");
   const [showEscalate, setShowEscalate] = useState(false);
-  const [showVerifyModal, setShowVerifyModal] = useState(false);
-  const [isVerifying, setIsVerifying] = useState(false);
   const [isSharing, setIsSharing] = useState(false);
   const [currentUser, setCurrentUser] = useState<any>(null);
   const shareCardRef = useRef<HTMLDivElement>(null);
@@ -75,66 +69,6 @@ export default function ComplaintDetail() {
         });
     }
   }, [id]);
-
-  const handleVerify = async () => {
-    if (!currentUser?.$id) {
-      toast.error("Please login to verify issues");
-      return;
-    }
-
-    setIsVerifying(true);
-    try {
-      const newConfirmations = (complaint.confirmations || 0) + 1;
-      let newStatus = complaint.status;
-
-      // Real-time Status Progression Logic
-      // 1-2 verifications: Pending Verification
-      // 3-4 verifications: Verified (Processing)
-      // 5+ verifications: In Progress (Working)
-      if (newConfirmations >= 5) {
-        newStatus = "In Progress";
-      } else if (newConfirmations >= 3) {
-        newStatus = "Verified";
-      } else if (newConfirmations >= 1) {
-        newStatus = "Pending Verification";
-      }
-
-      const newPriorityScore = Math.min(
-        1,
-        (complaint.priorityScore || 0) + 0.05,
-      );
-
-      // Persist to Backend
-      await appwriteService.verifyComplaint(
-        complaint.id,
-        newConfirmations,
-        newStatus,
-        newPriorityScore,
-        "Citizen verified this local issue",
-        currentUser.$id,
-      );
-
-      // Update local state immediately for "Real-time" feel
-      setComplaint((prev: any) => ({
-        ...prev,
-        confirmations: newConfirmations,
-        status: newStatus,
-        priorityScore: newPriorityScore,
-        // Update verifiedBy list locally to immediately disable the button
-        verifiedBy: [...(prev.verifiedBy || []), currentUser.$id],
-      }));
-
-      toast.success(
-        `Verification successful! Issue is now ${newStatus}. +20 Reputation Points earned.`,
-      );
-      setShowVerifyModal(false);
-    } catch (e) {
-      console.error(e);
-      toast.error("Verification failed. Please try again.");
-    } finally {
-      setIsVerifying(false);
-    }
-  };
 
   if (loading) {
     return (
@@ -460,53 +394,25 @@ export default function ComplaintDetail() {
                 </div>
               </div>
             </div>
-            <div className="bg-slate-50 border border-slate-100 rounded-xl p-3 shadow-sm group hover:border-slate-300 transition-all">
-              <div className="text-[10px] font-[700] text-slate-400 mb-1 uppercase tracking-widest flex items-center gap-1">
-                <ThumbsUp className="w-3 h-3 text-emerald-600 fill-emerald-600" />
-                Community Verification
+            <div className="bg-sky-50 border border-sky-100 rounded-xl p-3 shadow-sm group hover:border-sky-300 transition-all">
+              <div className="text-[10px] font-[700] text-sky-400 mb-1 uppercase tracking-widest flex items-center gap-1">
+                <CheckCircle className="w-3 h-3 text-sky-600 fill-sky-200" />
+                System Status
               </div>
               <div className="flex items-center justify-between">
-                <div className="text-2xl font-[900] text-slate-900 leading-none">
-                  {complaint.confirmations || 0}
+                <div className="text-sm font-black text-sky-900 leading-none py-1">
+                  VALIDATED REPORT
                 </div>
-                {["Submitted", "Pending Verification", "Verified"].includes(
-                  complaint.status,
-                ) &&
-                  !isReporter && (
-                    <>
-                      {(complaint.verifiedBy || []).includes(
-                        currentUser?.$id,
-                      ) ? (
-                        <div className="flex items-center gap-1.5 px-3 py-1.5 bg-emerald-50 text-emerald-600 rounded-lg border border-emerald-100">
-                          <CheckCircle className="w-3.5 h-3.5" />
-                          <span className="text-[10px] font-black uppercase">
-                            Verified
-                          </span>
-                        </div>
-                      ) : (
-                        <button
-                          onClick={() => setShowVerifyModal(true)}
-                          className="text-[10px] font-black bg-orange-500 text-white px-2 py-1 rounded-lg hover:bg-orange-600 transition-all shadow-md shadow-orange-500/20"
-                        >
-                          Verify Now
-                        </button>
-                      )}
-                    </>
-                  )}
-                {["Submitted", "Pending Verification", "Verified"].includes(
-                  complaint.status,
-                ) &&
-                  isReporter && (
-                    <div className="text-[10px] font-bold text-slate-400 italic">
-                      Author restricted
-                    </div>
-                  )}
+                <div className="flex items-center gap-1.5 px-3 py-1.5 bg-sky-100 text-sky-700 rounded-lg border border-sky-200">
+                  <CheckCircle className="w-3.5 h-3.5" />
+                  <span className="text-[10px] font-black uppercase">
+                    Trusted
+                  </span>
+                </div>
               </div>
-              <div className="text-[10px] text-emerald-700 font-[800] mt-1.5 flex items-center gap-1 bg-emerald-50 px-2 py-0.5 rounded-full">
+              <div className="text-[10px] text-sky-700 font-[800] mt-1.5 flex items-center gap-1 bg-sky-100 px-2 py-0.5 rounded-full w-fit">
                 <CheckCircle className="w-2.5 h-2.5" />
-                {(complaint.confirmations || 0) === 0
-                  ? "WAITING FOR NEIGHBORS"
-                  : `${complaint.confirmations} CITIZENS CONFIRMED`}
+                READY FOR PROCESSING
               </div>
             </div>
           </div>
@@ -540,13 +446,6 @@ export default function ComplaintDetail() {
                     SLA status
                   </span>
                 </div>
-                {["Submitted", "Pending Verification", "Verified"].includes(
-                  complaint.status,
-                ) && (
-                  <span className="text-[10px] font-bold bg-amber-500 text-white px-2 py-0.5 rounded-full animate-pulse">
-                    AWAITING VERIFICATION
-                  </span>
-                )}
               </div>
 
               <div className="space-y-1">
@@ -576,11 +475,9 @@ export default function ComplaintDetail() {
                       />
                     </div>
                   </div>
-                ) : ["Submitted", "Pending Verification", "Verified"].includes(
-                    complaint.status,
-                  ) ? (
+                ) : complaint.status === "Submitted" ? (
                   <div className="text-xl font-[900] text-amber-600">
-                    {complaint.confirmations || 0}/5 Verifications
+                    SLA START PENDING
                   </div>
                 ) : (
                   <div className="text-2xl font-[900] text-orange-700">
@@ -599,7 +496,7 @@ export default function ComplaintDetail() {
                     </span>
                   </div>
                   <div className="text-[9px] text-slate-400 font-bold uppercase mt-1">
-                    * Resolution starts after community verification
+                    * Resolution starts after assignment
                   </div>
                 </div>
               </div>
@@ -629,7 +526,7 @@ export default function ComplaintDetail() {
                   </div>
                 </div>
                 <div className="mt-3 text-xs text-slate-500 bg-white rounded-lg p-2.5 border border-slate-100">
-                  🔒 GPS-verified proof will be uploaded on resolution
+                  🔒 GPS-stamped proof will be uploaded on resolution
                 </div>
               </div>
             )}
@@ -810,86 +707,6 @@ export default function ComplaintDetail() {
               Share Before/After Card
             </button>
           </div>
-        </div>
-      )}
-
-      {/* Verification Modal */}
-      {showVerifyModal && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-md">
-          <motion.div
-            initial={{ scale: 0.9, opacity: 0, y: 20 }}
-            animate={{ scale: 1, opacity: 1, y: 0 }}
-            className="bg-white rounded-[2.5rem] p-8 max-w-md w-full shadow-2xl border border-slate-100"
-          >
-            <div className="w-16 h-16 bg-orange-500 rounded-3xl flex items-center justify-center mb-6 shadow-xl shadow-orange-500/20 mx-auto">
-              <ThumbsUp className="w-8 h-8 text-white" />
-            </div>
-
-            <h3 className="text-xl font-black text-slate-900 mb-2 text-center tracking-tight">
-              Verify Community Issue
-            </h3>
-            <p className="text-slate-500 text-sm text-center mb-8 font-medium">
-              Your verification helps the administration prioritize this issue.
-              <span className="text-orange-700 font-bold">
-                {" "}
-                +50 Reputation Points
-              </span>{" "}
-              will be added to your profile.
-            </p>
-
-            <div className="space-y-4 mb-8">
-              <div className="p-4 bg-slate-50 rounded-2xl border border-slate-100 flex items-center gap-4">
-                <div className="w-10 h-10 bg-white rounded-xl shadow-sm flex items-center justify-center text-lg">
-                  📍
-                </div>
-                <div className="flex-1 min-w-0">
-                  <div className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-0.5">
-                    Location Verified
-                  </div>
-                  <div className="text-sm font-black text-slate-800 truncate">
-                    {complaint.address}
-                  </div>
-                </div>
-              </div>
-
-              <div className="flex items-center gap-3 p-4 bg-emerald-50/60 rounded-2xl border border-emerald-100">
-                <input
-                  type="checkbox"
-                  id="confirm"
-                  className="w-5 h-5 rounded-lg border-emerald-200 text-emerald-600 focus:ring-emerald-500"
-                  defaultChecked
-                />
-                <label
-                  htmlFor="confirm"
-                  className="text-xs font-bold text-emerald-900/70 leading-relaxed cursor-pointer"
-                >
-                  I confirm that this issue is still present and requires
-                  immediate attention.
-                </label>
-              </div>
-            </div>
-
-            <div className="flex flex-col gap-3">
-              <button
-                onClick={handleVerify}
-                disabled={isVerifying}
-                className="w-full py-4 bg-orange-500 hover:bg-orange-600 text-white text-sm font-black uppercase tracking-[0.1em] rounded-2xl transition-all shadow-xl shadow-orange-500/20 disabled:opacity-50 flex items-center justify-center gap-2"
-              >
-                {isVerifying ? (
-                  <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                ) : (
-                  <CheckCircle size={18} />
-                )}
-                Confirm Verification
-              </button>
-              <button
-                onClick={() => setShowVerifyModal(false)}
-                className="w-full py-4 bg-slate-100 hover:bg-slate-200 text-slate-500 text-sm font-bold uppercase tracking-[0.1em] rounded-2xl transition-all"
-              >
-                Cancel
-              </button>
-            </div>
-          </motion.div>
         </div>
       )}
 

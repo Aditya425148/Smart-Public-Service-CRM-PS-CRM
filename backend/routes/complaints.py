@@ -102,14 +102,6 @@ class StatusUpdate(BaseModel):
     actor: Optional[str] = "System"
 
 
-class VerifyUpdate(BaseModel):
-    confirmations: int
-    status: str
-    priorityScore: float
-    note: str
-    actor: str
-
-
 # ── Routes ────────────────────────────────────────────────────────────────────
 
 @router.get("")
@@ -229,74 +221,6 @@ async def update_status(complaint_id: str, body: StatusUpdate):
     except HTTPException:
         raise
     except Exception as e:
+        print(f"STATUS_UPDATE_ERROR: {str(e)}")
         raise HTTPException(status_code=500, detail=str(e))
 
-
-@router.patch("/{complaint_id}/verify")
-async def verify_complaint_endpoint(complaint_id: str, body: VerifyUpdate):
-    try:
-        doc = tablesDB.get_row(DATABASE_ID, COLLECTION_ID, complaint_id)
-        
-        # 1. Extract verifiedBy from timeline instead of missing attribute
-        timeline_raw = doc.get("timeline", "[]") or "[]"
-        if isinstance(timeline_raw, str):
-            try:
-                timeline = json.loads(timeline_raw)
-            except:
-                timeline = []
-        else:
-            timeline = timeline_raw
-            
-        if not isinstance(timeline, list):
-            timeline = []
-
-        # Find unique verifier IDs from timeline notes
-        verified_by = []
-        for event in timeline:
-            note_content = event.get("note", "")
-            if "Verified by user:" in note_content:
-                verifier_id = note_content.split("Verified by user:")[1].strip()
-                verified_by.append(verifier_id)
-
-        # 2. Prevent double verification
-        if body.actor in verified_by:
-            return _map_doc(doc)
-            
-        timeline.append({
-            "status": body.status,
-            "timestamp": datetime.now(UTC).isoformat(),
-            "note": f"{body.note} | Verified by user: {body.actor}",
-            "actor": "Citizen Verification",
-        })
-        
-        # 3. Perform Update
-        update_payload = {
-            "status": body.status,
-            "priorityScore": body.priorityScore,
-            "timeline": json.dumps(timeline),
-            "updatedAt": datetime.now(UTC).isoformat(),
-        }
-        
-        # Check if confirmations attribute exists in the collection or if it's named differently
-        # If it doesn't exist, we can't update it directly.
-        # Let's try to update without 'confirmations' first and see if that works
-        # or if the user meant a different attribute name.
-        
-        try:
-             # Try with status and timeline first as they are verified to exist
-             tablesDB.update_row(DATABASE_ID, COLLECTION_ID, complaint_id, update_payload)
-        except Exception as update_err:
-             print(f"Update failed: {str(update_err)}")
-             # Final fallback: just the basic status/timeline which are guaranteed to exist
-             basic_payload = {
-                 "status": body.status,
-                 "timeline": json.dumps(timeline),
-                 "updatedAt": datetime.now(UTC).isoformat(),
-             }
-             tablesDB.update_row(DATABASE_ID, COLLECTION_ID, complaint_id, basic_payload)
-        
-        updated = tablesDB.get_row(DATABASE_ID, COLLECTION_ID, complaint_id)
-        return _map_doc(updated)
-    except Exception as e:
-        print(f"VERIFY_ERROR: {str(e)}")
-        raise HTTPException(status_code=500, detail=str(e))

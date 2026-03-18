@@ -10,9 +10,11 @@ import {
   Loader2,
   Eye,
   EyeOff,
+  Users,
 } from "lucide-react";
 import { authService } from "../appwriteService";
 import { getNetworkErrorMessage } from "../utils/connectionStatus";
+import { mockManagers } from "../data/mockData";
 
 export default function LoginPage() {
   const navigate = useNavigate();
@@ -54,6 +56,18 @@ export default function LoginPage() {
     try {
       setError("");
       setIsLoading(true);
+
+      // Check if this is a manager demo account
+      const manager = mockManagers.find(m => m.email.toLowerCase() === email.toLowerCase());
+      
+      if (manager) {
+        // Mock manager login (using anonymous auth for backend connection)
+        // For demo purposes, we accept any password for these specific emails
+        await authService.loginAnonymous();
+        navigate(`/manager/${manager.id}`, { replace: true });
+        return;
+      }
+
       await authService.loginWithEmail(email, password);
       navigate("/dashboard", { replace: true });
     } catch (err: any) {
@@ -96,12 +110,14 @@ export default function LoginPage() {
     }
   };
 
-  const handleDemoLogin = async (role: "citizen" | "admin") => {
+  const handleDemoLogin = async (role: "citizen" | "admin" | "manager") => {
     try {
       setError("");
       setIsLoading(true);
       await authService.loginAnonymous();
-      navigate(role === "admin" ? "/admin" : "/dashboard", { replace: true });
+      if (role === "admin") navigate("/admin", { replace: true });
+      else if (role === "manager") navigate("/manager", { replace: true });
+      else navigate("/dashboard", { replace: true });
     } catch (err: any) {
       console.error("Demo login error:", err);
       setError(err.message || "Guest login failed.");
@@ -118,7 +134,7 @@ export default function LoginPage() {
         <button
           onClick={handleGoogleLogin}
           disabled={isLoading}
-          className="w-full flex items-center justify-center gap-3 bg-white hover:bg-slate-100 text-slate-950 font-[600] py-4 rounded-xl transition-all duration-200 border border-slate-200 shadow-sm disabled:opacity-50"
+          className="w-full flex items-center justify-center gap-3 bg-white hover:bg-slate-50 text-slate-900 font-[600] py-4 rounded-2xl transition-all duration-200 border border-slate-200 shadow-sm disabled:opacity-50"
         >
           {isLoading ? (
             <Loader2 className="w-5 h-5 animate-spin" />
@@ -148,48 +164,50 @@ export default function LoginPage() {
         <button
           onClick={() => setMode("email-login")}
           disabled={isLoading}
-          className="w-full flex items-center justify-center gap-3 bg-slate-900 border border-slate-700/50 hover:bg-slate-800 text-white font-[600] py-4 rounded-xl transition-all duration-200 disabled:opacity-50"
+          className="w-full flex items-center justify-center gap-3 bg-sky-700 hover:bg-sky-800 text-white font-[600] py-4 rounded-2xl transition-all duration-200 shadow-[0_8px_20px_rgba(3,105,161,0.2)] disabled:opacity-50"
         >
-          <Mail className="w-5 h-5 text-slate-400" />
+          <Mail className="w-5 h-5" />
           <span>Login with Email</span>
         </button>
       </div>
 
       <div className="flex items-center gap-3 py-2">
-        <div className="h-px flex-1 bg-slate-800"></div>
-        <span className="text-xs font-[600] text-slate-500 uppercase tracking-widest">
+        <div className="h-px flex-1 bg-slate-200"></div>
+        <span className="text-xs font-[600] text-slate-400 uppercase tracking-widest px-2">
           Quick Access
         </span>
-        <div className="h-px flex-1 bg-slate-800"></div>
+        <div className="h-px flex-1 bg-slate-200"></div>
       </div>
 
       <div className="grid grid-cols-2 gap-3">
         <button
           onClick={() => handleDemoLogin("citizen")}
           disabled={isLoading}
-          className="group flex flex-col items-center justify-center p-4 rounded-xl border border-slate-800/50 bg-slate-900/30 hover:bg-blue-600/10 hover:border-blue-500/30 transition-all duration-200 disabled:opacity-50"
+          className="group flex flex-col items-center justify-center p-3 rounded-2xl border border-slate-100 bg-white hover:bg-sky-50 hover:border-sky-100 transition-all duration-200 shadow-sm disabled:opacity-50"
         >
-          <Zap className="w-6 h-6 text-blue-400 mb-2 group-hover:scale-110 transition-transform" />
-          <span className="text-sm font-[600] text-slate-300">
-            Demo Citizen
-          </span>
+          <div className="w-8 h-8 rounded-xl bg-sky-50 flex items-center justify-center mb-2 group-hover:scale-110 transition-transform">
+            <Zap className="w-4 h-4 text-sky-600" />
+          </div>
+          <span className="text-[10px] font-[700] uppercase text-slate-500">Citizen</span>
         </button>
         <button
           onClick={() => handleDemoLogin("admin")}
           disabled={isLoading}
-          className="group flex flex-col items-center justify-center p-4 rounded-xl border border-slate-800/50 bg-slate-900/30 hover:bg-emerald-600/10 hover:border-emerald-500/30 transition-all duration-200 disabled:opacity-50"
+          className="group flex flex-col items-center justify-center p-3 rounded-2xl border border-slate-100 bg-white hover:bg-purple-50 hover:border-purple-100 transition-all duration-200 shadow-sm disabled:opacity-50"
         >
-          <Shield className="w-6 h-6 text-emerald-400 mb-2 group-hover:scale-110 transition-transform" />
-          <span className="text-sm font-[600] text-slate-300">Demo Admin</span>
+          <div className="w-8 h-8 rounded-xl bg-purple-50 flex items-center justify-center mb-2 group-hover:scale-110 transition-transform">
+            <Shield className="w-4 h-4 text-purple-600" />
+          </div>
+          <span className="text-[10px] font-[700] uppercase text-slate-500">Admin</span>
         </button>
       </div>
 
-      <p className="text-center text-sm text-slate-400 mt-4">
+      <p className="text-center text-sm text-slate-500 mt-4">
         Don't have an account?{" "}
         <button
           type="button"
           onClick={() => setMode("email-signup")}
-          className="text-blue-400 font-[600] hover:underline"
+          className="text-sky-700 font-[600] hover:underline"
         >
           Join CivicPulse
         </button>
@@ -201,44 +219,44 @@ export default function LoginPage() {
     <div className="space-y-4">
       <button
         onClick={() => setMode("choose")}
-        className="flex items-center gap-2 text-slate-400 hover:text-white transition-colors text-sm mb-4"
+        className="flex items-center gap-2 text-slate-500 hover:text-slate-900 transition-colors text-sm mb-4 font-medium"
       >
         <ChevronLeft className="w-4 h-4" /> Back to options
       </button>
 
       {type === "signup" && (
         <div className="space-y-2">
-          <label className="text-sm font-[500] text-slate-300 ml-1">
+          <label className="text-sm font-[600] text-slate-700 ml-1">
             Full Name
           </label>
           <input
             type="text"
             value={name}
             onChange={(e) => setName(e.target.value)}
-            className="w-full bg-slate-950/50 border border-slate-800 rounded-xl px-4 py-3.5 text-white focus:outline-none focus:ring-2 focus:ring-blue-500/30 focus:border-blue-500/50 transition-all"
+            className="w-full bg-slate-50 border border-slate-200 rounded-2xl px-4 py-3.5 text-slate-900 focus:outline-none focus:ring-4 focus:ring-sky-500/10 focus:border-sky-500 transition-all placeholder:text-slate-400"
             placeholder="John Doe"
           />
         </div>
       )}
 
       <div className="space-y-2">
-        <label className="text-sm font-[500] text-slate-300 ml-1">
+        <label className="text-sm font-[600] text-slate-700 ml-1">
           Email Address
         </label>
         <input
           type="email"
           value={email}
           onChange={(e) => setEmail(e.target.value)}
-          className="w-full bg-slate-950/50 border border-slate-800 rounded-xl px-4 py-3.5 text-white focus:outline-none focus:ring-2 focus:ring-blue-500/30 focus:border-blue-500/50 transition-all"
+          className="w-full bg-slate-50 border border-slate-200 rounded-2xl px-4 py-3.5 text-slate-900 focus:outline-none focus:ring-4 focus:ring-sky-500/10 focus:border-sky-500 transition-all placeholder:text-slate-400"
           placeholder="admin@civicpulse.com"
         />
       </div>
 
       <div className="space-y-2">
         <div className="flex justify-between items-center ml-1">
-          <label className="text-sm font-[500] text-slate-300">Password</label>
+          <label className="text-sm font-[600] text-slate-700">Password</label>
           {type === "login" && (
-            <button className="text-xs text-blue-400 font-[500] hover:underline">
+            <button className="text-xs text-sky-700 font-[600] hover:underline">
               Forgot?
             </button>
           )}
@@ -248,13 +266,13 @@ export default function LoginPage() {
             type={showPassword ? "text" : "password"}
             value={password}
             onChange={(e) => setPassword(e.target.value)}
-            className="w-full bg-slate-950/50 border border-slate-800 rounded-xl px-4 py-3.5 pr-12 text-white focus:outline-none focus:ring-2 focus:ring-blue-500/30 focus:border-blue-500/50 transition-all"
+            className="w-full bg-slate-50 border border-slate-200 rounded-2xl px-4 py-3.5 pr-12 text-slate-900 focus:outline-none focus:ring-4 focus:ring-sky-500/10 focus:border-sky-500 transition-all placeholder:text-slate-400"
             placeholder="••••••••"
           />
           <button
             type="button"
             onClick={() => setShowPassword(!showPassword)}
-            className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-500 hover:text-slate-300 transition-colors"
+            className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 transition-colors"
           >
             {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
           </button>
@@ -265,7 +283,7 @@ export default function LoginPage() {
         type="button"
         onClick={type === "login" ? handleEmailLogin : handleEmailSignup}
         disabled={isLoading}
-        className="w-full bg-blue-600 hover:bg-blue-500 text-white font-[600] py-4 rounded-xl shadow-lg shadow-blue-900/10 transition-all duration-200 mt-4 flex items-center justify-center gap-2 disabled:opacity-50"
+        className="w-full bg-sky-700 hover:bg-sky-800 text-white font-[600] py-4 rounded-2xl shadow-lg shadow-sky-900/10 transition-all duration-200 mt-4 flex items-center justify-center gap-2 disabled:opacity-50"
       >
         {isLoading ? (
           <Loader2 className="w-5 h-5 animate-spin" />
@@ -280,25 +298,25 @@ export default function LoginPage() {
   );
 
   return (
-    <div className="min-h-screen bg-slate-950 flex items-center justify-center p-4 relative overflow-hidden font-['Plus_Jakarta_Sans',sans-serif]">
+    <div className="min-h-screen bg-slate-50 flex items-center justify-center p-4 relative overflow-hidden font-['Plus_Jakarta_Sans',sans-serif]">
       {/* Background decorations */}
       <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full h-full max-w-[800px] max-h-[800px] pointer-events-none">
-        <div className="absolute inset-0 bg-blue-500/5 blur-[120px] rounded-full"></div>
+        <div className="absolute inset-0 bg-sky-200/20 blur-[120px] rounded-full"></div>
       </div>
 
       <motion.div
-        initial={{ opacity: 0, scale: 0.95, y: 10 }}
+        initial={{ opacity: 0, scale: 0.98, y: 5 }}
         animate={{ opacity: 1, scale: 1, y: 0 }}
-        className="w-full max-w-md bg-slate-900/40 backdrop-blur-2xl p-8 lg:p-10 rounded-[2.5rem] border border-slate-800 relative z-10 shadow-2xl"
+        className="w-full max-w-md bg-white p-8 lg:p-10 rounded-[3rem] border border-slate-100 relative z-10 shadow-[0_32px_64px_-16px_rgba(0,0,0,0.06)]"
       >
         <div className="text-center mb-10">
-          <div className="w-16 h-16 bg-blue-600/10 text-blue-500 rounded-2xl flex items-center justify-center mx-auto mb-6 border border-blue-500/10">
+          <div className="w-16 h-16 bg-sky-700 text-white rounded-2xl flex items-center justify-center mx-auto mb-6 shadow-lg shadow-sky-900/20">
             <Shield size={32} />
           </div>
-          <h1 className="text-3xl font-[800] text-white tracking-tight">
+          <h1 className="text-3xl font-[800] text-slate-900 tracking-tight">
             CivicPulse
           </h1>
-          <p className="text-slate-400 mt-2 font-[500]">
+          <p className="text-slate-500 mt-2 font-[500]">
             Secure access to community pulse
           </p>
         </div>
@@ -307,10 +325,10 @@ export default function LoginPage() {
           <motion.div
             initial={{ opacity: 0, y: -10 }}
             animate={{ opacity: 1, y: 0 }}
-            className="bg-red-500/10 border border-red-500/20 text-red-200 text-sm p-4 rounded-2xl mb-8 flex gap-3 backdrop-blur-sm"
+            className="bg-rose-50 border border-rose-100 text-rose-600 text-sm p-4 rounded-2xl mb-8 flex gap-3"
           >
             <span className="shrink-0 leading-tight">⚠️</span>
-            <p className="leading-tight font-[500]">{error}</p>
+            <p className="leading-tight font-medium">{error}</p>
           </motion.div>
         )}
 

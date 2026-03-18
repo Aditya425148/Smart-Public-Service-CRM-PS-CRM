@@ -1,7 +1,5 @@
 export type ComplaintStatus =
   | "Submitted"
-  | "Pending Verification"
-  | "Verified"
   | "Assigned"
   | "In Progress"
   | "Resolved"
@@ -38,14 +36,81 @@ export interface Complaint {
   resolvedAt?: string;
   reporterName: string;
   reporterTier: number;
-  confirmations: number;
   assignedTo?: string;
   imageUrl?: string;
   aiConfidence?: number;
   isDuplicate?: boolean;
   escalated?: boolean;
+  state?: string;
+  area?: string;
   timeline: TimelineEvent[];
 }
+
+export interface Worker {
+  id: string;
+  name: string;
+  phone: string;
+  state: string;
+  area: string;
+  status: "Available" | "Busy" | "Offline";
+  rating: number;
+}
+
+export interface Manager {
+  id: string;
+  name: string;
+  email: string;
+  phone: string;
+  managedState: string;
+  managedAreas: string[];
+}
+
+export const mockManagers: Manager[] = [
+  // --- DELHI MANAGERS (5) ---
+  { id: "MGR-DEL-01", name: "Sanjay Sharma", email: "sanjay@civicpulse.com", phone: "+919810012345", managedState: "Delhi", managedAreas: ["North Delhi", "Civil Lines"] },
+  { id: "MGR-DEL-02", name: "Meena Kumari", email: "meena@civicpulse.com", phone: "+919810023456", managedState: "Delhi", managedAreas: ["South Delhi", "Saket"] },
+  { id: "MGR-DEL-03", name: "Rajesh Tyagi", email: "rajesh@civicpulse.com", phone: "+919810034567", managedState: "Delhi", managedAreas: ["East Delhi", "Laxmi Nagar"] },
+  { id: "MGR-DEL-04", name: "Anita Singh", email: "anita@civicpulse.com", phone: "+919810045678", managedState: "Delhi", managedAreas: ["West Delhi", "Dwarka"] },
+  { id: "MGR-DEL-05", name: "Amit Goel", email: "amit@civicpulse.com", phone: "+919810056789", managedState: "Delhi", managedAreas: ["Central Delhi", "Connaught Place"] },
+
+  // --- UP MANAGERS (10) ---
+  { id: "MGR-UP-01", name: "Yash Pal", email: "yash@civicpulse.com", phone: "+919920011223", managedState: "Uttar Pradesh", managedAreas: ["Lucknow City", "Hazratganj"] },
+  { id: "MGR-UP-02", name: "Priti Yadav", email: "priti@civicpulse.com", phone: "+919920022334", managedState: "Uttar Pradesh", managedAreas: ["Kanpur Central", "Kalyanpur"] },
+  { id: "MGR-UP-03", name: "Manoj Mishra", email: "manoj@civicpulse.com", phone: "+919920033445", managedState: "Uttar Pradesh", managedAreas: ["Varanasi Ghant", "Lanka"] },
+  { id: "MGR-UP-04", name: "Renu Devi", email: "renu@civicpulse.com", phone: "+919920044556", managedState: "Uttar Pradesh", managedAreas: ["Agra Fort", "Tajganj"] },
+  { id: "MGR-UP-05", name: "Suresh Chandra", email: "suresh@civicpulse.com", phone: "+919920055667", managedState: "Uttar Pradesh", managedAreas: ["Meerut Cantt", "Modipuram"] },
+  { id: "MGR-UP-06", name: "Kiran Singh", email: "kiran@civicpulse.com", phone: "+919920066778", managedState: "Uttar Pradesh", managedAreas: ["Prayagraj", "Civil Lines UP"] },
+  { id: "MGR-UP-07", name: "Deepak Rawat", email: "deepak@civicpulse.com", phone: "+919920077889", managedState: "Uttar Pradesh", managedAreas: ["Ghaziabad", "Indirapuram"] },
+  { id: "MGR-UP-08", name: "Alka Jha", email: "alka@civicpulse.com", phone: "+919920088990", managedState: "Uttar Pradesh", managedAreas: ["Noida Sector 62", "Greater Noida"] },
+  { id: "MGR-UP-09", name: "Vikrant Tomar", email: "vikrant@civicpulse.com", phone: "+919920099001", managedState: "Uttar Pradesh", managedAreas: ["Bareilly", "Izatnagar"] },
+  { id: "MGR-UP-10", name: "Sudhir Maurya", email: "sudhir@civicpulse.com", phone: "+919920010112", managedState: "Uttar Pradesh", managedAreas: ["Gorakhpur", "Cantt Area"] },
+];
+
+export const mockWorkers: Worker[] = [
+  // Workers for Delhi (4 per area focus)
+  { id: "WKR-DEL-01", name: "Ramu", phone: "+919001100111", state: "Delhi", area: "North Delhi", status: "Available", rating: 4.2 },
+  { id: "WKR-DEL-02", name: "Shamu", phone: "+919001100112", state: "Delhi", area: "North Delhi", status: "Available", rating: 4.5 },
+  { id: "WKR-DEL-03", name: "Kalu", phone: "+919001100113", state: "Delhi", area: "North Delhi", status: "Busy", rating: 3.9 },
+  { id: "WKR-DEL-04", name: "Golu", phone: "+919001100114", state: "Delhi", area: "North Delhi", status: "Available", rating: 4.8 },
+
+  { id: "WKR-DEL-05", name: "Vikram", phone: "+919002200221", state: "Delhi", area: "Central Delhi", status: "Available", rating: 4.1 },
+  { id: "WKR-DEL-06", name: "Manoj", phone: "+919002200222", state: "Delhi", area: "Central Delhi", status: "Busy", rating: 4.4 },
+  { id: "WKR-DEL-07", name: "Sunil", phone: "+919002200223", state: "Delhi", area: "Central Delhi", status: "Available", rating: 4.0 },
+  { id: "WKR-DEL-08", name: "Anil", phone: "+919002200224", state: "Delhi", area: "Central Delhi", status: "Available", rating: 4.6 },
+
+  // Workers for UP (Representative sample of 4 for Lucknow)
+  { id: "WKR-UP-01", name: "Prakash", phone: "+919111100111", state: "Uttar Pradesh", area: "Lucknow City", status: "Available", rating: 4.3 },
+  { id: "WKR-UP-02", name: "Om", phone: "+919111100112", state: "Uttar Pradesh", area: "Lucknow City", status: "Busy", rating: 4.0 },
+  { id: "WKR-UP-03", name: "Ved", phone: "+919111100113", state: "Uttar Pradesh", area: "Lucknow City", status: "Available", rating: 4.7 },
+  { id: "WKR-UP-04", name: "Jai", phone: "+919111100114", state: "Uttar Pradesh", area: "Lucknow City", status: "Available", rating: 4.2 },
+
+  { id: "WKR-UP-05", name: "Ravi", phone: "+919112200221", state: "Uttar Pradesh", area: "Kanpur Central", status: "Available", rating: 4.4 },
+  { id: "WKR-UP-06", name: "Som", phone: "+919112200222", state: "Uttar Pradesh", area: "Kanpur Central", status: "Available", rating: 4.1 },
+  { id: "WKR-UP-07", name: "Harry", phone: "+919112200223", state: "Uttar Pradesh", area: "Kanpur Central", status: "Busy", rating: 3.8 },
+  { id: "WKR-UP-08", name: "Dev", phone: "+919112200224", state: "Uttar Pradesh", area: "Kanpur Central", status: "Available", rating: 4.5 },
+];
+
+export const mockComplaints: Complaint[] = [];
 
 export interface TimelineEvent {
   status: ComplaintStatus;
@@ -74,379 +139,6 @@ export interface WardStats {
   avgResolutionHours: number;
   rank: number;
 }
-
-export const mockComplaints: Complaint[] = [
-  {
-    id: "CMP-2026-04821",
-    category: "Pothole",
-    subcategory: "Road",
-    description:
-      "Large pothole on MG Road near bus stop. Very dangerous for two-wheelers. Multiple accidents reported.",
-    status: "In Progress",
-    priorityScore: 0.87,
-    address: "MG Road, Near Bus Stop 12, Ward 4",
-    ward: "Ward 4",
-    lat: 28.6139,
-    lng: 77.209,
-    slaDeadline: "2026-03-06T10:00:00",
-    slaHours: 72,
-    slaRemainingHours: 14,
-    createdAt: "2026-03-03T10:00:00",
-    updatedAt: "2026-03-04T08:00:00",
-    reporterName: "Rahul Sharma",
-    reporterTier: 2,
-    confirmations: 7,
-    assignedTo: "Officer Priya Mehta",
-    imageUrl:
-      "https://images.unsplash.com/photo-1730674337922-0bf08006a66a?w=400",
-    aiConfidence: 0.92,
-    isDuplicate: false,
-    escalated: false,
-    timeline: [
-      {
-        status: "Submitted",
-        timestamp: "2026-03-03T10:00:00",
-        note: "Complaint submitted via mobile app",
-        actor: "Rahul Sharma",
-      },
-      {
-        status: "Verified",
-        timestamp: "2026-03-03T10:45:00",
-        note: "AI priority score 0.87 — fast tracked",
-        actor: "System",
-      },
-      {
-        status: "Assigned",
-        timestamp: "2026-03-03T11:00:00",
-        note: "Assigned to Officer Priya Mehta (Ward 4)",
-        actor: "Auto-Router",
-      },
-      {
-        status: "In Progress",
-        timestamp: "2026-03-04T08:00:00",
-        note: "Officer en route to location",
-        actor: "Priya Mehta",
-      },
-    ],
-  },
-  {
-    id: "CMP-2026-04822",
-    category: "Garbage",
-    subcategory: "Overflow",
-    description:
-      "Garbage bin near Sector 5 market overflowing for 3 days. Foul smell and health hazard.",
-    status: "Resolved",
-    priorityScore: 0.79,
-    address: "Sector 5 Market, Ward 7",
-    ward: "Ward 7",
-    lat: 28.6229,
-    lng: 77.218,
-    slaDeadline: "2026-03-02T14:00:00",
-    slaHours: 24,
-    slaRemainingHours: 0,
-    createdAt: "2026-03-01T14:00:00",
-    updatedAt: "2026-03-02T10:30:00",
-    resolvedAt: "2026-03-02T10:30:00",
-    reporterName: "Anjali Desai",
-    reporterTier: 1,
-    confirmations: 12,
-    assignedTo: "Officer Ravi Kumar",
-    imageUrl:
-      "https://images.unsplash.com/photo-1586528116311-ad8dd3c8310d?w=400",
-    aiConfidence: 0.88,
-    isDuplicate: false,
-    escalated: false,
-    timeline: [
-      {
-        status: "Submitted",
-        timestamp: "2026-03-01T14:00:00",
-        note: "Filed via WhatsApp bot",
-        actor: "Anjali Desai",
-      },
-      {
-        status: "Verified",
-        timestamp: "2026-03-01T14:12:00",
-        note: "Auto-verified",
-        actor: "System",
-      },
-      {
-        status: "Assigned",
-        timestamp: "2026-03-01T14:30:00",
-        note: "Assigned to Ravi Kumar",
-        actor: "Auto-Router",
-      },
-      {
-        status: "In Progress",
-        timestamp: "2026-03-02T07:00:00",
-        note: "Cleaning crew dispatched",
-        actor: "Ravi Kumar",
-      },
-      {
-        status: "Resolved",
-        timestamp: "2026-03-02T10:30:00",
-        note: "Garbage cleared. GPS-verified proof uploaded.",
-        actor: "Ravi Kumar",
-      },
-    ],
-  },
-  {
-    id: "CMP-2026-04823",
-    category: "Streetlight",
-    subcategory: "Main Road",
-    description:
-      "3 consecutive streetlights not working on Nehru Nagar lane. Dark stretch at night — safety concern.",
-    status: "Assigned",
-    priorityScore: 0.65,
-    address: "Nehru Nagar Lane 3, Ward 2",
-    ward: "Ward 2",
-    lat: 28.605,
-    lng: 77.198,
-    slaDeadline: "2026-03-06T20:00:00",
-    slaHours: 48,
-    slaRemainingHours: 32,
-    createdAt: "2026-03-04T20:00:00",
-    updatedAt: "2026-03-04T21:00:00",
-    reporterName: "Mohammed Farouk",
-    reporterTier: 1,
-    confirmations: 4,
-    assignedTo: "Officer Sunita Rao",
-    aiConfidence: 0.75,
-    isDuplicate: false,
-    escalated: false,
-    timeline: [
-      {
-        status: "Submitted",
-        timestamp: "2026-03-04T20:00:00",
-        note: "Complaint submitted",
-        actor: "Mohammed Farouk",
-      },
-      {
-        status: "Verified",
-        timestamp: "2026-03-04T20:30:00",
-        note: "Volunteer verification confirmed",
-        actor: "Volunteer",
-      },
-      {
-        status: "Assigned",
-        timestamp: "2026-03-04T21:00:00",
-        note: "Assigned to Electrical dept",
-        actor: "Auto-Router",
-      },
-    ],
-  },
-  {
-    id: "CMP-2026-04824",
-    category: "Water",
-    subcategory: "Supply Failure",
-    description: "No water supply since 2 days in Block C. Affecting 40+ households.",
-    status: "Escalated",
-    priorityScore: 0.91,
-    address: "Block C, Indira Colony, Ward 3",
-    ward: "Ward 3",
-    lat: 28.618,
-    lng: 77.205,
-    slaDeadline: "2026-03-04T06:00:00",
-    slaHours: 24,
-    slaRemainingHours: -18,
-    createdAt: "2026-03-03T06:00:00",
-    updatedAt: "2026-03-04T09:00:00",
-    reporterName: "Priya Singh",
-    reporterTier: 2,
-    confirmations: 21,
-    assignedTo: "Officer Deepak Varma",
-    aiConfidence: 0.95,
-    isDuplicate: false,
-    escalated: true,
-    timeline: [
-      {
-        status: "Submitted",
-        timestamp: "2026-03-03T06:00:00",
-        note: "Emergency report filed",
-        actor: "Priya Singh",
-      },
-      {
-        status: "Verified",
-        timestamp: "2026-03-03T06:05:00",
-        note: "Fast-tracked — AI score 0.91",
-        actor: "System",
-      },
-      {
-        status: "Assigned",
-        timestamp: "2026-03-03T06:30:00",
-        note: "Assigned to water dept",
-        actor: "Auto-Router",
-      },
-      {
-        status: "Escalated",
-        timestamp: "2026-03-04T06:00:00",
-        note: "SLA breached — auto-escalated to department head",
-        actor: "System",
-      },
-    ],
-  },
-  {
-    id: "CMP-2026-04825",
-    category: "Safety",
-    subcategory: "Public Hazard",
-    description: "Exposed electric wire hanging low on Rajiv Chowk. Immediate safety risk.",
-    status: "Submitted",
-    priorityScore: 0.96,
-    address: "Rajiv Chowk, Near ATM, Ward 1",
-    ward: "Ward 1",
-    lat: 28.632,
-    lng: 77.22,
-    slaDeadline: "2026-03-04T22:00:00",
-    slaHours: 12,
-    slaRemainingHours: 5,
-    createdAt: "2026-03-04T10:00:00",
-    updatedAt: "2026-03-04T10:00:00",
-    reporterName: "Kiran Patel",
-    reporterTier: 1,
-    confirmations: 3,
-    aiConfidence: 0.89,
-    isDuplicate: false,
-    escalated: false,
-    timeline: [
-      {
-        status: "Submitted",
-        timestamp: "2026-03-04T10:00:00",
-        note: "Emergency safety complaint",
-        actor: "Kiran Patel",
-      },
-    ],
-  },
-  {
-    id: "CMP-2026-04826",
-    category: "Sanitation",
-    subcategory: "Drainage",
-    description: "Clogged drain on Patel Street. Sewage overflow onto road after rain.",
-    status: "Pending Verification",
-    priorityScore: 0.52,
-    address: "Patel Street, Ward 5",
-    ward: "Ward 5",
-    lat: 28.598,
-    lng: 77.212,
-    slaDeadline: "2026-03-06T15:00:00",
-    slaHours: 24,
-    slaRemainingHours: 28,
-    createdAt: "2026-03-03T15:00:00",
-    updatedAt: "2026-03-03T16:00:00",
-    reporterName: "Anonymous",
-    reporterTier: 0,
-    confirmations: 2,
-    aiConfidence: 0.61,
-    isDuplicate: false,
-    escalated: false,
-    timeline: [
-      {
-        status: "Submitted",
-        timestamp: "2026-03-03T15:00:00",
-        note: "Submitted as pseudonymous",
-        actor: "Anonymous",
-      },
-      {
-        status: "Pending Verification",
-        timestamp: "2026-03-03T16:00:00",
-        note: "Routed to volunteer verifier",
-        actor: "System",
-      },
-    ],
-  },
-  {
-    id: "CMP-2026-04827",
-    category: "Construction",
-    subcategory: "Illegal",
-    description: "Unauthorized construction happening at plot 43. No visible permits.",
-    status: "Submitted",
-    priorityScore: 0.44,
-    address: "Plot 43, Shastri Nagar, Ward 6",
-    ward: "Ward 6",
-    lat: 28.625,
-    lng: 77.195,
-    slaDeadline: "2026-03-09T12:00:00",
-    slaHours: 120,
-    slaRemainingHours: 96,
-    createdAt: "2026-03-04T12:00:00",
-    updatedAt: "2026-03-04T12:00:00",
-    reporterName: "Suresh Nair",
-    reporterTier: 2,
-    confirmations: 1,
-    aiConfidence: 0.55,
-    isDuplicate: false,
-    escalated: false,
-    timeline: [
-      {
-        status: "Submitted",
-        timestamp: "2026-03-04T12:00:00",
-        note: "Complaint submitted with photos",
-        actor: "Suresh Nair",
-      },
-    ],
-  },
-  {
-    id: "CMP-2026-04828",
-    category: "Pothole",
-    subcategory: "Footpath",
-    description: "Broken footpath tiles near school causing injury risk to children.",
-    status: "Closed",
-    priorityScore: 0.71,
-    address: "Near Govt School, Lajpat Nagar, Ward 4",
-    ward: "Ward 4",
-    lat: 28.609,
-    lng: 77.203,
-    slaDeadline: "2026-02-28T08:00:00",
-    slaHours: 120,
-    slaRemainingHours: 0,
-    createdAt: "2026-02-23T08:00:00",
-    updatedAt: "2026-02-28T07:00:00",
-    resolvedAt: "2026-02-28T07:00:00",
-    reporterName: "Meena Kumari",
-    reporterTier: 1,
-    confirmations: 8,
-    assignedTo: "Officer Priya Mehta",
-    aiConfidence: 0.82,
-    isDuplicate: false,
-    escalated: false,
-    timeline: [
-      {
-        status: "Submitted",
-        timestamp: "2026-02-23T08:00:00",
-        note: "Complaint filed",
-        actor: "Meena Kumari",
-      },
-      {
-        status: "Verified",
-        timestamp: "2026-02-23T09:00:00",
-        note: "Verified by volunteer",
-        actor: "Volunteer",
-      },
-      {
-        status: "Assigned",
-        timestamp: "2026-02-23T10:00:00",
-        note: "Assigned",
-        actor: "Auto-Router",
-      },
-      {
-        status: "In Progress",
-        timestamp: "2026-02-25T08:00:00",
-        note: "Repair work started",
-        actor: "Priya Mehta",
-      },
-      {
-        status: "Resolved",
-        timestamp: "2026-02-28T07:00:00",
-        note: "Tiles replaced and area cleared",
-        actor: "Priya Mehta",
-      },
-      {
-        status: "Closed",
-        timestamp: "2026-02-28T10:00:00",
-        note: "Citizen confirmed resolution",
-        actor: "Meena Kumari",
-      },
-    ],
-  },
-];
 
 export const mockOfficers: Officer[] = [
   {
@@ -573,7 +265,6 @@ export const kpiData = {
   mtta: 3.2,
   mttr: 54.7,
   slaCompliance: 82.4,
-  verificationRate: 67.3,
   reopenRate: 7.8,
   satisfactionScore: 4.2,
   totalComplaints: 1248,
@@ -661,16 +352,15 @@ export const currentUser = {
   email: "rahul.sharma@gmail.com",
   tier: 2,
   reputationScore: 420,
-  reputationLevel: "Verified Contributor",
+  reputationLevel: "Active Reporter",
   joinedDate: "January 2026",
   complaintsField: 18,
-  verified: 15,
   resolved: 12,
   badges: [
     { id: "first_reporter", name: "First Reporter", icon: "🌱", earned: true },
     {
-      id: "verified_contributor",
-      name: "Verified Contributor",
+      id: "consistent_reporter",
+      name: "Consistent Reporter",
       icon: "🔍",
       earned: true,
     },
@@ -685,7 +375,7 @@ export const currentUser = {
       name: "Neighborhood Hero",
       icon: "🦸",
       earned: false,
-      criteria: "25 verified reports, >90% accuracy",
+      criteria: "25 reports, >90% accuracy",
     },
     {
       id: "ward_champion",
@@ -694,15 +384,7 @@ export const currentUser = {
       earned: false,
       criteria: "Top contributor in ward for 3 months",
     },
-    {
-      id: "volunteer_star",
-      name: "Volunteer Star",
-      icon: "🤝",
-      earned: false,
-      criteria: "50 verifications completed",
-    },
   ],
   ward: "Ward 4",
   nextMilestone: 500,
-  confirmationsGiven: 23,
 };

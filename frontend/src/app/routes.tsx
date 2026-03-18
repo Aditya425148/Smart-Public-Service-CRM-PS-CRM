@@ -14,6 +14,9 @@ import AdminQueue from "./pages/admin/AdminQueue";
 import AdminAnalytics from "./pages/admin/AdminAnalytics";
 import AdminSLA from "./pages/admin/AdminSLA";
 import AdminUsers from "./pages/admin/AdminUsers";
+import ManagerLayout from "./components/manager/ManagerLayout";
+import ManagerOverview from "./pages/manager/ManagerOverview";
+import ManagerWorkers from "./pages/manager/ManagerWorkers";
 import NotFound from "./pages/NotFound";
 import OAuthCallback from "./pages/OAuthCallback";
 import ProtectedRoute from "./components/ProtectedRoute";
@@ -23,7 +26,7 @@ export const router = createBrowserRouter([
   { path: "/login", Component: LoginPage },
   { path: "/auth/callback", Component: OAuthCallback },
   {
-    element: <ProtectedRoute allowedRoles={["citizen", "admin"]} />,
+    element: <ProtectedRoute allowedRoles={["citizen", "admin", "manager"]} />,
     children: [
       {
         path: "/dashboard",
@@ -35,6 +38,19 @@ export const router = createBrowserRouter([
           { path: "complaints/:id", Component: ComplaintDetail },
           { path: "leaderboard", Component: Leaderboard },
           { path: "profile", Component: Profile },
+        ],
+      },
+    ],
+  },
+  {
+    element: <ProtectedRoute allowedRoles={["manager"]} />,
+    children: [
+      {
+        path: "/manager/:managerId?",
+        Component: ManagerLayout,
+        children: [
+          { index: true, Component: ManagerOverview },
+          { path: "workers", Component: ManagerWorkers },
         ],
       },
     ],

@@ -15,8 +15,6 @@ import { account } from "../appwrite";
 
 const statusColor: Record<string, string> = {
   Submitted: "bg-slate-100 text-slate-700",
-  "Pending Verification": "bg-amber-100 text-amber-800",
-  Verified: "bg-sky-100 text-sky-700",
   Assigned: "bg-sky-100 text-sky-700",
   "In Progress": "bg-blue-100 text-blue-700",
   Resolved: "bg-emerald-100 text-emerald-700",
@@ -120,14 +118,6 @@ export default function CitizenHome() {
     (complaint) =>
       !["Resolved", "Closed"].includes(complaint.status) &&
       (complaint.distance_km || 1) <= 5,
-  ).length;
-  const verificationCount = complaints.filter(
-    (complaint) =>
-      ["Submitted", "Pending Verification"].includes(complaint.status) &&
-      complaint.reporterId !== user.uid &&
-      complaint.userId !== user.uid &&
-      !(complaint.verifiedBy || []).includes(user.uid) &&
-      (userState ? complaint.state === userState : true),
   ).length;
 
   const recentComplaints = [...userComplaints].slice(0, 5);
@@ -340,24 +330,9 @@ export default function CitizenHome() {
         <div className="space-y-6">
           <div className="rounded-[24px] border border-slate-200 bg-white p-6 shadow-sm">
             <h2 className="text-lg font-semibold text-slate-900">
-              What needs attention
+              Your engagement
             </h2>
             <div className="mt-4 space-y-4">
-              <div className="rounded-2xl bg-sky-50 p-4">
-                <div className="text-sm font-medium text-slate-600">
-                  Complaints waiting for your verification
-                </div>
-                <div className="mt-2 text-2xl font-semibold text-slate-900">
-                  {verificationCount}
-                </div>
-                <button
-                  onClick={() => navigate("/dashboard/complaints")}
-                  className="mt-3 text-sm font-medium text-sky-700 hover:text-sky-800"
-                >
-                  Review complaints
-                </button>
-              </div>
-
               <div className="rounded-2xl border border-slate-200 p-4">
                 <div className="text-sm font-medium text-slate-600">
                   Your completion rate

@@ -211,8 +211,8 @@ const features = [
   },
   {
     icon: Shield,
-    title: "GPS-Verified Resolution",
-    desc: "Field officers can only upload resolution proof within 150m of the complaint location — no false closures. Immutable audit trail for every action.",
+    title: "GPS-Proof Resolution",
+    desc: "Field officers must upload resolution proof within 150m of the complaint location — ensuring genuine closure. Immutable audit trail for every action.",
     color: "text-emerald-500",
     bg: "bg-emerald-50",
   },
@@ -226,7 +226,7 @@ const features = [
   {
     icon: Award,
     title: "Reputation & Rewards",
-    desc: "Citizens earn points for verified reports. Gamified badges, ward leaderboards, and a Phase 2 civic reward marketplace to incentivize genuine reporting.",
+    desc: "Citizens earn points for reporting and resolving issues. Gamified badges, ward leaderboards, and a Phase 2 civic reward marketplace to incentivize active reporting.",
     color: "text-orange-500",
     bg: "bg-orange-50",
   },
@@ -256,7 +256,7 @@ const testimonials = [
     ward: "Ward 7, Mumbai",
     text: "I reported a garbage overflow and it was cleared in 8 hours. The before/after card was amazing — I shared it on my building WhatsApp group!",
     rating: 5,
-    badge: "🔍 Verified Contributor",
+    badge: "🏆 Active Contributor",
   },
   {
     name: "Rajesh Kumar",
@@ -371,7 +371,7 @@ export default function LandingPage() {
             <div className="p-3 border rounded-lg hover:bg-slate-50 cursor-pointer transition-colors">
               <p className="font-medium text-sm">What are Civic Credits?</p>
               <p className="text-xs text-slate-500">
-                Points earned for every verified report fixed by the city.
+                Points earned for every report resolved by the city.
               </p>
             </div>
           </div>
@@ -730,7 +730,7 @@ export default function LandingPage() {
             >
               Report civic issues in under 60 seconds. AI routes complaints to
               the right department, enforces SLA deadlines, and guarantees
-              GPS-verified resolution — with full transparency throughout.
+              GPS-stamped resolution — with full transparency throughout.
             </motion.p>
 
             <motion.div
@@ -795,7 +795,7 @@ export default function LandingPage() {
           {Array(4)
             .fill([
               "🚀 Ward 7 resolved 124 complaints this week",
-              "⚡ AI verified 42 new street light issues",
+              "⚡ AI prioritized 42 new street light issues",
               "🛠️ Pothole on MG Road fixed in 14 hours",
               "🔍 94% SLA compliance citywide",
               "🏆 Citizen 'Anjali K.' earned Gold Contributor",
@@ -1061,7 +1061,7 @@ export default function LandingPage() {
               {
                 value: 4821,
                 suffix: "",
-                label: "Verified Fixes",
+                label: "Resolved Fixes",
                 icon: CheckCircle,
               },
               { value: 45, suffix: "s", label: "Reporting Speed", icon: Clock },
