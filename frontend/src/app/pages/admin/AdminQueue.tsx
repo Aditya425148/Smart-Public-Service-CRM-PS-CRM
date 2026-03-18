@@ -136,24 +136,24 @@ export default function AdminQueue() {
       {/* Header */}
       <div className="flex items-center justify-between flex-wrap gap-3">
         <div>
-          <h1 className="text-2xl font-[800] text-slate-900">
+          <h1 className="text-2xl font-[800] text-[#ffcbd1]">
             Complaint Queue
           </h1>
-          <p className="text-slate-500 text-sm mt-1">
+          <p className="text-white/90 text-sm mt-1">
             {filtered.length} of {complaints.length} complaints
           </p>
         </div>
         <div className="flex gap-2">
-          <button className="flex items-center gap-2 px-3 py-2 text-sm text-slate-600 bg-white border border-slate-200 rounded-xl hover:bg-slate-50 transition-colors">
+          <button className="flex items-center gap-2 px-3 py-2 text-sm text-slate-600 bg-white/85 backdrop-blur-xl border border-white rounded-2xl hover:bg-white transition-colors shadow-sm">
             <RefreshCw className="w-4 h-4" /> Refresh
           </button>
-          <button className="flex items-center gap-2 px-3 py-2 text-sm text-slate-600 bg-white border border-slate-200 rounded-xl hover:bg-slate-50 transition-colors">
+          <button className="flex items-center gap-2 px-3 py-2 text-sm text-slate-600 bg-white/85 backdrop-blur-xl border border-white rounded-2xl hover:bg-white transition-colors shadow-sm">
             <Download className="w-4 h-4" /> Export CSV
           </button>
           {selectedIds.length > 0 && (
             <button
               onClick={() => setAssignModalOpen(true)}
-              className="flex items-center gap-2 px-4 py-2 text-sm text-white bg-violet-600 hover:bg-violet-700 rounded-xl transition-colors font-[600]"
+              className="flex items-center gap-2 px-4 py-2 text-sm text-white bg-[linear-gradient(90deg,#7c3aed,#2563eb)] rounded-2xl transition-all font-[700] shadow-[0_16px_32px_rgba(76,29,149,0.24)]"
             >
               <UserCheck className="w-4 h-4" /> Assign {selectedIds.length}{" "}
               selected
@@ -163,7 +163,7 @@ export default function AdminQueue() {
       </div>
 
       {/* Filters */}
-      <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-4">
+      <div className="bg-white/88 backdrop-blur-xl rounded-[1.85rem] border border-white shadow-[0_18px_45px_rgba(148,163,184,0.14)] p-4">
         <div className="flex flex-wrap gap-3">
           <div className="relative flex-1 min-w-[200px]">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
@@ -207,7 +207,7 @@ export default function AdminQueue() {
       </div>
 
       {/* Table */}
-      <div className="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden">
+      <div className="bg-white/88 backdrop-blur-xl rounded-[1.85rem] border border-white shadow-[0_18px_45px_rgba(148,163,184,0.14)] overflow-hidden">
         {/* Table Header */}
         <div className="flex items-center gap-3 px-5 py-3 bg-slate-50 border-b border-slate-100 text-xs font-[700] text-slate-500 uppercase tracking-wider">
           <input
@@ -371,7 +371,7 @@ export default function AdminQueue() {
           <motion.div
             initial={{ scale: 0.9, opacity: 0 }}
             animate={{ scale: 1, opacity: 1 }}
-            className="bg-white rounded-2xl p-6 max-w-md w-full shadow-2xl"
+            className="bg-white/95 backdrop-blur-xl rounded-[1.85rem] p-6 max-w-md w-full shadow-[0_24px_60px_rgba(15,23,42,0.28)] border border-white"
           >
             <h3 className="text-lg font-[700] text-slate-900 mb-4">
               Assign {selectedIds.length} Complaint

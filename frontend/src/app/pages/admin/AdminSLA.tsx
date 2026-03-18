@@ -33,12 +33,12 @@ export default function AdminSLA() {
   return (
     <div className="max-w-4xl mx-auto space-y-6">
       <div>
-        <h1 className="text-2xl font-[800] text-slate-900">SLA Configuration</h1>
-        <p className="text-slate-500 text-sm mt-1">Configure service level agreements per complaint category</p>
+        <h1 className="text-2xl font-[800] text-[#ffcbd1]">SLA Configuration</h1>
+        <p className="text-white/90 text-sm mt-1">Configure service level agreements per complaint category</p>
       </div>
 
       {/* Info Banner */}
-      <div className="bg-blue-50 border border-blue-100 rounded-2xl p-4 flex gap-3">
+      <div className="bg-[linear-gradient(90deg,rgba(239,246,255,0.96),rgba(255,255,255,0.92))] border border-sky-200 rounded-[1.75rem] p-4 flex gap-3 shadow-[0_18px_40px_rgba(14,165,233,0.08)]">
         <Info className="w-5 h-5 text-blue-500 shrink-0 mt-0.5" />
         <div>
           <div className="text-sm font-[600] text-blue-800">Public SLA Visibility</div>
@@ -49,7 +49,7 @@ export default function AdminSLA() {
       </div>
 
       {/* SLA Table */}
-      <div className="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden">
+      <div className="bg-white/88 backdrop-blur-xl rounded-[1.85rem] border border-white shadow-[0_18px_45px_rgba(148,163,184,0.14)] overflow-hidden">
         <div className="flex items-center justify-between p-5 border-b border-slate-100">
           <h3 className="text-base font-[700] text-slate-900">SLA Rules by Category</h3>
           <span className="text-xs text-slate-500 bg-slate-100 px-2.5 py-1 rounded-full font-[600]">
@@ -176,7 +176,7 @@ export default function AdminSLA() {
       </div>
 
       {/* Escalation Chain */}
-      <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-5">
+      <div className="bg-white/88 backdrop-blur-xl rounded-[1.85rem] border border-white shadow-[0_18px_45px_rgba(148,163,184,0.14)] p-5">
         <h3 className="text-base font-[700] text-slate-900 mb-5">Escalation Chain</h3>
         <div className="space-y-4">
           {escalationChain.map((e, i) => (

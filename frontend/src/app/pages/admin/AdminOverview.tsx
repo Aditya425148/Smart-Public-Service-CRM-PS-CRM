@@ -49,7 +49,7 @@ const KPICard = ({
   <motion.div
     initial={{ opacity: 0, y: 10 }}
     animate={{ opacity: 1, y: 0 }}
-    className="bg-white rounded-2xl p-5 border border-slate-100 shadow-sm"
+    className="bg-white/85 backdrop-blur-xl rounded-[1.75rem] p-5 border border-white shadow-[0_18px_45px_rgba(148,163,184,0.16)]"
   >
     <div className="flex items-start justify-between mb-3">
       <div
@@ -128,8 +128,8 @@ export default function AdminOverview() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-[800] text-slate-900">Admin Overview</h1>
-          <p className="text-slate-500 text-sm mt-1">
+          <h1 className="text-2xl font-[800] text-[#ffcbd1]">Admin Overview</h1>
+          <p className="text-white/90 text-sm mt-1">
             {new Date().toLocaleDateString("en-IN", {
               weekday: "long",
               day: "numeric",
@@ -141,7 +141,7 @@ export default function AdminOverview() {
         <div className="flex gap-3">
           <button
             onClick={() => navigate("/admin/queue")}
-            className="flex items-center gap-2 px-4 py-2.5 bg-violet-600 hover:bg-violet-700 text-white text-sm font-[600] rounded-xl transition-colors"
+            className="flex items-center gap-2 px-4 py-2.5 bg-[linear-gradient(90deg,#7c3aed,#2563eb)] hover:opacity-95 text-white text-sm font-[700] rounded-2xl transition-all shadow-[0_16px_32px_rgba(76,29,149,0.24)]"
           >
             <BarChart3 className="w-4 h-4" />
             Complaint Queue
@@ -150,8 +150,8 @@ export default function AdminOverview() {
       </div>
 
       {/* Alerts Banner */}
-      <div className="bg-red-50 border border-red-100 rounded-2xl p-4 flex items-center gap-4 flex-wrap">
-        <div className="w-9 h-9 rounded-xl bg-red-100 flex items-center justify-center">
+      <div className="bg-[linear-gradient(90deg,rgba(255,241,242,0.96),rgba(255,255,255,0.92))] border border-rose-200 rounded-[1.75rem] p-4 flex items-center gap-4 flex-wrap shadow-[0_18px_40px_rgba(251,113,133,0.08)]">
+        <div className="w-9 h-9 rounded-xl bg-rose-100 flex items-center justify-center">
           <AlertTriangle className="w-4 h-4 text-red-600" />
         </div>
         <div className="flex-1">
@@ -163,7 +163,7 @@ export default function AdminOverview() {
         </div>
         <button
           onClick={() => navigate("/admin/queue")}
-          className="flex items-center gap-1.5 text-xs font-[600] text-red-600 hover:text-red-700"
+          className="flex items-center gap-1.5 text-xs font-[700] text-rose-600 hover:text-rose-700"
         >
           Review <ArrowRight className="w-3.5 h-3.5" />
         </button>
@@ -242,7 +242,7 @@ export default function AdminOverview() {
         ].map(({ label, value, suffix, target, ok }) => (
           <div
             key={label}
-            className="bg-white rounded-2xl p-4 border border-slate-100 shadow-sm"
+            className="bg-white/85 backdrop-blur-xl rounded-[1.75rem] p-4 border border-white shadow-[0_18px_45px_rgba(148,163,184,0.14)]"
           >
             <div className="flex items-center justify-between mb-2">
               <span className="text-xs font-[600] text-slate-500">{label}</span>
@@ -262,7 +262,7 @@ export default function AdminOverview() {
       {/* Charts Row */}
       <div className="grid lg:grid-cols-3 gap-6">
         {/* Trend Chart */}
-        <div className="lg:col-span-2 bg-white rounded-2xl border border-slate-100 shadow-sm p-5">
+        <div className="lg:col-span-2 bg-white/88 backdrop-blur-xl rounded-[1.85rem] border border-white shadow-[0_18px_45px_rgba(148,163,184,0.14)] p-5">
           <div className="flex items-center justify-between mb-5">
             <div>
               <h3 className="text-base font-[700] text-slate-900">
@@ -344,7 +344,7 @@ export default function AdminOverview() {
         </div>
 
         {/* Category Pie */}
-        <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-5">
+        <div className="bg-white/88 backdrop-blur-xl rounded-[1.85rem] border border-white shadow-[0_18px_45px_rgba(148,163,184,0.14)] p-5">
           <div className="mb-4">
             <h3 className="text-base font-[700] text-slate-900">By Category</h3>
             <p className="text-xs text-slate-400">Current month breakdown</p>
@@ -395,7 +395,7 @@ export default function AdminOverview() {
       {/* Officer Performance + Recent Escalations */}
       <div className="grid lg:grid-cols-2 gap-6">
         {/* Officers */}
-        <div className="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden">
+        <div className="bg-white/88 backdrop-blur-xl rounded-[1.85rem] border border-white shadow-[0_18px_45px_rgba(148,163,184,0.14)] overflow-hidden">
           <div className="flex items-center justify-between p-5 border-b border-slate-100">
             <h3 className="text-base font-[700] text-slate-900">
               Field Officers
@@ -448,7 +448,7 @@ export default function AdminOverview() {
         </div>
 
         {/* Escalated Complaints */}
-        <div className="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden">
+        <div className="bg-white/88 backdrop-blur-xl rounded-[1.85rem] border border-white shadow-[0_18px_45px_rgba(148,163,184,0.14)] overflow-hidden">
           <div className="flex items-center justify-between p-5 border-b border-slate-100">
             <h3 className="text-base font-[700] text-slate-900">
               Escalations & Overdue

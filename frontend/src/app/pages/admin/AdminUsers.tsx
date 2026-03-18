@@ -29,8 +29,8 @@ export default function AdminUsers() {
   return (
     <div className="max-w-6xl mx-auto space-y-6">
       <div>
-        <h1 className="text-2xl font-[800] text-slate-900">User Management</h1>
-        <p className="text-slate-500 text-sm mt-1">Monitor citizens, volunteers, and field officers</p>
+        <h1 className="text-2xl font-[800] text-[#ffcbd1]">User Management</h1>
+        <p className="text-white/90 text-sm mt-1">Monitor citizens, volunteers, and field officers</p>
       </div>
 
       {/* Summary */}
@@ -41,7 +41,7 @@ export default function AdminUsers() {
           { label: "Flagged Accounts", value: mockUsers.filter(u => u.status === "Flagged").length, color: "text-amber-600", bg: "bg-amber-50" },
           { label: "Avg Reputation", value: Math.round(mockUsers.reduce((a, u) => a + u.reputation, 0) / mockUsers.length), color: "text-emerald-600", bg: "bg-emerald-50" },
         ].map(({ label, value, color, bg }) => (
-          <div key={label} className="bg-white rounded-2xl p-4 border border-slate-100 shadow-sm">
+          <div key={label} className="bg-white/88 backdrop-blur-xl rounded-[1.75rem] p-4 border border-white shadow-[0_18px_45px_rgba(148,163,184,0.14)]">
             <div className={`text-2xl font-[800] ${color}`}>{value}</div>
             <div className="text-xs text-slate-500 font-[500] mt-1">{label}</div>
           </div>
@@ -49,7 +49,7 @@ export default function AdminUsers() {
       </div>
 
       {/* Filters */}
-      <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-4 flex flex-wrap gap-3">
+      <div className="bg-white/88 backdrop-blur-xl rounded-[1.85rem] border border-white shadow-[0_18px_45px_rgba(148,163,184,0.14)] p-4 flex flex-wrap gap-3">
         <div className="relative flex-1 min-w-[200px]">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
           <input
@@ -69,7 +69,7 @@ export default function AdminUsers() {
       </div>
 
       {/* Users Table */}
-      <div className="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden">
+      <div className="bg-white/88 backdrop-blur-xl rounded-[1.85rem] border border-white shadow-[0_18px_45px_rgba(148,163,184,0.14)] overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
             <thead>
@@ -168,7 +168,7 @@ export default function AdminUsers() {
           <motion.div
             initial={{ scale: 0.9, opacity: 0 }}
             animate={{ scale: 1, opacity: 1 }}
-            className="bg-white rounded-2xl p-6 max-w-md w-full shadow-2xl"
+            className="bg-white/95 backdrop-blur-xl rounded-[1.85rem] p-6 max-w-md w-full shadow-[0_24px_60px_rgba(15,23,42,0.28)] border border-white"
           >
             <div className="flex items-center justify-between mb-5">
               <h3 className="text-lg font-[700] text-slate-900">User Profile</h3>

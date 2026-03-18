@@ -138,11 +138,11 @@ export default function AdminAnalytics() {
       {/* Header */}
       <div className="flex items-center justify-between flex-wrap gap-3">
         <div>
-          <h1 className="text-2xl font-[800] text-slate-900">Analytics & Heatmap</h1>
-          <p className="text-slate-500 text-sm mt-1">City-wide civic intelligence dashboard</p>
+          <h1 className="text-2xl font-[800] text-[#ffcbd1]">Analytics & Heatmap</h1>
+          <p className="text-white/90 text-sm mt-1">City-wide civic intelligence dashboard</p>
         </div>
         <div className="flex gap-2">
-          <div className="flex bg-white border border-slate-200 rounded-xl overflow-hidden">
+          <div className="flex bg-white/88 backdrop-blur-xl border border-white rounded-2xl overflow-hidden shadow-sm">
             {["7d", "30d", "90d"].map(d => (
               <button
                 key={d}
@@ -155,14 +155,14 @@ export default function AdminAnalytics() {
               </button>
             ))}
           </div>
-          <button className="flex items-center gap-2 px-4 py-2 text-sm text-slate-600 bg-white border border-slate-200 rounded-xl hover:bg-slate-50 transition-colors">
+          <button className="flex items-center gap-2 px-4 py-2 text-sm text-slate-600 bg-white/88 backdrop-blur-xl border border-white rounded-2xl hover:bg-white transition-colors shadow-sm">
             <Download className="w-4 h-4" /> Export PDF
           </button>
         </div>
       </div>
 
       {/* Heatmap */}
-      <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-5">
+      <div className="bg-white/88 backdrop-blur-xl rounded-[1.85rem] border border-white shadow-[0_18px_45px_rgba(148,163,184,0.14)] p-5">
         <div className="flex items-center justify-between mb-4">
           <div>
             <h3 className="text-base font-[700] text-slate-900">Live Complaint Heatmap</h3>
@@ -189,7 +189,7 @@ export default function AdminAnalytics() {
           { label: "SLA Compliance", value: `${kpiData.slaCompliance}%`, target: "> 80%", ok: kpiData.slaCompliance > 80, desc: "Within SLA window" },
           { label: "Satisfaction", value: `${kpiData.satisfactionScore}★`, target: "> 4.0", ok: kpiData.satisfactionScore >= 4, desc: "Post-resolution rating" },
         ].map(({ label, value, target, ok, desc }) => (
-          <div key={label} className="bg-white rounded-2xl p-5 border border-slate-100 shadow-sm">
+          <div key={label} className="bg-white/88 backdrop-blur-xl rounded-[1.75rem] p-5 border border-white shadow-[0_18px_45px_rgba(148,163,184,0.14)]">
             <div className="flex justify-between items-start mb-2">
               <span className="text-xs text-slate-500 font-[500]">{desc}</span>
               <span className={`w-2 h-2 rounded-full mt-1 ${ok ? "bg-emerald-500" : "bg-red-500"}`} />
@@ -203,7 +203,7 @@ export default function AdminAnalytics() {
       {/* Charts Row 1 */}
       <div className="grid lg:grid-cols-2 gap-6">
         {/* SLA Compliance Trend */}
-        <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-5">
+        <div className="bg-white/88 backdrop-blur-xl rounded-[1.85rem] border border-white shadow-[0_18px_45px_rgba(148,163,184,0.14)] p-5">
           <h3 className="text-base font-[700] text-slate-900 mb-1">SLA Compliance Trend</h3>
           <p className="text-xs text-slate-400 mb-4">6-month improvement trajectory</p>
           <ResponsiveContainer width="100%" height={200}>
@@ -225,7 +225,7 @@ export default function AdminAnalytics() {
         </div>
 
         {/* Resolution Time by Ward */}
-        <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-5">
+        <div className="bg-white/88 backdrop-blur-xl rounded-[1.85rem] border border-white shadow-[0_18px_45px_rgba(148,163,184,0.14)] p-5">
           <h3 className="text-base font-[700] text-slate-900 mb-1">Avg Resolution Time by Ward</h3>
           <p className="text-xs text-slate-400 mb-4">Hours · Target: 72h</p>
           <ResponsiveContainer width="100%" height={200}>
@@ -250,7 +250,7 @@ export default function AdminAnalytics() {
       {/* Charts Row 2 */}
       <div className="grid lg:grid-cols-3 gap-6">
         {/* Performance Radar */}
-        <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-5">
+        <div className="bg-white/88 backdrop-blur-xl rounded-[1.85rem] border border-white shadow-[0_18px_45px_rgba(148,163,184,0.14)] p-5">
           <h3 className="text-base font-[700] text-slate-900 mb-1">Performance Overview</h3>
           <p className="text-xs text-slate-400 mb-4">City-wide scores</p>
           <ResponsiveContainer width="100%" height={220}>
@@ -264,7 +264,7 @@ export default function AdminAnalytics() {
         </div>
 
         {/* Ward Stats Table */}
-        <div className="lg:col-span-2 bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden">
+        <div className="lg:col-span-2 bg-white/88 backdrop-blur-xl rounded-[1.85rem] border border-white shadow-[0_18px_45px_rgba(148,163,184,0.14)] overflow-hidden">
           <div className="p-5 border-b border-slate-100">
             <h3 className="text-base font-[700] text-slate-900">Ward Performance Breakdown</h3>
           </div>

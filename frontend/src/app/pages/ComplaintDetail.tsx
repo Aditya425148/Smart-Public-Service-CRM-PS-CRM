@@ -23,8 +23,8 @@ import {
 const statusColors: Record<string, string> = {
   Submitted: "bg-slate-100 text-slate-600",
   "Pending Verification": "bg-yellow-100 text-yellow-700",
-  Verified: "bg-blue-100 text-blue-700",
-  Assigned: "bg-indigo-100 text-indigo-700",
+  Verified: "bg-orange-100 text-orange-700",
+  Assigned: "bg-emerald-100 text-emerald-700",
   "In Progress": "bg-emerald-100 text-emerald-700 font-black animate-pulse",
   Resolved: "bg-emerald-100 text-emerald-700",
   Closed: "bg-slate-100 text-slate-500",
@@ -139,7 +139,7 @@ export default function ComplaintDetail() {
   if (loading) {
     return (
       <div className="flex items-center justify-center min-vh-100 p-8 text-slate-500">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mr-3"></div>
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-orange-500 mr-3"></div>
         Loading complaint details...
       </div>
     );
@@ -210,25 +210,25 @@ export default function ComplaintDetail() {
       >
         <div
           ref={shareCardRef}
-          className="w-[800px] bg-white p-12 rounded-[3rem] border-[12px] border-blue-50 shadow-2xl relative overflow-hidden"
+          className="w-[800px] bg-white p-12 rounded-[3rem] border-[12px] border-orange-100 shadow-2xl relative overflow-hidden"
           style={{ fontFamily: "Inter, system-ui, sans-serif" }}
         >
           {/* Brand Background Decoration */}
-          <div className="absolute top-0 right-0 w-64 h-64 bg-blue-500/5 rounded-full blur-3xl -mr-32 -mt-32" />
-          <div className="absolute bottom-0 left-0 w-64 h-64 bg-indigo-500/5 rounded-full blur-3xl -ml-32 -mb-32" />
+          <div className="absolute top-0 right-0 w-64 h-64 bg-orange-500/10 rounded-full blur-3xl -mr-32 -mt-32" />
+          <div className="absolute bottom-0 left-0 w-64 h-64 bg-emerald-500/10 rounded-full blur-3xl -ml-32 -mb-32" />
 
           <div className="relative z-10">
             {/* Brand Header */}
             <div className="flex items-center justify-between mb-12 border-b border-slate-100 pb-8">
               <div className="flex items-center gap-4">
-                <div className="w-16 h-16 bg-blue-600 rounded-[1.5rem] flex items-center justify-center shadow-lg">
+                <div className="w-16 h-16 bg-orange-500 rounded-[1.5rem] flex items-center justify-center shadow-lg">
                   <CheckCircle className="w-10 h-10 text-white" />
                 </div>
                 <div>
                   <h1 className="text-3xl font-black text-slate-900 tracking-tight">
                     CivicPulse
                   </h1>
-                  <p className="text-blue-600 font-bold uppercase tracking-widest text-xs">
+                  <p className="text-emerald-700 font-bold uppercase tracking-widest text-xs">
                     Official Issue Report
                   </p>
                 </div>
@@ -268,13 +268,13 @@ export default function ComplaintDetail() {
               </div>
               <div className="bg-slate-50 p-6 rounded-[2rem] border border-slate-100 flex items-center gap-5">
                 <div className="w-14 h-14 bg-white rounded-2xl flex items-center justify-center shadow-sm border border-slate-50">
-                  <MapPin className="w-8 h-8 text-blue-600" />
+                  <MapPin className="w-8 h-8 text-orange-600" />
                 </div>
                 <div className="min-w-0">
                   <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">
                     Status
                   </p>
-                  <p className="text-xl font-black text-blue-700">
+                  <p className="text-xl font-black text-emerald-700">
                     {complaint.status}
                   </p>
                 </div>
@@ -292,8 +292,8 @@ export default function ComplaintDetail() {
                 </p>
               </div>
 
-              <div className="flex items-start gap-5 p-6 border-l-4 border-blue-500 bg-blue-50/50 rounded-r-[2rem]">
-                <MapPin className="w-8 h-8 text-blue-600 mt-1 shrink-0" />
+              <div className="flex items-start gap-5 p-6 border-l-4 border-orange-500 bg-orange-50/60 rounded-r-[2rem]">
+                <MapPin className="w-8 h-8 text-orange-600 mt-1 shrink-0" />
                 <div>
                   <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">
                     Full Location
@@ -379,10 +379,10 @@ export default function ComplaintDetail() {
             <button
               onClick={handleShareAsImage}
               disabled={isSharing}
-              className="group flex items-center gap-1.5 text-xs font-black text-blue-600 hover:text-blue-700 px-3 py-2 bg-blue-50 hover:bg-blue-100 rounded-lg transition-all border border-blue-100/50 shadow-sm"
+              className="group flex items-center gap-1.5 text-xs font-black text-orange-700 hover:text-orange-800 px-3 py-2 bg-orange-50 hover:bg-orange-100 rounded-lg transition-all border border-orange-100 shadow-sm"
             >
               {isSharing ? (
-                <div className="w-3.5 h-3.5 border-2 border-blue-600/30 border-t-blue-600 rounded-full animate-spin" />
+                <div className="w-3.5 h-3.5 border-2 border-orange-600/30 border-t-orange-600 rounded-full animate-spin" />
               ) : (
                 <Download className="w-3.5 h-3.5 group-hover:-translate-y-0.5 transition-transform" />
               )}
@@ -462,7 +462,7 @@ export default function ComplaintDetail() {
             </div>
             <div className="bg-slate-50 border border-slate-100 rounded-xl p-3 shadow-sm group hover:border-slate-300 transition-all">
               <div className="text-[10px] font-[700] text-slate-400 mb-1 uppercase tracking-widest flex items-center gap-1">
-                <ThumbsUp className="w-3 h-3 text-blue-500 fill-blue-500" />
+                <ThumbsUp className="w-3 h-3 text-emerald-600 fill-emerald-600" />
                 Community Verification
               </div>
               <div className="flex items-center justify-between">
@@ -486,7 +486,7 @@ export default function ComplaintDetail() {
                       ) : (
                         <button
                           onClick={() => setShowVerifyModal(true)}
-                          className="text-[10px] font-black bg-blue-600 text-white px-2 py-1 rounded-lg hover:bg-blue-700 transition-all shadow-md shadow-blue-500/20"
+                          className="text-[10px] font-black bg-orange-500 text-white px-2 py-1 rounded-lg hover:bg-orange-600 transition-all shadow-md shadow-orange-500/20"
                         >
                           Verify Now
                         </button>
@@ -502,7 +502,7 @@ export default function ComplaintDetail() {
                     </div>
                   )}
               </div>
-              <div className="text-[10px] text-blue-600 font-[800] mt-1.5 flex items-center gap-1 bg-blue-50 px-2 py-0.5 rounded-full">
+              <div className="text-[10px] text-emerald-700 font-[800] mt-1.5 flex items-center gap-1 bg-emerald-50 px-2 py-0.5 rounded-full">
                 <CheckCircle className="w-2.5 h-2.5" />
                 {(complaint.confirmations || 0) === 0
                   ? "WAITING FOR NEIGHBORS"
@@ -522,7 +522,7 @@ export default function ComplaintDetail() {
                     ? "bg-amber-50 border-amber-100"
                     : complaint.slaRemainingHours < complaint.slaHours * 0.25
                       ? "bg-amber-50 border-amber-100"
-                      : "bg-blue-50 border-blue-100"
+                      : "bg-emerald-50 border-emerald-100"
               }`}
             >
               <div className="flex items-center justify-between mb-3">
@@ -533,7 +533,7 @@ export default function ComplaintDetail() {
                         ? "text-red-500"
                         : complaint.status === "Submitted"
                           ? "text-amber-500"
-                          : "text-blue-500"
+                          : "text-emerald-600"
                     }`}
                   />
                   <span className="text-xs font-[700] text-slate-700 uppercase tracking-wider">
@@ -583,7 +583,7 @@ export default function ComplaintDetail() {
                     {complaint.confirmations || 0}/5 Verifications
                   </div>
                 ) : (
-                  <div className="text-2xl font-[900] text-blue-700">
+                  <div className="text-2xl font-[900] text-orange-700">
                     {complaint.slaRemainingHours}h{" "}
                     <span className="text-sm font-bold">remaining</span>
                   </div>
@@ -612,7 +612,7 @@ export default function ComplaintDetail() {
                   Assigned To
                 </div>
                 <div className="flex items-center gap-3">
-                  <div className="w-9 h-9 rounded-full bg-gradient-to-br from-indigo-500 to-blue-600 flex items-center justify-center text-white text-xs font-[700]">
+                  <div className="w-9 h-9 rounded-full bg-gradient-to-br from-orange-500 to-emerald-600 flex items-center justify-center text-white text-xs font-[700]">
                     {complaint.assignedTo
                       .split(" ")
                       .slice(-2)
@@ -705,7 +705,7 @@ export default function ComplaintDetail() {
                       done
                         ? "bg-emerald-500 border-emerald-500 text-white"
                         : active
-                          ? "bg-blue-600 border-blue-600 text-white ring-4 ring-blue-100"
+                        ? "bg-orange-500 border-orange-500 text-white ring-4 ring-orange-100"
                           : "bg-white border-slate-200 text-slate-400"
                     }`}
                   >
@@ -714,7 +714,7 @@ export default function ComplaintDetail() {
                   <span
                     className={`text-[10px] mt-1 text-center font-[500] whitespace-nowrap ${
                       active
-                        ? "text-blue-600"
+                        ? "text-orange-700"
                         : done
                           ? "text-emerald-600"
                           : "text-slate-400"
@@ -744,7 +744,7 @@ export default function ComplaintDetail() {
               className="flex gap-4"
             >
               <div className="flex flex-col items-center">
-                <div className="w-2.5 h-2.5 rounded-full bg-blue-500 mt-1.5 shrink-0" />
+                <div className="w-2.5 h-2.5 rounded-full bg-orange-500 mt-1.5 shrink-0" />
                 {i < complaint.timeline.length - 1 && (
                   <div className="w-0.5 flex-1 bg-slate-100 mt-1" />
                 )}
@@ -765,7 +765,7 @@ export default function ComplaintDetail() {
                       minute: "2-digit",
                     })}
                   </span>
-                  <span className="text-xs text-blue-500 font-[500]">
+                  <span className="text-xs text-emerald-700 font-[500]">
                     by {event.actor}
                   </span>
                 </div>
@@ -799,10 +799,10 @@ export default function ComplaintDetail() {
             value={comment}
             onChange={(e) => setComment(e.target.value)}
             rows={3}
-            className="w-full px-4 py-3 text-sm border border-slate-200 rounded-xl focus:outline-none focus:border-blue-400 resize-none bg-slate-50"
+            className="w-full px-4 py-3 text-sm border border-slate-200 rounded-xl focus:outline-none focus:border-orange-400 resize-none bg-slate-50"
           />
           <div className="flex gap-3 mt-3">
-            <button className="flex-1 py-2.5 bg-blue-600 hover:bg-blue-700 text-white text-sm font-[600] rounded-xl transition-colors">
+            <button className="flex-1 py-2.5 bg-orange-500 hover:bg-orange-600 text-white text-sm font-[600] rounded-xl transition-colors">
               Submit Rating
             </button>
             <button className="flex items-center gap-2 px-4 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 text-sm font-[500] rounded-xl transition-colors">
@@ -821,7 +821,7 @@ export default function ComplaintDetail() {
             animate={{ scale: 1, opacity: 1, y: 0 }}
             className="bg-white rounded-[2.5rem] p-8 max-w-md w-full shadow-2xl border border-slate-100"
           >
-            <div className="w-16 h-16 bg-blue-500 rounded-3xl flex items-center justify-center mb-6 shadow-xl shadow-blue-500/20 mx-auto">
+            <div className="w-16 h-16 bg-orange-500 rounded-3xl flex items-center justify-center mb-6 shadow-xl shadow-orange-500/20 mx-auto">
               <ThumbsUp className="w-8 h-8 text-white" />
             </div>
 
@@ -830,7 +830,7 @@ export default function ComplaintDetail() {
             </h3>
             <p className="text-slate-500 text-sm text-center mb-8 font-medium">
               Your verification helps the administration prioritize this issue.
-              <span className="text-blue-600 font-bold">
+              <span className="text-orange-700 font-bold">
                 {" "}
                 +50 Reputation Points
               </span>{" "}
@@ -852,16 +852,16 @@ export default function ComplaintDetail() {
                 </div>
               </div>
 
-              <div className="flex items-center gap-3 p-4 bg-blue-50/50 rounded-2xl border border-blue-100">
+              <div className="flex items-center gap-3 p-4 bg-emerald-50/60 rounded-2xl border border-emerald-100">
                 <input
                   type="checkbox"
                   id="confirm"
-                  className="w-5 h-5 rounded-lg border-blue-200 text-blue-600 focus:ring-blue-500"
+                  className="w-5 h-5 rounded-lg border-emerald-200 text-emerald-600 focus:ring-emerald-500"
                   defaultChecked
                 />
                 <label
                   htmlFor="confirm"
-                  className="text-xs font-bold text-blue-900/70 leading-relaxed cursor-pointer"
+                  className="text-xs font-bold text-emerald-900/70 leading-relaxed cursor-pointer"
                 >
                   I confirm that this issue is still present and requires
                   immediate attention.
@@ -873,7 +873,7 @@ export default function ComplaintDetail() {
               <button
                 onClick={handleVerify}
                 disabled={isVerifying}
-                className="w-full py-4 bg-blue-600 hover:bg-blue-700 text-white text-sm font-black uppercase tracking-[0.1em] rounded-2xl transition-all shadow-xl shadow-blue-500/20 disabled:opacity-50 flex items-center justify-center gap-2"
+                className="w-full py-4 bg-orange-500 hover:bg-orange-600 text-white text-sm font-black uppercase tracking-[0.1em] rounded-2xl transition-all shadow-xl shadow-orange-500/20 disabled:opacity-50 flex items-center justify-center gap-2"
               >
                 {isVerifying ? (
                   <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
