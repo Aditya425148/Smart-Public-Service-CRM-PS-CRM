@@ -15,6 +15,7 @@ import {
   AlertTriangle,
   HardHat,
   Lightbulb,
+  Plus,
 } from "lucide-react";
 import { toast } from "sonner";
 import { appwriteService } from "../appwriteService";
@@ -84,11 +85,30 @@ export default function ReportIssue() {
     const files = event.target.files;
     if (!files?.length) return;
 
+    if (uploadedPhotos.length + files.length > 5) {
+      toast.error("You can only upload up to 5 photos in total.");
+      event.target.value = "";
+      return;
+    }
+
     setIsUploadingPhoto(true);
     try {
       const photoUrls: string[] = [];
+      const allowedTypes = [
+        "image/jpeg",
+        "image/png",
+        "image/webp",
+        "image/heic",
+      ];
 
-      for (const file of Array.from(files).slice(0, 5)) {
+      for (const file of Array.from(files)) {
+        if (!allowedTypes.includes(file.type)) {
+          toast.error(
+            `Invalid file type: ${file.name}. Only images are allowed.`,
+          );
+          continue;
+        }
+
         try {
           const photoUrl = await appwriteService.uploadPhoto(file);
           if (photoUrl) photoUrls.push(photoUrl);
@@ -188,11 +208,15 @@ export default function ReportIssue() {
             );
             if (pinComponent) setPincode(pinComponent.long_name);
           } else {
-            setAddress(`Location: ${latitude.toFixed(4)}, ${longitude.toFixed(4)}`);
+            setAddress(
+              `Location: ${latitude.toFixed(4)}, ${longitude.toFixed(4)}`,
+            );
           }
         } catch (error) {
           console.error("Geocoding failed:", error);
-          setAddress(`Location: ${latitude.toFixed(4)}, ${longitude.toFixed(4)}`);
+          setAddress(
+            `Location: ${latitude.toFixed(4)}, ${longitude.toFixed(4)}`,
+          );
         }
 
         setLocationDetected(true);
@@ -200,7 +224,8 @@ export default function ReportIssue() {
         toast.success("Location detected.");
       },
       (error) => {
-        let errorMessage = "Could not detect location. Please enter it manually.";
+        let errorMessage =
+          "Could not detect location. Please enter it manually.";
         if (error.code === error.PERMISSION_DENIED) {
           errorMessage =
             "Location access was denied. Please allow location permission.";
@@ -283,18 +308,20 @@ export default function ReportIssue() {
             return (
               <div
                 key={label}
-                className={`rounded-2xl border px-4 py-3 text-sm ${
+                className={`rounded-2xl border px-4 py-3 text-sm transition-all duration-300 ${
                   active
-                    ? "border-sky-200 bg-sky-50 text-sky-700"
+                    ? "border-sky-300 bg-sky-200 text-sky-900 shadow-md"
                     : complete
                       ? "border-emerald-200 bg-emerald-50 text-emerald-700"
                       : "border-slate-200 bg-slate-50 text-slate-500"
                 }`}
               >
-                <div className="text-xs font-semibold uppercase tracking-wide">
+                <div
+                  className={`text-[10px] font-bold uppercase tracking-widest ${active ? "text-sky-800" : "text-slate-400"}`}
+                >
                   Step {current}
                 </div>
-                <div className="mt-1 font-medium">{label}</div>
+                <div className="mt-0.5 font-bold tracking-tight">{label}</div>
               </div>
             );
           })}
@@ -318,17 +345,31 @@ export default function ReportIssue() {
                   setSelectedCategory(id);
                   setSelectedSubcategory(null);
                 }}
-                className={`rounded-2xl border p-4 text-left transition ${
+                className={`group rounded-3xl border p-5 text-left transition-all duration-300 ${
                   selectedCategory === id
-                    ? "border-sky-200 bg-sky-50"
-                    : "border-slate-200 hover:border-sky-200 hover:bg-sky-50/60"
+                    ? "border-sky-400 bg-sky-200 text-sky-950 shadow-md ring-4 ring-sky-500/10"
+                    : "border-slate-100 bg-white hover:border-sky-200 hover:bg-sky-50/50 hover:shadow-lg"
                 }`}
               >
-                <div className="mb-3 inline-flex rounded-xl bg-white p-2 text-sky-700 ring-1 ring-slate-200">
-                  <Icon className="h-5 w-5" />
+                <div
+                  className={`mb-4 inline-flex rounded-2xl p-2.5 transition-colors ${
+                    selectedCategory === id
+                      ? "bg-sky-600 text-white"
+                      : "bg-sky-50 text-sky-700 group-hover:bg-white group-hover:shadow-sm"
+                  }`}
+                >
+                  <Icon className="h-6 w-6" />
                 </div>
-                <div className="text-sm font-semibold text-slate-900">{id}</div>
-                <div className="mt-1 text-sm text-slate-500">{description}</div>
+                <div
+                  className={`text-base font-bold tracking-tight ${selectedCategory === id ? "text-sky-950" : "text-slate-900"}`}
+                >
+                  {id}
+                </div>
+                <div
+                  className={`mt-1.5 text-sm leading-relaxed ${selectedCategory === id ? "text-sky-800" : "text-slate-500"}`}
+                >
+                  {description}
+                </div>
               </button>
             ))}
           </div>
@@ -338,15 +379,15 @@ export default function ReportIssue() {
               <h3 className="text-sm font-medium text-slate-700">
                 Choose subcategory
               </h3>
-              <div className="mt-3 flex flex-wrap gap-2">
+              <div className="mt-3 flex flex-wrap gap-2.5">
                 {(subcategories[selectedCategory] || []).map((sub) => (
                   <button
                     key={sub}
                     onClick={() => setSelectedSubcategory(sub)}
-                    className={`rounded-full px-4 py-2 text-sm font-medium transition ${
+                    className={`rounded-2xl px-5 py-3 text-sm font-bold transition-all duration-300 ${
                       selectedSubcategory === sub
-                        ? "bg-sky-700 text-white"
-                        : "bg-slate-100 text-slate-700 hover:bg-sky-50 hover:text-sky-700"
+                        ? "bg-sky-600 text-white shadow-md ring-4 ring-sky-600/10"
+                        : "bg-white border border-slate-200 text-slate-600 hover:border-sky-300 hover:bg-sky-50"
                     }`}
                   >
                     {sub}
@@ -482,7 +523,9 @@ export default function ReportIssue() {
 
           <textarea
             value={description}
-            onChange={(event) => setDescription(event.target.value.slice(0, 500))}
+            onChange={(event) =>
+              setDescription(event.target.value.slice(0, 500))
+            }
             rows={7}
             className="mt-6 w-full rounded-3xl border border-slate-200 px-4 py-4 text-sm text-slate-900 outline-none transition focus:border-sky-400"
             placeholder="Example: There is a large pothole near the main gate of the school. It is causing traffic and is dangerous for bikes."
@@ -517,54 +560,46 @@ export default function ReportIssue() {
 
       {step === 4 && (
         <section className="rounded-[24px] border border-slate-200 bg-white p-6 shadow-sm">
-          <h2 className="text-xl font-semibold text-slate-900">
-            Add photos
-          </h2>
+          <h2 className="text-xl font-semibold text-slate-900">Add photos</h2>
           <p className="mt-1 text-sm text-slate-500">
             Photos are optional, but they help verify the issue quickly.
           </p>
 
-          <div className="mt-6 grid gap-4 sm:grid-cols-2">
-            <label className="rounded-2xl border border-dashed border-slate-300 p-6 text-center hover:border-sky-300 hover:bg-sky-50/60">
-              <input
-                type="file"
-                accept="image/*"
-                capture="environment"
-                onChange={handlePhotoUpload}
-                className="hidden"
-                disabled={isUploadingPhoto}
-              />
-              <Camera className="mx-auto h-8 w-8 text-sky-700" />
-              <div className="mt-3 text-sm font-medium text-slate-900">
-                Open camera
+          <div className="mt-6 flex flex-col items-center justify-center rounded-[32px] border-2 border-dashed border-slate-200 bg-slate-50/50 p-10 transition-all hover:bg-white hover:border-sky-300 group">
+            <input
+              type="file"
+              multiple
+              accept="image/*"
+              onChange={handlePhotoUpload}
+              className="hidden"
+              id="photo-upload"
+              disabled={isUploadingPhoto || uploadedPhotos.length >= 5}
+            />
+            <label
+              htmlFor="photo-upload"
+              className={`flex flex-col items-center justify-center cursor-pointer text-center ${uploadedPhotos.length >= 5 ? "opacity-50 cursor-not-allowed" : ""}`}
+            >
+              <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-3xl bg-white text-sky-700 shadow-sm transition-transform group-hover:scale-110">
+                <ImagePlus className="h-8 w-8" />
               </div>
-              <div className="mt-1 text-sm text-slate-500">
-                Capture a fresh photo
+              <div className="text-lg font-bold text-slate-900">
+                {uploadedPhotos.length >= 5 ? "Limit reached" : "Upload images"}
               </div>
-            </label>
-
-            <label className="rounded-2xl border border-dashed border-slate-300 p-6 text-center hover:border-sky-300 hover:bg-sky-50/60">
-              <input
-                type="file"
-                multiple
-                accept="image/*"
-                onChange={handlePhotoUpload}
-                className="hidden"
-                disabled={isUploadingPhoto}
-              />
-              <ImagePlus className="mx-auto h-8 w-8 text-sky-700" />
-              <div className="mt-3 text-sm font-medium text-slate-900">
-                Upload from gallery
-              </div>
-              <div className="mt-1 text-sm text-slate-500">
-                Add up to 5 photos
+              <p className="mt-2 text-sm text-slate-500 max-w-[240px]">
+                {uploadedPhotos.length >= 5
+                  ? "You have already added 5 photos"
+                  : "Tap to select up to 5 photos from your gallery or camera"}
+              </p>
+              <div className="mt-4 inline-flex items-center gap-2 rounded-full bg-sky-700 px-6 py-2.5 text-xs font-bold text-white shadow-lg shadow-sky-900/10">
+                <Plus className="h-3.5 w-3.5" /> Select Files
               </div>
             </label>
           </div>
 
           {isUploadingPhoto && (
-            <div className="mt-5 rounded-2xl bg-sky-50 px-4 py-3 text-sm text-slate-600">
-              Uploading photos...
+            <div className="mt-5 flex items-center gap-3 rounded-2xl bg-sky-50 px-5 py-4 text-sm font-medium text-sky-800 animate-pulse">
+              <div className="h-2 w-2 rounded-full bg-sky-700 animate-bounce" />
+              Processing and uploading photos...
             </div>
           )}
 

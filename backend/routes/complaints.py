@@ -169,13 +169,14 @@ async def create_complaint(body: ComplaintCreate):
 
 
 @router.get("/user/{user_id}")
-async def complaints_by_user(user_id: str):
+async def complaints_by_user(user_id: str, email: Optional[str] = None):
     try:
-        r1 = tablesDB.list_rows(DATABASE_ID, COLLECTION_ID,
-            queries=[Query.equal("reporterId", user_id), Query.order_desc("createdAt"), Query.limit(100)])
+        queries_1 = [Query.equal("reporterId", user_id), Query.order_desc("createdAt"), Query.limit(100)]
+        r1 = tablesDB.list_rows(DATABASE_ID, COLLECTION_ID, queries=queries_1)
         r2 = tablesDB.list_rows(DATABASE_ID, COLLECTION_ID,
             queries=[Query.equal("userId", user_id), Query.order_desc("createdAt"), Query.limit(100)])
         all_docs = r1["rows"] + r2["rows"]
+        
         seen, unique = set(), []
         for d in all_docs:
             if d["$id"] not in seen:

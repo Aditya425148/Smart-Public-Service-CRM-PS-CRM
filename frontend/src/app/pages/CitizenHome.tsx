@@ -45,6 +45,7 @@ function formatFirstName(name?: string) {
 export default function CitizenHome() {
   const navigate = useNavigate();
   const [complaints, setComplaints] = useState<any[]>([]);
+  const [userComplaints, setUserComplaints] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [user, setUser] = useState<any>({});
   const [coords, setCoords] = useState<{ lat: number; lng: number } | null>(
@@ -83,51 +84,90 @@ export default function CitizenHome() {
     account
       .get()
       .then((currentUser) => {
-        setUser({
+        const userData = {
           name:
             currentUser.name || currentUser.email?.split("@")[0] || "Citizen",
           email: currentUser.email,
           uid: currentUser.$id,
-        });
+        };
+        setUser(userData);
+
+        // Initial fetch for immediate data
+        const fetchAll = () => {
+          appwriteService
+            .getAllComplaints(coords?.lat, coords?.lng, 10)
+            .then((data) => {
+              setComplaints(data);
+              setLoading(false);
+            })
+            .catch(() => setLoading(false));
+
+          appwriteService
+            .getComplaintsByUser(userData.uid)
+            .then((data) => setUserComplaints(data))
+            .catch(() => {});
+        };
+
+        fetchAll();
+
+        // Subscribe for updates
+        const unsubscribeAll = appwriteService.subscribeToComplaints(
+          (data) => {
+            setComplaints(data);
+            setLoading(false);
+          },
+          coords?.lat,
+          coords?.lng,
+          10,
+        );
+
+        const unsubscribeUser = appwriteService.subscribeToUserComplaints(
+          userData.uid,
+          (data) => setUserComplaints(data),
+        );
+
+        return () => {
+          unsubscribeAll();
+          unsubscribeUser();
+        };
       })
       .catch(() => {
         navigate("/login");
       });
-
-    const unsubscribe = appwriteService.subscribeToComplaints(
-      (data) => {
-        setComplaints(data);
-        setLoading(false);
-      },
-      coords?.lat,
-      coords?.lng,
-      5,
-    );
-
-    return () => unsubscribe();
   }, [coords, navigate]);
 
-  const userComplaints = complaints.filter(
-    (complaint) =>
-      complaint.reporterId === user.uid || complaint.userId === user.uid,
-  );
+  const activeCount = userComplaints.filter(
+    (c) => !["Resolved", "Closed"].includes(c.status) && c.status !== "Deleted",
+  ).length;
   const resolvedCount = userComplaints.filter((complaint) =>
     ["Resolved", "Closed"].includes(complaint.status),
   ).length;
-  const activeCount = userComplaints.length - resolvedCount;
-  const nearbyOpenCount = complaints.filter(
-    (complaint) =>
-      !["Resolved", "Closed"].includes(complaint.status) &&
-      (complaint.distance_km || 1) <= 5,
-  ).length;
 
-  const recentComplaints = [...userComplaints].slice(0, 5);
-  const nearbyComplaints = complaints
-    .filter(
-      (complaint) =>
-        !["Resolved", "Closed"].includes(complaint.status) &&
-        (complaint.distance_km || 1) <= 5,
+  const nearbyOpenCount = complaints.filter((complaint) => {
+    const isStatusOpen = !["Resolved", "Closed"].includes(complaint.status);
+    const isNearby =
+      complaint.distance_km !== undefined ? complaint.distance_km <= 10 : true;
+    return isStatusOpen && isNearby;
+  }).length;
+
+  const recentComplaints = [...userComplaints]
+    .filter((c) => c.status !== "Deleted")
+    .sort(
+      (a, b) =>
+        new Date(b.createdAt || 0).getTime() -
+        new Date(a.createdAt || 0).getTime(),
     )
+    .slice(0, 5);
+
+  const nearbyComplaints = complaints
+    .filter((complaint) => {
+      const isStatusOpen = !["Resolved", "Closed"].includes(complaint.status);
+      const isNearby =
+        complaint.distance_km !== undefined
+          ? complaint.distance_km <= 10
+          : true;
+      return isStatusOpen && isNearby;
+    })
     .slice(0, 4);
 
   const quickLinks = [
@@ -150,10 +190,10 @@ export default function CitizenHome() {
 
   if (loading && complaints.length === 0) {
     return (
-      <div className="min-h-[60vh] rounded-3xl border border-slate-200 bg-white flex flex-col items-center justify-center">
-        <div className="mb-4 h-10 w-10 rounded-full border-4 border-sky-100 border-t-sky-600 animate-spin" />
-        <p className="text-sm font-medium text-slate-500">
-          Loading your dashboard...
+      <div className="min-h-[60vh] flex flex-col items-center justify-center bg-slate-50/50">
+        <div className="mb-4 h-12 w-12 rounded-full border-4 border-slate-200 border-t-sky-600 animate-spin" />
+        <p className="text-sm font-bold text-slate-400 uppercase tracking-widest">
+          Syncing Dashboard...
         </p>
       </div>
     );
@@ -173,8 +213,8 @@ export default function CitizenHome() {
               </h1>
               <p className="text-sm leading-6 text-slate-600">
                 Everything important is on one screen: create a complaint,
-                follow your updates, and see nearby issues without extra visual
-                clutter.
+                follow your updates, and track your reported issues without
+                extra visual clutter.
               </p>
             </div>
             <div className="flex flex-wrap gap-3 text-sm text-slate-600">
@@ -208,7 +248,7 @@ export default function CitizenHome() {
         </div>
       </section>
 
-      <section className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+      <section className="grid gap-3 sm:grid-cols-3">
         {[
           {
             label: "Reported by you",
@@ -224,11 +264,6 @@ export default function CitizenHome() {
             label: "Resolved",
             value: resolvedCount,
             note: "Completed or closed",
-          },
-          {
-            label: "Nearby open issues",
-            value: nearbyOpenCount,
-            note: "Within about 5 km",
           },
         ].map((item) => (
           <div
@@ -385,66 +420,6 @@ export default function CitizenHome() {
               ))}
             </div>
           </div>
-        </div>
-      </section>
-
-      <section className="rounded-[24px] border border-slate-200 bg-white shadow-sm">
-        <div className="flex items-center justify-between border-b border-slate-100 px-6 py-4">
-          <div>
-            <h2 className="text-lg font-semibold text-slate-900">
-              Nearby public issues
-            </h2>
-            <p className="text-sm text-slate-500">
-              A short local feed so users can understand what is happening
-              around them.
-            </p>
-          </div>
-          <div className="inline-flex items-center gap-2 rounded-full bg-sky-50 px-3 py-1 text-xs font-medium text-sky-700">
-            <CheckCircle2 className="h-4 w-4" />
-            {nearbyComplaints.length} visible now
-          </div>
-        </div>
-
-        <div className="grid gap-4 px-6 py-5 md:grid-cols-2">
-          {nearbyComplaints.length === 0 ? (
-            <div className="rounded-2xl bg-slate-50 px-4 py-8 text-center text-sm text-slate-500 md:col-span-2">
-              No open nearby issues are visible right now.
-            </div>
-          ) : (
-            nearbyComplaints.map((complaint) => (
-              <div
-                key={complaint.id}
-                className="rounded-2xl border border-slate-200 p-4"
-              >
-                <div className="flex items-start justify-between gap-3">
-                  <div>
-                    <div className="text-sm font-semibold text-slate-900">
-                      {complaint.category || "Issue"}
-                    </div>
-                    <div className="mt-1 text-sm text-slate-500">
-                      {complaint.address || "Address unavailable"}
-                    </div>
-                  </div>
-                  <span
-                    className={`rounded-full px-2.5 py-1 text-xs font-medium ${statusColor[complaint.status] || "bg-slate-100 text-slate-700"}`}
-                  >
-                    {complaint.status}
-                  </span>
-                </div>
-                <div className="mt-3 flex items-center justify-between text-sm text-slate-500">
-                  <span>{(complaint.distance_km || 0).toFixed(1)} km away</span>
-                  <button
-                    onClick={() =>
-                      navigate(`/dashboard/complaints/${complaint.id}`)
-                    }
-                    className="font-medium text-sky-700 hover:text-sky-800"
-                  >
-                    Open details
-                  </button>
-                </div>
-              </div>
-            ))
-          )}
         </div>
       </section>
     </div>

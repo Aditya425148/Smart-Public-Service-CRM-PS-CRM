@@ -107,12 +107,12 @@ export const appwriteService = {
     this.getAllComplaints(lat, lng, radius)
       .then(callback)
       .catch(() => callback([]));
-    // Poll every 15s (Appwrite Realtime replaced by REST polling via FastAPI)
+    // Poll every 60s (Increased from 15s to save resources)
     const interval = setInterval(() => {
       this.getAllComplaints(lat, lng, radius)
         .then(callback)
         .catch(() => callback([]));
-    }, 15_000);
+    }, 60_000);
     return () => clearInterval(interval);
   },
 
@@ -127,7 +127,7 @@ export const appwriteService = {
       this.getComplaintsByUser(userId)
         .then(callback)
         .catch(() => callback([]));
-    }, 15_000);
+    }, 60_000);
     return () => clearInterval(interval);
   },
 
