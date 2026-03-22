@@ -14,6 +14,7 @@ app.add_middleware(
         "http://localhost:5174", 
         "http://localhost:3000",
         "https://smart-public-service-crm-ps-crm.onrender.com",
+        "https://smart-public-service-crm-ps-crm.vercel.app",
         "https://civicpulse-crm.vercel.app",
         "https://civicpulse-crm.netlify.app"
     ],
