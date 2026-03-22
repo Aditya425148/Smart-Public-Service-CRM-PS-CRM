@@ -1,134 +1,119 @@
-# Smart Public Service CRM (PS-CRM)
+# 🌆 CivicPulse: Smart Public Service CRM (PS-CRM)
 
-Civic engagement platform for reporting and tracking public infrastructure issues.
+[![FastAPI](https://img.shields.io/badge/Backend-FastAPI-009688?style=for-the-badge&logo=fastapi&logoColor=white)](https://fastapi.tiangolo.com)
+[![React](https://img.shields.io/badge/Frontend-React-61DAFB?style=for-the-badge&logo=react&logoColor=black)](https://reactjs.org)
+[![Appwrite](https://img.shields.io/badge/Backend_as_a_Service-Appwrite-f02e65?style=for-the-badge&logo=appwrite&logoColor=white)](https://appwrite.io)
+[![Tailwind CSS](https://img.shields.io/badge/UI-Tailwind_CSS-38B2AC?style=for-the-badge&logo=tailwind-css&logoColor=white)](https://tailwindcss.com)
+
+**CivicPulse** is a next-generation civic engagement platform that empowers citizens to report, track, and verify public infrastructure issues in real-time. Built for speed, transparency, and accountability, it bridges the gap between the public and urban management.
+
+---
+
+## ✨ Key Features
+
+### 👨‍💼 For Citizens
+
+- **📍 Smart Reporting**: Report issues like potholes, broken streetlights, or waste with GPS auto-detection.
+- **🖼️ AI Smart-Snap**: AI-assisted category suggestion based on uploaded photos.
+- **🗺️ The Fix Map**: Interactive map showing nearby issues, their status, and community verifications.
+- **⏱️ SLA Tracking**: Real-time countdowns for issue resolution with automatic escalation triggers.
+- **🏆 Leaderboard**: Earn credits and climb the rankings by reporting and verifying neighborhood issues.
+
+### 🛡️ For Administrators & Managers
+
+- **📊 Admin Portal**: Comprehensive command center for ward-level statistics and performance metrics.
+- **📋 Management Dashboard**: Streamlined interface for assigning tasks to field officers and monitoring progress.
+- **📈 Data Visualization**: Real-time charts and heatmaps for infrastructure health monitoring.
 
 ---
 
 ## 🏗️ Architecture
 
-```
-Browser (React) ──REST──▶ FastAPI Backend (:8000) ──▶ Appwrite Cloud
-                    │
-                    └──▶ Appwrite JS SDK (auth only — login/signup direct to Appwrite)
-```
+- **Frontend**: React 18, Vite, Tailwind CSS (v4), Lucide Icons, Framer Motion.
+- **Backend**: FastAPI (Python 3.10+), Pydantic.
+- **Database/Infrastructure**: Appwrite (Auth, Databases, Storage, Real-time).
 
 ---
 
 ## 📁 Project Structure
 
-### 🐍 Backend (`backend/`)
-
-| File | Purpose |
-|------|---------|
-| `main.py` | FastAPI app entry point, CORS, route registration |
-| `appwrite_client.py` | Appwrite Python SDK setup using server API key |
-| `routes/complaints.py` | Complaints CRUD + priority score & SLA calculation |
-| `routes/leaderboard.py` | Citizen impact rankings (`calculateRankings` logic) |
-| `routes/stats.py` | Ward-level resolution statistics |
-| `routes/uploads.py` | Photo upload/delete proxied to Appwrite Storage |
-| `requirements.txt` | Python dependencies |
-| `.env` | Secrets — **gitignored, never commit** |
-
-### ⚛️ Frontend (`frontend/src/`)
-
-| File | Purpose |
-|------|---------|
-| `app/appwrite.ts` | Appwrite JS SDK init (auth only) |
-| `app/api.ts` | `fetch` wrapper — attaches session header, calls FastAPI |
-| `app/appwriteService.ts` | Service layer: auth → Appwrite direct, data → FastAPI |
-| `app/pages/ReportIssue.tsx` | Multi-step complaint submission form |
-| `app/pages/Leaderboard.tsx` | Citizen rankings UI |
-| `app/pages/...` | Dashboard, ComplaintDetail, Login, etc. |
-| `.env.local` | Frontend env vars — **gitignored, never commit** |
+| Path        | Purpose                                      |
+| ----------- | -------------------------------------------- |
+| `backend/`  | 🐍 FastAPI Application (Business Logic & AI) |
+| `frontend/` | ⚛️ React Application (Vite + Tailwind)       |
+| `docs/`     | 📝 Documentation & PRDs                      |
 
 ---
 
-## � Quick Start
+## 🚀 Quick Start
 
-### Prerequisites
-- Python 3.10+ with a virtualenv
-- Node.js 18+
-- [Appwrite](https://cloud.appwrite.io) project (free tier works)
+### 📋 Prerequisites
 
-### 1. Clone & setup
+- **Python 3.10+**
+- **Node.js 18+**
+- An **Appwrite** Project ([Create one for free](https://cloud.appwrite.io))
+
+### 1️⃣ Clone & Install
 
 ```bash
 git clone https://github.com/Nehul1605/Smart-Public-Service-CRM-PS-CRM
 cd Smart-Public-Service-CRM-PS-CRM
-python -m venv venv
-source venv/bin/activate
+
+# Setup Backend
+python -m venv .venv
+source .venv/bin/activate  # Windows: .venv\Scripts\activate
 pip install -r backend/requirements.txt
-cd frontend && npm install
+
+# Setup Frontend
+cd frontend
+npm install
 ```
 
-### 2. Configure environment
+### 2️⃣ Environment Configuration
 
-**`backend/.env`** (copy from `.env.example`):
+Create a `.env` file in `backend/` and a `.env.local` in `frontend/`.
+
+**Backend `.env`:**
+
 ```env
 APPWRITE_ENDPOINT=https://cloud.appwrite.io/v1
-APPWRITE_PROJECT_ID=your_project_id
-APPWRITE_API_KEY=your_server_api_key      # Appwrite Console → API Keys
-APPWRITE_DATABASE_ID=your_database_id
+APPWRITE_PROJECT_ID=your_id
+APPWRITE_API_KEY=your_secret_key
+# These can be default/demo values if using local setup scripts
+APPWRITE_DATABASE_ID=civicpulse_db
 APPWRITE_COLLECTION_ID=complaints
-APPWRITE_BUCKET_ID=your_bucket_id
 ```
 
-**`frontend/.env.local`**:
+**Frontend `.env.local`:**
+
 ```env
 VITE_APPWRITE_ENDPOINT=https://cloud.appwrite.io/v1
-VITE_APPWRITE_PROJECT_ID=your_project_id
-VITE_APPWRITE_DATABASE_ID=your_database_id
-VITE_APPWRITE_COMPLAINTS_COLLECTION_ID=complaints
-VITE_APPWRITE_BUCKET_ID=your_bucket_id
+VITE_APPWRITE_PROJECT_ID=your_id
 VITE_API_URL=http://localhost:8000
 ```
 
-### 3. Run
+### 3️⃣ Run Locally
+
+**Terminal 1 (Backend):**
 
 ```bash
-# Terminal 1 — Backend
-source venv/bin/activate && cd backend
-python3 main.py
-# API running at http://localhost:8000
-# API docs at http://localhost:8000/docs
+cd backend
+python main.py
+```
 
-# Terminal 2 — Frontend
+**Terminal 2 (Frontend):**
+
+```bash
 cd frontend
 npm run dev
-# App running at http://localhost:5173
 ```
 
 ---
 
-## 🔐 Appwrite Setup
+## License
 
-1. Create a project at [cloud.appwrite.io](https://cloud.appwrite.io)
-2. **Auth** → Settings → Enable **Email/Password**
-3. **Databases** → Create database + `complaints` collection
-4. **Storage** → Create a bucket for photos
-5. **API Keys** → Create server key with `databases.read/write`, `storage.read/write`
+This project is licensed under the MIT License.
 
 ---
 
-## ✨ Features
-
-- Report civic issues (potholes, streetlights, garbage, water, safety, etc.)
-- Multi-step form with photo upload and GPS location
-- AI priority scoring based on category urgency
-- SLA tracking per category (Safety=12h, Water=24h, etc.)
-- Citizen impact leaderboard with real-time rankings
-- Ward-level resolution statistics
-- Appwrite authentication (email/password + Google OAuth)
-
----
-
-## �️ Tech Stack
-
-| Layer | Technology |
-|-------|-----------|
-| Frontend | React 18 + TypeScript + Tailwind CSS + Vite |
-| Backend | FastAPI + Python 3.10+ |
-| Database | Appwrite Database |
-| Auth | Appwrite Auth (client-side sessions) |
-| Storage | Appwrite Storage (photos) |
-| Animations | Framer Motion |
+_Created with ❤️ for smarter cities._
