@@ -62,7 +62,7 @@ export default function LoginPage() {
         email.toLowerCase().endsWith("@civicpulse.com") ||
         email.toLowerCase() === "admin@civicpulse.com";
 
-      if (isOfficialEmail && password !== "123456") {
+      if (isOfficialEmail && password !== "admin123456") {
         setError("Invalid credentials for official account.");
         setIsLoading(false);
         return;
