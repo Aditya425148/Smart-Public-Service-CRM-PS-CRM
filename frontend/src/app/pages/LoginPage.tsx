@@ -82,7 +82,12 @@ export default function LoginPage() {
       }
 
       await authService.loginWithEmail(email, password);
-      navigate("/dashboard", { replace: true });
+      // Redirect based on email
+      if (email.toLowerCase() === "admin@civicpulse.com") {
+        navigate("/admin", { replace: true });
+      } else {
+        navigate("/dashboard", { replace: true });
+      }
     } catch (err: any) {
       console.error("Login error:", err);
       // Handle specific Appwrite error codes if needed
