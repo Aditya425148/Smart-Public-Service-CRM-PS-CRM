@@ -13,16 +13,118 @@ router = APIRouter(prefix="/api/complaints", tags=["complaints"])
 # Geocoder for reverse-geocoding state from coordinates
 geolocator = Nominatim(user_agent="smart_crm_ps_crm")
 
+# ── Manager Config (mirrors frontend mockData.ts) ─────────────────────────────
+
+MOCK_MANAGERS = [
+    # Delhi (5 managers)
+    {"id": "MGR-DEL-01", "name": "Sanjay Sharma",  "state": "Delhi"},
+    {"id": "MGR-DEL-02", "name": "Meena Kumari",   "state": "Delhi"},
+    {"id": "MGR-DEL-03", "name": "Rajesh Tyagi",   "state": "Delhi"},
+    {"id": "MGR-DEL-04", "name": "Anita Singh",    "state": "Delhi"},
+    {"id": "MGR-DEL-05", "name": "Amit Goel",      "state": "Delhi"},
+    # Uttar Pradesh (10 managers)
+    {"id": "MGR-UP-01",  "name": "Yash Pal",       "state": "Uttar Pradesh"},
+    {"id": "MGR-UP-02",  "name": "Priti Yadav",    "state": "Uttar Pradesh"},
+    {"id": "MGR-UP-03",  "name": "Manoj Mishra",   "state": "Uttar Pradesh"},
+    {"id": "MGR-UP-04",  "name": "Renu Devi",      "state": "Uttar Pradesh"},
+    {"id": "MGR-UP-05",  "name": "Suresh Chandra", "state": "Uttar Pradesh"},
+    {"id": "MGR-UP-06",  "name": "Kiran Singh",    "state": "Uttar Pradesh"},
+    {"id": "MGR-UP-07",  "name": "Deepak Rawat",   "state": "Uttar Pradesh"},
+    {"id": "MGR-UP-08",  "name": "Alka Jha",       "state": "Uttar Pradesh"},
+    {"id": "MGR-UP-09",  "name": "Vikrant Tomar",  "state": "Uttar Pradesh"},
+    {"id": "MGR-UP-10",  "name": "Sudhir Maurya",  "state": "Uttar Pradesh"},
+]
+
+
+def assign_manager_to_complaint(complaint_state: str) -> dict:
+    """Assigns the manager with the least active complaints for the given state."""
+    # 1. Get managers for this state
+    state_managers = [m for m in MOCK_MANAGERS if m["state"].lower() == complaint_state.lower()]
+
+    if not state_managers:
+        return {"id": "SYSTEM", "name": "SystemAdmin"}
+
+    # 2. Count active (non-resolved) complaints per manager
+    manager_workloads = []
+    for mgr in state_managers:
+        try:
+            resp = databases.list_documents(
+                DATABASE_ID, COLLECTION_ID,
+                queries=[
+                    Query.equal("assignedManagerId", mgr["id"]),
+                    Query.not_equal("status", "Resolved"),
+                    Query.not_equal("status", "Closed"),
+                    Query.limit(1),  # we only need the total count
+                ]
+            )
+            count = resp.get("total", 0)
+        except Exception:
+            count = 0
+        manager_workloads.append((mgr, count))
+
+    # 3. Pick the manager with the fewest active complaints
+    best_manager = min(manager_workloads, key=lambda x: x[1])[0]
+    return best_manager
+
+
 # ── Business Logic ─────────────────────────────────────────────────────────────
+
+# Maps known Nominatim ISO codes and city names to the state names used in MOCK_MANAGERS
+_STATE_ALIASES: dict[str, str] = {
+    # Delhi / NCT
+    "IN-DL": "Delhi", "nct of delhi": "Delhi", "delhi": "Delhi",
+    "new delhi": "Delhi",
+    # Uttar Pradesh
+    "IN-UP": "Uttar Pradesh", "uttar pradesh": "Uttar Pradesh",
+    "lucknow": "Uttar Pradesh", "kanpur": "Uttar Pradesh",
+    "noida": "Uttar Pradesh", "ghaziabad": "Uttar Pradesh",
+    "agra": "Uttar Pradesh", "varanasi": "Uttar Pradesh",
+    "meerut": "Uttar Pradesh", "prayagraj": "Uttar Pradesh",
+    "allahabad": "Uttar Pradesh", "bareilly": "Uttar Pradesh",
+    "gorakhpur": "Uttar Pradesh",
+}
+
+def _resolve_state_from_address(addr: dict) -> str:
+    """Tries multiple Nominatim address fields to find a known state."""
+    candidates = [
+        addr.get("state", ""),
+        addr.get("state_district", ""),
+        addr.get("county", ""),
+        addr.get("ISO3166-2-lvl4", ""),
+        addr.get("city", ""),
+        addr.get("town", ""),
+        addr.get("village", ""),
+    ]
+    for val in candidates:
+        if not val:
+            continue
+        key = val.strip().lower()
+        if key in _STATE_ALIASES:
+            return _STATE_ALIASES[key]
+        # Check if any alias is a substring (e.g. "nct of delhi")
+        for alias, state_name in _STATE_ALIASES.items():
+            if alias in key or key in alias:
+                return state_name
+    return "Unknown"
+
 
 def get_state_from_coords(lat: float, lng: float) -> str:
     """Reverse geocodes coordinates to find the State."""
     try:
         location = geolocator.reverse((lat, lng), exactly_one=True, timeout=10)
         if location and "address" in location.raw:
-            return location.raw["address"].get("state", "Unknown")
+            return _resolve_state_from_address(location.raw["address"])
     except Exception:
         pass
+    return "Unknown"
+
+
+def get_state_from_address_text(address: str) -> str:
+    """Extracts state from a free-text address string (used when no GPS coords)."""
+    lower = address.lower()
+    for alias, state_name in _STATE_ALIASES.items():
+        if alias in lower:
+            return state_name
     return "Unknown"
 
 def haversine_distance(lat1: float, lon1: float, lat2: float, lon2: float) -> float:
@@ -108,17 +210,18 @@ class StatusUpdate(BaseModel):
 async def list_complaints(
     lat: Optional[float] = None,
     lng: Optional[float] = None,
-    radius: Optional[float] = 5.0  # default 5km radius
+    radius: Optional[float] = 5.0,  # default 5km radius
+    managerId: Optional[str] = None,
 ):
     try:
-        resp = databases.list_documents(
-            DATABASE_ID, COLLECTION_ID,
-            queries=[Query.order_desc("createdAt"), Query.limit(100)]
-        )
-        
+        queries = [Query.order_desc("createdAt"), Query.limit(100)]
+        if managerId:
+            queries.append(Query.equal("assignedManagerId", managerId))
+
+        resp = databases.list_documents(DATABASE_ID, COLLECTION_ID, queries=queries)
         complaints = [_map_doc(d) for d in resp["documents"]]
-        
-        # If lat/lng are provided, filter by distance
+
+        # If lat/lng are provided, further filter by distance
         if lat is not None and lng is not None:
             filtered = []
             for c in complaints:
@@ -129,14 +232,19 @@ async def list_complaints(
                     if c_lat is not None and c_lng is not None:
                         dist = haversine_distance(lat, lng, c_lat, c_lng)
                         if dist <= radius:
-                            # Attach distance for frontend use
                             c["distance_km"] = round(dist, 2)
                             filtered.append(c)
             return filtered
-            
+
         return complaints
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.get("/managers")
+async def get_managers():
+    """Returns the list of all available managers."""
+    return MOCK_MANAGERS
 
 
 @router.post("", status_code=201)
@@ -149,6 +257,17 @@ async def create_complaint(body: ComplaintCreate):
             "status": "Submitted", "timestamp": now,
             "note": "Complaint submitted successfully", "actor": "Citizen",
         }])
+
+        # Resolve state from GPS coordinates, fallback to address text
+        state = "Unknown"
+        if body.coordinates:
+            state = get_state_from_coords(body.coordinates["lat"], body.coordinates["lng"])
+        if state == "Unknown" and body.address:
+            state = get_state_from_address_text(body.address)
+
+        # Assign manager based on location (least-loaded manager for this state)
+        assigned_manager = assign_manager_to_complaint(state)
+
         payload = {
             **body.model_dump(),
             "status": "Submitted",
@@ -160,10 +279,12 @@ async def create_complaint(body: ComplaintCreate):
             "slaRemainingHours": int(sla_hours),
             "coordinates": json.dumps(body.coordinates) if body.coordinates else None,
             "photos": json.dumps(body.photos) if body.photos else "[]",
-            "state": get_state_from_coords(body.coordinates["lat"], body.coordinates["lng"]) if body.coordinates else "Unknown"
+            "state": state,
+            "assignedManagerId": assigned_manager["id"],
+            "assignedManagerName": assigned_manager["name"],
         }
         doc = databases.create_document(DATABASE_ID, COLLECTION_ID, "unique()", payload)
-        return {"id": doc["$id"]}
+        return {"id": doc["$id"], "assignedManager": assigned_manager["name"]}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 

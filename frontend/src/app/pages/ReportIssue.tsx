@@ -1,4 +1,4 @@
-import { useState, type ChangeEvent } from "react";
+import { useState, type ChangeEvent, useMemo } from "react";
 import { useNavigate } from "react-router";
 import {
   ArrowLeft,
@@ -16,10 +16,42 @@ import {
   HardHat,
   Lightbulb,
   Plus,
+  UserCheck,
 } from "lucide-react";
 import { toast } from "sonner";
 import { appwriteService } from "../appwriteService";
 import { account } from "../appwrite";
+
+// Mirrors backend MOCK_MANAGERS — used for live preview only
+const MANAGER_STATE_MAP: { keywords: string[]; state: string; managers: { id: string; name: string }[] }[] = [
+  {
+    state: "Delhi",
+    keywords: ["delhi", "new delhi", "nd", "ndmc", "delhite"],
+    managers: [
+      { id: "MGR-DEL-01", name: "Sanjay Sharma" },
+      { id: "MGR-DEL-02", name: "Meena Kumari" },
+      { id: "MGR-DEL-03", name: "Rajesh Tyagi" },
+      { id: "MGR-DEL-04", name: "Anita Singh" },
+      { id: "MGR-DEL-05", name: "Amit Goel" },
+    ],
+  },
+  {
+    state: "Uttar Pradesh",
+    keywords: ["uttar pradesh", "up", "lucknow", "kanpur", "varanasi", "agra", "meerut", "noida", "ghaziabad", "prayagraj", "allahabad", "bareilly", "gorakhpur"],
+    managers: [
+      { id: "MGR-UP-01", name: "Yash Pal" },
+      { id: "MGR-UP-02", name: "Priti Yadav" },
+      { id: "MGR-UP-03", name: "Manoj Mishra" },
+      { id: "MGR-UP-04", name: "Renu Devi" },
+      { id: "MGR-UP-05", name: "Suresh Chandra" },
+      { id: "MGR-UP-06", name: "Kiran Singh" },
+      { id: "MGR-UP-07", name: "Deepak Rawat" },
+      { id: "MGR-UP-08", name: "Alka Jha" },
+      { id: "MGR-UP-09", name: "Vikrant Tomar" },
+      { id: "MGR-UP-10", name: "Sudhir Maurya" },
+    ],
+  },
+];
 
 const categories = [
   { id: "Garbage", icon: Trash2, description: "Overflow, dumping, litter" },
@@ -58,6 +90,17 @@ const subcategories: Record<string, string[]> = {
 
 type Step = 1 | 2 | 3 | 4 | 5;
 
+function getManagerPreview(text: string): { state: string; manager: { id: string; name: string } } | null {
+  const lower = text.toLowerCase();
+  for (const group of MANAGER_STATE_MAP) {
+    if (group.keywords.some((kw) => lower.includes(kw))) {
+      // Pick a random-seeming but deterministic manager (first one as preview)
+      return { state: group.state, manager: group.managers[0] };
+    }
+  }
+  return null;
+}
+
 export default function ReportIssue() {
   const navigate = useNavigate();
   const [step, setStep] = useState<Step>(1);
@@ -78,6 +121,13 @@ export default function ReportIssue() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [complaintId, setComplaintId] = useState("");
   const [isUploadingPhoto, setIsUploadingPhoto] = useState(false);
+  const [assignedManagerName, setAssignedManagerName] = useState("");
+
+  // Live manager preview — recomputed whenever address/area text changes
+  const managerPreview = useMemo(
+    () => getManagerPreview(`${address} ${area}`),
+    [address, area],
+  );
 
   const steps = ["Category", "Location", "Details", "Photos", "Done"];
 
@@ -262,8 +312,12 @@ export default function ReportIssue() {
         reporterId: user.$id || "anon",
       };
 
-      const newId = await appwriteService.createComplaint(payload as any);
+      const result = await appwriteService.createComplaint(payload as any);
+      // result may be a string (id) or object {id, assignedManager}
+      const newId = typeof result === "string" ? result : (result as any).id;
+      const mgr = typeof result === "object" ? (result as any).assignedManager : (managerPreview?.manager.name || "");
       setComplaintId(newId);
+      setAssignedManagerName(mgr);
       setStep(5);
       toast.success("Complaint submitted successfully.");
     } catch (error: any) {
@@ -488,6 +542,20 @@ export default function ReportIssue() {
             </div>
           </div>
 
+          {/* Manager Assignment Preview */}
+          {managerPreview && (
+            <div className="mt-6 flex items-start gap-3 rounded-2xl border border-sky-200 bg-sky-50 px-5 py-4">
+              <div className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-sky-600 text-white">
+                <UserCheck className="h-4 w-4" />
+              </div>
+              <div>
+                <div className="text-xs font-bold uppercase tracking-wide text-sky-700">Will be assigned to</div>
+                <div className="mt-0.5 text-base font-bold text-slate-900">{managerPreview.manager.name}</div>
+                <div className="text-xs text-slate-500">{managerPreview.state} — one of {MANAGER_STATE_MAP.find(g => g.state === managerPreview.state)?.managers.length ?? 1} managers handling this region</div>
+              </div>
+            </div>
+          )}
+
           <div className="mt-8 flex items-center justify-between">
             <button
               onClick={() => setStep(1)}
@@ -662,13 +730,26 @@ export default function ReportIssue() {
             Your issue has been added successfully. You can now track its status
             from the complaints page.
           </p>
-          <div className="mx-auto mt-6 max-w-sm rounded-2xl bg-sky-50 px-5 py-4">
-            <div className="text-xs font-semibold uppercase tracking-wide text-sky-700">
-              Ticket ID
+          <div className="mx-auto mt-6 max-w-sm space-y-3">
+            <div className="rounded-2xl bg-sky-50 px-5 py-4">
+              <div className="text-xs font-semibold uppercase tracking-wide text-sky-700">
+                Ticket ID
+              </div>
+              <div className="mt-2 text-2xl font-semibold text-slate-900">
+                {complaintId}
+              </div>
             </div>
-            <div className="mt-2 text-2xl font-semibold text-slate-900">
-              {complaintId}
-            </div>
+            {assignedManagerName && (
+              <div className="flex items-center gap-3 rounded-2xl border border-emerald-200 bg-emerald-50 px-5 py-4 text-left">
+                <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-emerald-600 text-white">
+                  <UserCheck className="h-5 w-5" />
+                </div>
+                <div>
+                  <div className="text-xs font-bold uppercase tracking-wide text-emerald-700">Assigned Manager</div>
+                  <div className="mt-0.5 text-base font-bold text-slate-900">{assignedManagerName}</div>
+                </div>
+              </div>
+            )}
           </div>
           <div className="mt-8 flex flex-col justify-center gap-3 sm:flex-row">
             <button

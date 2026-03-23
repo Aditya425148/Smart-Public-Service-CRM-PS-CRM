@@ -1,18 +1,17 @@
 import { useNavigate } from "react-router";
 import { motion } from "motion/react";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { appwriteService } from "../../appwriteService";
 import {
   TrendingUp,
   Clock,
   AlertTriangle,
   CheckCircle,
-  Users,
   BarChart3,
   ArrowRight,
   ChevronRight,
-  Zap,
   Activity,
+  UserCheck,
 } from "lucide-react";
 import {
   AreaChart,
@@ -27,15 +26,19 @@ import {
   CartesianGrid,
   Tooltip,
   ResponsiveContainer,
-  Legend,
   ComposedChart,
 } from "recharts";
-import {
-  kpiData,
-  complaintTrendData,
-  categoryBreakdown,
-  mockOfficers,
-} from "../../data/mockData";
+
+const CATEGORY_COLORS: Record<string, string> = {
+  Pothole: "#EF4444",
+  Garbage: "#F59E0B",
+  Streetlight: "#3B82F6",
+  Water: "#06B6D4",
+  Sanitation: "#8B5CF6",
+  Safety: "#EC4899",
+  Construction: "#10B981",
+  Other: "#6B7280",
+};
 
 const KPICard = ({
   label,
@@ -89,29 +92,67 @@ export default function AdminOverview() {
       setComplaints(data);
       setLoading(false);
     });
-
     return () => unsubscribe();
   }, []);
 
-  const liveKpis = {
-    total: complaints.length || 142, // Fallback to mock for first-ever boot
-    resolved:
-      complaints.length > 0
-        ? complaints.filter(
-            (c) => c.status === "Resolved" || c.status === "Closed",
-          ).length
-        : 98,
-    active:
-      complaints.length > 0
-        ? complaints.filter(
-            (c) => !["Resolved", "Closed", "Rejected"].includes(c.status),
-          ).length
-        : 44,
-    escalated:
-      complaints.length > 0 ? complaints.filter((c) => c.escalated).length : 3,
-  };
+  // --- Live KPIs ---
+  const liveKpis = useMemo(() => {
+    const total = complaints.length;
+    const resolved = complaints.filter((c) => ["Resolved", "Closed"].includes(c.status)).length;
+    const active = complaints.filter((c) => !["Resolved", "Closed", "Rejected"].includes(c.status)).length;
+    const escalated = complaints.filter((c) => c.escalated).length;
+    const slaMet = complaints.filter((c) => {
+      if (!["Resolved", "Closed"].includes(c.status)) return false;
+      return (c.slaRemainingHours ?? 1) >= 0;
+    }).length;
+    const slaCompliance = resolved > 0 ? Math.round((slaMet / resolved) * 100) : 0;
+    return { total, resolved, active, escalated, slaCompliance };
+  }, [complaints]);
 
-  // Skip the spinner if data is available from Firestore's persistent cache
+  // --- Category breakdown from live data ---
+  const liveCategoryBreakdown = useMemo(() => {
+    if (complaints.length === 0) return [];
+    const counts: Record<string, number> = {};
+    complaints.forEach((c) => { counts[c.category] = (counts[c.category] || 0) + 1; });
+    return Object.entries(counts).map(([name, value]) => ({
+      name,
+      value: Math.round((value / complaints.length) * 100),
+      color: CATEGORY_COLORS[name] || "#6B7280",
+    })).sort((a, b) => b.value - a.value);
+  }, [complaints]);
+
+  // --- 7-day trend from live data ---
+  const liveTrendData = useMemo(() => {
+    const days: { day: string; submitted: number; resolved: number; escalated: number }[] = [];
+    for (let i = 6; i >= 0; i--) {
+      const d = new Date();
+      d.setDate(d.getDate() - i);
+      const label = d.toLocaleDateString("en-IN", { day: "numeric", month: "short" });
+      const dateStr = d.toISOString().slice(0, 10);
+      days.push({
+        day: label,
+        submitted: complaints.filter((c) => c.createdAt?.slice(0, 10) === dateStr).length,
+        resolved: complaints.filter((c) => ["Resolved", "Closed"].includes(c.status) && c.updatedAt?.slice(0, 10) === dateStr).length,
+        escalated: complaints.filter((c) => c.escalated && c.updatedAt?.slice(0, 10) === dateStr).length,
+      });
+    }
+    return days;
+  }, [complaints]);
+
+  // --- Manager workload from live data ---
+  const managerWorkload = useMemo(() => {
+    const map: Record<string, { name: string; active: number; resolved: number }> = {};
+    complaints.forEach((c) => {
+      if (!c.assignedManagerName) return;
+      if (!map[c.assignedManagerName]) map[c.assignedManagerName] = { name: c.assignedManagerName, active: 0, resolved: 0 };
+      if (["Resolved", "Closed"].includes(c.status)) map[c.assignedManagerName].resolved++;
+      else map[c.assignedManagerName].active++;
+    });
+    return Object.values(map).sort((a, b) => b.active - a.active).slice(0, 5);
+  }, [complaints]);
+
+  const breachedCount = complaints.filter((c) => (c.slaRemainingHours ?? 1) < 0 && !["Resolved", "Closed"].includes(c.status)).length;
+
   if (loading && complaints.length === 0) {
     return (
       <div className="flex items-center justify-center min-h-[60vh] p-8 text-slate-500">
@@ -150,144 +191,75 @@ export default function AdminOverview() {
       </div>
 
       {/* Alerts Banner */}
-      <div className="bg-[linear-gradient(90deg,rgba(255,241,242,0.96),rgba(255,255,255,0.92))] border border-rose-200 rounded-[1.75rem] p-4 flex items-center gap-4 flex-wrap shadow-[0_18px_40px_rgba(251,113,133,0.08)]">
-        <div className="w-9 h-9 rounded-xl bg-rose-100 flex items-center justify-center">
-          <AlertTriangle className="w-4 h-4 text-red-600" />
-        </div>
-        <div className="flex-1">
-          <div className="text-sm font-[700] text-red-800">Active Alerts</div>
-          <div className="text-xs text-red-600 mt-0.5">
-            3 complaints SLA breached · 1 Water Supply escalated to City Admin ·
-            Complaint volume spike detected in Ward 3
+      {(breachedCount > 0 || liveKpis.escalated > 0) ? (
+        <div className="bg-[linear-gradient(90deg,rgba(255,241,242,0.96),rgba(255,255,255,0.92))] border border-rose-200 rounded-[1.75rem] p-4 flex items-center gap-4 flex-wrap shadow-[0_18px_40px_rgba(251,113,133,0.08)]">
+          <div className="w-9 h-9 rounded-xl bg-rose-100 flex items-center justify-center">
+            <AlertTriangle className="w-4 h-4 text-red-600" />
           </div>
+          <div className="flex-1">
+            <div className="text-sm font-[700] text-red-800">Active Alerts</div>
+            <div className="text-xs text-red-600 mt-0.5">
+              {breachedCount > 0 && `${breachedCount} complaint${breachedCount > 1 ? "s" : ""} SLA breached`}
+              {breachedCount > 0 && liveKpis.escalated > 0 && " · "}
+              {liveKpis.escalated > 0 && `${liveKpis.escalated} escalated`}
+            </div>
+          </div>
+          <button onClick={() => navigate("/admin/queue")} className="flex items-center gap-1.5 text-xs font-[700] text-rose-600 hover:text-rose-700">
+            Review <ArrowRight className="w-3.5 h-3.5" />
+          </button>
         </div>
-        <button
-          onClick={() => navigate("/admin/queue")}
-          className="flex items-center gap-1.5 text-xs font-[700] text-rose-600 hover:text-rose-700"
-        >
-          Review <ArrowRight className="w-3.5 h-3.5" />
-        </button>
-      </div>
+      ) : (
+        <div className="bg-emerald-50 border border-emerald-200 rounded-[1.75rem] p-4 flex items-center gap-4">
+          <div className="w-9 h-9 rounded-xl bg-emerald-100 flex items-center justify-center">
+            <CheckCircle className="w-4 h-4 text-emerald-600" />
+          </div>
+          <div className="text-sm font-[700] text-emerald-800">All systems healthy — No active SLA breaches or escalations</div>
+        </div>
+      )}
 
       {/* KPI Cards */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        <KPICard
-          label="Total Complaints"
-          value={liveKpis.total}
-          suffix=""
-          icon={Activity}
-          color="bg-blue-50 text-blue-600"
-          trend={12}
-          subtext="Synced from Firestore"
-        />
-        <KPICard
-          label="Resolved Overall"
-          value={liveKpis.resolved}
-          suffix=""
-          icon={CheckCircle}
-          color="bg-emerald-50 text-emerald-600"
-          trend={8}
-          subtext="Across all time"
-        />
-        <KPICard
-          label="SLA Compliance"
-          value={kpiData.slaCompliance}
-          suffix="%"
-          icon={TrendingUp}
-          color="bg-violet-50 text-violet-600"
-          trend={-2}
-          subtext="Target: 80%"
-        />
-        <KPICard
-          label="Pending Resolution"
-          value={liveKpis.active}
-          suffix=""
-          icon={Clock}
-          color="bg-amber-50 text-amber-600"
-          subtext={`${liveKpis.escalated} escalated`}
-        />
+        <KPICard label="Total Complaints" value={liveKpis.total} suffix="" icon={Activity} color="bg-blue-50 text-blue-600" subtext="Synced from DB" />
+        <KPICard label="Resolved" value={liveKpis.resolved} suffix="" icon={CheckCircle} color="bg-emerald-50 text-emerald-600" subtext="All time" />
+        <KPICard label="SLA Compliance" value={liveKpis.slaCompliance} suffix="%" icon={TrendingUp} color="bg-violet-50 text-violet-600" subtext="Target: 80%" />
+        <KPICard label="Pending" value={liveKpis.active} suffix="" icon={Clock} color="bg-amber-50 text-amber-600" subtext={`${liveKpis.escalated} escalated`} />
       </div>
 
-      {/* Secondary KPIs */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+      {/* Secondary KPIs — computed from live data */}
+      <div className="grid grid-cols-2 lg:grid-cols-3 gap-4">
         {[
-          {
-            label: "Mean Time to Assignment",
-            value: kpiData.mtta,
-            suffix: "h",
-            target: "< 4h",
-            ok: kpiData.mtta < 4,
-          },
-          {
-            label: "Mean Time to Resolution",
-            value: kpiData.mttr,
-            suffix: "h",
-            target: "< 72h",
-            ok: kpiData.mttr < 72,
-          },
-          {
-            label: "SLA Compliance",
-            value: kpiData.slaCompliance,
-            suffix: "%",
-            target: "> 80%",
-            ok: kpiData.slaCompliance > 80,
-          },
-          {
-            label: "Citizen Satisfaction",
-            value: kpiData.satisfactionScore,
-            suffix: "★",
-            target: "> 4.0",
-            ok: kpiData.satisfactionScore >= 4,
-          },
-        ].map(({ label, value, suffix, target, ok }) => (
-          <div
-            key={label}
-            className="bg-white/85 backdrop-blur-xl rounded-[1.75rem] p-4 border border-white shadow-[0_18px_45px_rgba(148,163,184,0.14)]"
-          >
-            <div className="flex items-center justify-between mb-2">
-              <span className="text-xs font-[600] text-slate-500">{label}</span>
-              <span
-                className={`w-2 h-2 rounded-full ${ok ? "bg-emerald-500" : "bg-red-500"}`}
-              />
-            </div>
-            <div className="text-xl font-[800] text-slate-900">
-              {value}
-              {suffix}
-            </div>
-            <div className="text-xs text-slate-400 mt-1">Target: {target}</div>
+          { label: "Active Complaints", value: liveKpis.active, suffix: "", desc: "Not yet resolved" },
+          { label: "SLA Compliance", value: `${liveKpis.slaCompliance}%`, suffix: "", desc: "Resolved within SLA" },
+          { label: "Escalated", value: liveKpis.escalated, suffix: "", desc: "Needs urgent attention" },
+        ].map(({ label, value, desc }) => (
+          <div key={label} className="bg-white/85 backdrop-blur-xl rounded-[1.75rem] p-4 border border-white shadow-[0_18px_45px_rgba(148,163,184,0.14)]">
+            <div className="text-xs font-[600] text-slate-500 mb-2">{desc}</div>
+            <div className="text-xl font-[800] text-slate-900">{value}</div>
+            <div className="text-xs text-slate-400 mt-1">{label}</div>
           </div>
         ))}
       </div>
 
       {/* Charts Row */}
       <div className="grid lg:grid-cols-3 gap-6">
-        {/* Trend Chart */}
+        {/* Trend Chart - live 7-day */}
         <div className="lg:col-span-2 bg-white/88 backdrop-blur-xl rounded-[1.85rem] border border-white shadow-[0_18px_45px_rgba(148,163,184,0.14)] p-5">
           <div className="flex items-center justify-between mb-5">
             <div>
-              <h3 className="text-base font-[700] text-slate-900">
-                Complaint Trends
-              </h3>
-              <p className="text-xs text-slate-400">Last 7 days</p>
+              <h3 className="text-base font-[700] text-slate-900">Complaint Trends</h3>
+              <p className="text-xs text-slate-400">Last 7 days — live from DB</p>
             </div>
             <div className="flex gap-3 text-xs">
-              {[
-                { color: "#3B82F6", label: "Submitted" },
-                { color: "#10B981", label: "Resolved" },
-                { color: "#EF4444", label: "Escalated" },
-              ].map(({ color, label }) => (
+              {[{ color: "#3B82F6", label: "Submitted" }, { color: "#10B981", label: "Resolved" }, { color: "#EF4444", label: "Escalated" }].map(({ color, label }) => (
                 <div key={label} className="flex items-center gap-1.5">
-                  <div
-                    className="w-2.5 h-2.5 rounded-full"
-                    style={{ backgroundColor: color }}
-                  />
+                  <div className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: color }} />
                   <span className="text-slate-500">{label}</span>
                 </div>
               ))}
             </div>
           </div>
           <ResponsiveContainer width="100%" height={220}>
-            <ComposedChart data={complaintTrendData}>
+            <ComposedChart data={liveTrendData}>
               <defs>
                 <linearGradient id="colorSubmitted" x1="0" y1="0" x2="0" y2="1">
                   <stop offset="5%" stopColor="#3B82F6" stopOpacity={0.2} />
@@ -299,197 +271,106 @@ export default function AdminOverview() {
                 </linearGradient>
               </defs>
               <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
-              <XAxis
-                dataKey="day"
-                tick={{ fontSize: 11, fill: "#94a3b8" }}
-                axisLine={false}
-                tickLine={false}
-              />
-              <YAxis
-                tick={{ fontSize: 11, fill: "#94a3b8" }}
-                axisLine={false}
-                tickLine={false}
-              />
-              <Tooltip
-                contentStyle={{
-                  background: "#1e293b",
-                  border: "none",
-                  borderRadius: "12px",
-                  fontSize: "12px",
-                  color: "#f1f5f9",
-                }}
-              />
-              <Area
-                type="monotone"
-                dataKey="submitted"
-                stroke="#3B82F6"
-                strokeWidth={2}
-                fill="url(#colorSubmitted)"
-              />
-              <Area
-                type="monotone"
-                dataKey="resolved"
-                stroke="#10B981"
-                strokeWidth={2}
-                fill="url(#colorResolved)"
-              />
-              <Bar
-                dataKey="escalated"
-                fill="#EF4444"
-                barSize={8}
-                radius={[4, 4, 0, 0]}
-              />
+              <XAxis dataKey="day" tick={{ fontSize: 11, fill: "#94a3b8" }} axisLine={false} tickLine={false} />
+              <YAxis tick={{ fontSize: 11, fill: "#94a3b8" }} axisLine={false} tickLine={false} />
+              <Tooltip contentStyle={{ background: "#1e293b", border: "none", borderRadius: "12px", fontSize: "12px", color: "#f1f5f9" }} />
+              <Area type="monotone" dataKey="submitted" stroke="#3B82F6" strokeWidth={2} fill="url(#colorSubmitted)" />
+              <Area type="monotone" dataKey="resolved" stroke="#10B981" strokeWidth={2} fill="url(#colorResolved)" />
+              <Bar dataKey="escalated" fill="#EF4444" barSize={8} radius={[4, 4, 0, 0]} />
             </ComposedChart>
           </ResponsiveContainer>
         </div>
 
-        {/* Category Pie */}
+        {/* Category Pie - live */}
         <div className="bg-white/88 backdrop-blur-xl rounded-[1.85rem] border border-white shadow-[0_18px_45px_rgba(148,163,184,0.14)] p-5">
           <div className="mb-4">
             <h3 className="text-base font-[700] text-slate-900">By Category</h3>
-            <p className="text-xs text-slate-400">Current month breakdown</p>
+            <p className="text-xs text-slate-400">Live breakdown</p>
           </div>
-          <ResponsiveContainer width="100%" height={160}>
-            <PieChart>
-              <Pie
-                data={categoryBreakdown}
-                cx="50%"
-                cy="50%"
-                innerRadius={45}
-                outerRadius={75}
-                dataKey="value"
-                paddingAngle={2}
-              >
-                {categoryBreakdown.map((entry, i) => (
-                  <Cell key={i} fill={entry.color} />
+          {liveCategoryBreakdown.length === 0 ? (
+            <div className="flex items-center justify-center h-[160px] text-slate-400 text-sm">No data yet</div>
+          ) : (
+            <>
+              <ResponsiveContainer width="100%" height={160}>
+                <PieChart>
+                  <Pie data={liveCategoryBreakdown} cx="50%" cy="50%" innerRadius={45} outerRadius={75} dataKey="value" paddingAngle={2}>
+                    {liveCategoryBreakdown.map((entry, i) => <Cell key={i} fill={entry.color} />)}
+                  </Pie>
+                  <Tooltip contentStyle={{ background: "#1e293b", border: "none", borderRadius: "8px", fontSize: "12px", color: "#f1f5f9" }} />
+                </PieChart>
+              </ResponsiveContainer>
+              <div className="mt-2 space-y-1.5">
+                {liveCategoryBreakdown.slice(0, 5).map(({ name, value, color }) => (
+                  <div key={name} className="flex items-center gap-2">
+                    <div className="w-2.5 h-2.5 rounded-full shrink-0" style={{ backgroundColor: color }} />
+                    <span className="text-xs text-slate-600 flex-1">{name}</span>
+                    <span className="text-xs font-[700] text-slate-700">{value}%</span>
+                  </div>
                 ))}
-              </Pie>
-              <Tooltip
-                contentStyle={{
-                  background: "#1e293b",
-                  border: "none",
-                  borderRadius: "8px",
-                  fontSize: "12px",
-                  color: "#f1f5f9",
-                }}
-              />
-            </PieChart>
-          </ResponsiveContainer>
-          <div className="mt-2 space-y-1.5">
-            {categoryBreakdown.slice(0, 5).map(({ name, value, color }) => (
-              <div key={name} className="flex items-center gap-2">
-                <div
-                  className="w-2.5 h-2.5 rounded-full shrink-0"
-                  style={{ backgroundColor: color }}
-                />
-                <span className="text-xs text-slate-600 flex-1">{name}</span>
-                <span className="text-xs font-[700] text-slate-700">
-                  {value}%
-                </span>
               </div>
-            ))}
-          </div>
+            </>
+          )}
         </div>
       </div>
 
-      {/* Officer Performance + Recent Escalations */}
+      {/* Manager Workload (live) + Escalations */}
       <div className="grid lg:grid-cols-2 gap-6">
-        {/* Officers */}
+        {/* Manager Workload */}
         <div className="bg-white/88 backdrop-blur-xl rounded-[1.85rem] border border-white shadow-[0_18px_45px_rgba(148,163,184,0.14)] overflow-hidden">
           <div className="flex items-center justify-between p-5 border-b border-slate-100">
-            <h3 className="text-base font-[700] text-slate-900">
-              Field Officers
-            </h3>
-            <span className="text-xs bg-slate-100 text-slate-500 px-2.5 py-1 rounded-full font-[600]">
-              {mockOfficers.length} active
-            </span>
+            <h3 className="text-base font-[700] text-slate-900">Manager Workload</h3>
+            <span className="text-xs bg-slate-100 text-slate-500 px-2.5 py-1 rounded-full font-[600]">{managerWorkload.length} active managers</span>
           </div>
           <div className="divide-y divide-slate-50">
-            {mockOfficers.map((officer) => (
-              <div
-                key={officer.id}
-                className="flex items-center gap-4 px-5 py-3.5"
-              >
-                <div className="w-9 h-9 rounded-full bg-gradient-to-br from-indigo-500 to-blue-600 flex items-center justify-center text-white text-xs font-[700]">
-                  {officer.avatar}
+            {managerWorkload.length === 0 ? (
+              <div className="py-10 text-center text-sm text-slate-400">No assigned complaints yet</div>
+            ) : managerWorkload.map((mgr) => (
+              <div key={mgr.name} className="flex items-center gap-4 px-5 py-3.5">
+                <div className="w-9 h-9 rounded-full bg-gradient-to-br from-sky-500 to-indigo-600 flex items-center justify-center text-white text-xs font-[700]">
+                  {mgr.name.split(" ").map((n: string) => n[0]).join("")}
                 </div>
                 <div className="flex-1">
-                  <div className="text-sm font-[600] text-slate-800">
-                    {officer.name}
-                  </div>
-                  <div className="text-xs text-slate-400">{officer.ward}</div>
+                  <div className="text-sm font-[600] text-slate-800">{mgr.name}</div>
                 </div>
                 <div className="text-center">
-                  <div className="text-sm font-[700] text-slate-800">
-                    {officer.activeComplaints}
-                  </div>
+                  <div className="text-sm font-[700] text-amber-600">{mgr.active}</div>
                   <div className="text-xs text-slate-400">active</div>
                 </div>
                 <div className="text-center">
-                  <div className="text-sm font-[700] text-emerald-600">
-                    {officer.resolvedThisWeek}
-                  </div>
-                  <div className="text-xs text-slate-400">this week</div>
+                  <div className="text-sm font-[700] text-emerald-600">{mgr.resolved}</div>
+                  <div className="text-xs text-slate-400">resolved</div>
                 </div>
-                <span
-                  className={`text-xs px-2.5 py-1 rounded-full font-[600] ${
-                    officer.status === "Available"
-                      ? "bg-emerald-100 text-emerald-700"
-                      : officer.status === "On Site"
-                        ? "bg-amber-100 text-amber-700"
-                        : "bg-slate-100 text-slate-500"
-                  }`}
-                >
-                  {officer.status}
-                </span>
               </div>
             ))}
           </div>
         </div>
 
-        {/* Escalated Complaints */}
+        {/* Escalated / Overdue (live) */}
         <div className="bg-white/88 backdrop-blur-xl rounded-[1.85rem] border border-white shadow-[0_18px_45px_rgba(148,163,184,0.14)] overflow-hidden">
           <div className="flex items-center justify-between p-5 border-b border-slate-100">
-            <h3 className="text-base font-[700] text-slate-900">
-              Escalations & Overdue
-            </h3>
-            <button
-              onClick={() => navigate("/admin/queue")}
-              className="text-xs text-violet-600 hover:text-violet-700 font-[600] flex items-center gap-1"
-            >
+            <h3 className="text-base font-[700] text-slate-900">Escalations &amp; Overdue</h3>
+            <button onClick={() => navigate("/admin/queue")} className="text-xs text-violet-600 hover:text-violet-700 font-[600] flex items-center gap-1">
               View Queue <ChevronRight className="w-3 h-3" />
             </button>
           </div>
           <div className="divide-y divide-slate-50">
-            {complaints
-              .filter((c) => c.escalated || (c.slaRemainingHours || 0) < 0)
-              .map((c) => (
-                <div key={c.id} className="flex items-center gap-4 px-5 py-3.5">
-                  <div
-                    className={`w-2 h-10 rounded-full ${c.escalated ? "bg-red-500" : "bg-amber-500"}`}
-                  />
-                  <div className="flex-1 min-w-0">
-                    <div className="text-sm font-[600] text-slate-800">
-                      {c.id}
-                    </div>
-                    <div className="text-xs text-slate-400 truncate">
-                      {c.category} · {c.address}
-                    </div>
-                  </div>
-                  <div>
-                    <div
-                      className={`text-xs font-[700] ${c.escalated ? "text-red-600" : "text-amber-600"}`}
-                    >
-                      {c.escalated
-                        ? "🔴 Escalated"
-                        : `${Math.abs(c.slaRemainingHours || 0)}h Overdue`}
-                    </div>
-                    <div className="text-xs text-slate-400 text-right">
-                      Ward {c.ward?.split(" ")[1] || "N/A"}
-                    </div>
-                  </div>
+            {complaints.filter((c) => c.escalated || (c.slaRemainingHours ?? 1) < 0).length === 0 ? (
+              <div className="py-10 text-center text-sm text-slate-400">No escalations or overdue complaints 🎉</div>
+            ) : complaints.filter((c) => c.escalated || (c.slaRemainingHours ?? 1) < 0).slice(0, 5).map((c) => (
+              <div key={c.id} className="flex items-center gap-4 px-5 py-3.5">
+                <div className={`w-2 h-10 rounded-full ${c.escalated ? "bg-red-500" : "bg-amber-500"}`} />
+                <div className="flex-1 min-w-0">
+                  <div className="text-sm font-[600] text-slate-800">{c.id}</div>
+                  <div className="text-xs text-slate-400 truncate">{c.category} · {c.address}</div>
                 </div>
-              ))}
+                <div>
+                  <div className={`text-xs font-[700] ${c.escalated ? "text-red-600" : "text-amber-600"}`}>
+                    {c.escalated ? "🔴 Escalated" : `${Math.abs(c.slaRemainingHours || 0)}h Overdue`}
+                  </div>
+                  <div className="text-xs text-slate-400 text-right">Ward {c.ward?.split(" ")[1] || "N/A"}</div>
+                </div>
+              </div>
+            ))}
           </div>
         </div>
       </div>

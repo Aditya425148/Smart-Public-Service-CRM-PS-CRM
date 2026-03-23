@@ -35,6 +35,7 @@ import {
 } from "../../data/mockData";
 import { appwriteService } from "../../appwriteService";
 import { account } from "../../appwrite";
+import { api } from "../../api";
 
 export default function ManagerOverview() {
   const { managerId } = useParams();
@@ -49,18 +50,20 @@ export default function ManagerOverview() {
         // Find the mock config for this logged in user or use defaults
         const mockConfig = mockManagers.find(
           (m: Manager) => m.email === user.email,
-        );
+        ) || mockManagers[0];
         setManager({
           ...user,
-          name: user.name || mockConfig?.name || "Sanjay Sharma",
-          email: user.email || mockConfig?.email || "sanjay@civicpulse.com",
-          phone: user.phone || mockConfig?.phone || "+91 98100 12345",
-          managedState: mockConfig?.managedState || "Delhi",
-          managedAreas: mockConfig?.managedAreas || ["North Delhi"],
+          // Use the mock manager ID (e.g. MGR-DEL-01) for complaint filtering
+          id: mockConfig.id,
+          name: user.name || mockConfig.name,
+          email: user.email || mockConfig.email,
+          phone: user.phone || mockConfig.phone,
+          managedState: mockConfig.managedState,
+          managedAreas: mockConfig.managedAreas,
         });
       })
       .catch(() => {
-        // Fallback: If no session exists, use the ID from URL or default to ensure something is visible
+        // Fallback: If no session exists, use the ID from URL or default
         const fallback =
           mockManagers.find((m) => m.id === managerId) || mockManagers[0];
         setManager(fallback);
@@ -76,21 +79,23 @@ export default function ManagerOverview() {
 
   useEffect(() => {
     if (!manager) return;
-    // Subscribe to real complaints from the backend
-    const unsubscribe = appwriteService.subscribeToComplaints((data) => {
-      // Filter complaints based on the manager's responsible state and areas
-      const filtered = (data as Complaint[]).filter(
-        (c) =>
-          c.state === manager.managedState &&
-          (manager.managedAreas.includes(c.area || "") ||
-            manager.managedAreas.some((area: string) =>
-              c.address.toLowerCase().includes(area.toLowerCase()),
-            )),
-      );
-      setComplaints(filtered);
-    });
-
-    return () => unsubscribe();
+    // Fetch live complaints assigned to this manager from the backend
+    api
+      .get<Complaint[]>(`/api/complaints?managerId=${manager.id}`)
+      .then((data) => setComplaints(data))
+      .catch(() => {
+        // Fallback: filter from all complaints by assignedManagerId
+        api
+          .get<Complaint[]>("/api/complaints")
+          .then((data) =>
+            setComplaints(
+              (data as any[]).filter(
+                (c: any) => c.assignedManagerId === manager.id,
+              ) as Complaint[],
+            ),
+          )
+          .catch(console.error);
+      });
   }, [manager]);
 
   // Statistics Calculation

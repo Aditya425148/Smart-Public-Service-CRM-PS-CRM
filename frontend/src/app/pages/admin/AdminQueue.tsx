@@ -18,6 +18,19 @@ import {
 import { appwriteService } from "../../appwriteService";
 import { Complaint } from "../../data/mockData";
 
+const MOCK_MANAGERS = [
+  { id: "MGR-DEL-01", name: "Sanjay Sharma",  state: "Delhi" },
+  { id: "MGR-DEL-02", name: "Meena Kumari",   state: "Delhi" },
+  { id: "MGR-DEL-03", name: "Rajesh Tyagi",   state: "Delhi" },
+  { id: "MGR-DEL-04", name: "Anita Singh",    state: "Delhi" },
+  { id: "MGR-DEL-05", name: "Amit Goel",      state: "Delhi" },
+  { id: "MGR-UP-01",  name: "Yash Pal",       state: "Uttar Pradesh" },
+  { id: "MGR-UP-02",  name: "Priti Yadav",    state: "Uttar Pradesh" },
+  { id: "MGR-UP-03",  name: "Manoj Mishra",   state: "Uttar Pradesh" },
+  { id: "MGR-UP-04",  name: "Renu Devi",      state: "Uttar Pradesh" },
+  { id: "MGR-UP-05",  name: "Suresh Chandra", state: "Uttar Pradesh" },
+];
+
 const slaStatus = (remaining: number, status: string) => {
   if (["Resolved", "Closed"].includes(status))
     return {
@@ -381,11 +394,11 @@ export default function AdminQueue() {
               IDs: {selectedIds.join(", ")}
             </div>
             <div className="space-y-2 mb-5">
-              {mockOfficers.map((o) => (
+              {MOCK_MANAGERS.map((mgr) => (
                 <label
-                  key={o.id}
+                  key={mgr.id}
                   className={`flex items-center gap-3 p-3 rounded-xl border cursor-pointer transition-all ${
-                    selectedOfficer === o.id
+                    selectedOfficer === mgr.id
                       ? "bg-violet-50 border-violet-200"
                       : "border-slate-100 hover:bg-slate-50"
                   }`}
@@ -393,31 +406,18 @@ export default function AdminQueue() {
                   <input
                     type="radio"
                     name="officer"
-                    value={o.id}
-                    checked={selectedOfficer === o.id}
-                    onChange={() => setSelectedOfficer(o.id)}
+                    value={mgr.id}
+                    checked={selectedOfficer === mgr.id}
+                    onChange={() => setSelectedOfficer(mgr.id)}
                     className="accent-violet-600"
                   />
-                  <div className="w-8 h-8 rounded-full bg-gradient-to-br from-indigo-500 to-blue-600 text-white flex items-center justify-center text-xs font-[700]">
-                    {o.avatar}
+                  <div className="w-8 h-8 rounded-full bg-gradient-to-br from-sky-500 to-indigo-600 text-white flex items-center justify-center text-xs font-[700]">
+                    {mgr.name.split(" ").map((n) => n[0]).join("")}
                   </div>
                   <div className="flex-1">
-                    <div className="text-sm font-[600] text-slate-800">
-                      {o.name}
-                    </div>
-                    <div className="text-xs text-slate-400">
-                      {o.ward} · {o.activeComplaints} active
-                    </div>
+                    <div className="text-sm font-[600] text-slate-800">{mgr.name}</div>
+                    <div className="text-xs text-slate-400">{mgr.state}</div>
                   </div>
-                  <span
-                    className={`text-xs px-2 py-0.5 rounded-full font-[600] ${
-                      o.status === "Available"
-                        ? "bg-emerald-100 text-emerald-700"
-                        : "bg-amber-100 text-amber-700"
-                    }`}
-                  >
-                    {o.status}
-                  </span>
                 </label>
               ))}
             </div>

@@ -419,6 +419,27 @@ export default function ComplaintDetail() {
 
           {/* Right */}
           <div className="space-y-4">
+            {/* Assigned Manager */}
+            <div className={`rounded-xl p-4 border ${complaint.assignedManagerName ? "bg-sky-50 border-sky-100" : "bg-slate-50 border-slate-100"}`}>
+              <div className="text-xs font-[600] text-slate-400 mb-2 uppercase tracking-wider flex items-center gap-1.5">
+                <CheckCircle className="w-3 h-3 text-sky-500" />
+                Assigned Manager
+              </div>
+              {complaint.assignedManagerName ? (
+                <div className="flex items-center gap-3">
+                  <div className="w-9 h-9 rounded-full bg-gradient-to-br from-sky-500 to-indigo-600 flex items-center justify-center text-white text-xs font-[700] shrink-0">
+                    {complaint.assignedManagerName.split(" ").map((n: string) => n[0]).join("")}
+                  </div>
+                  <div>
+                    <div className="text-sm font-[700] text-slate-900">{complaint.assignedManagerName}</div>
+                    <div className="text-xs text-slate-400">District Manager · {complaint.assignedManagerId}</div>
+                  </div>
+                </div>
+              ) : (
+                <div className="text-sm text-slate-400 italic">Pending assignment</div>
+              )}
+            </div>
+
             {/* SLA */}
             <div
               className={`rounded-xl p-4 border transition-all ${
