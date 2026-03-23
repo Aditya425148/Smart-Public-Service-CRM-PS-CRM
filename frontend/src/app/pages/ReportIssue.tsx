@@ -526,7 +526,7 @@ export default function ReportIssue() {
             onChange={(event) =>
               setDescription(event.target.value.slice(0, 500))
             }
-            rows={7}
+            rows={4}
             className="mt-6 w-full rounded-3xl border border-slate-200 px-4 py-4 text-sm text-slate-900 outline-none transition focus:border-sky-400"
             placeholder="Example: There is a large pothole near the main gate of the school. It is causing traffic and is dangerous for bikes."
           />
