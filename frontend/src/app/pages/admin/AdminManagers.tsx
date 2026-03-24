@@ -258,7 +258,7 @@ export default function AdminManagers() {
                     {selectedMgrComplaints.map((c) => (
                       <div key={c.id} className="px-4 py-3.5 hover:bg-slate-50 transition-colors">
                         <div className="flex items-start gap-3">
-                          <div className={`mt-0.5 flex-shrink-0 w-2 h-2 rounded-full mt-2 ${
+                          <div className={`mt-0.5 flex-shrink-0 w-2 h-2 rounded-full ${
                             c.escalated ? "bg-red-500" :
                             (c.slaRemainingHours ?? 1) < 0 ? "bg-amber-500" :
                             ["Resolved","Closed"].includes(c.status) ? "bg-emerald-500" : "bg-sky-400"

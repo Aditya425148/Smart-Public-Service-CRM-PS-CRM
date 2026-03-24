@@ -53,7 +53,7 @@ export default function AdminLayout() {
           <div>
             <div className="text-sm font-[700] text-white">Municipal Admin</div>
             <div className="text-xs text-[#d8c8e8]/80">
-              Ward Manager · All Wards
+              Area Manager · Delhi & UP
             </div>
           </div>
         </div>
@@ -84,25 +84,14 @@ export default function AdminLayout() {
             Quick Links
           </div>
           <button
-            onClick={() => navigate("/dashboard")}
-            className="flex w-full items-center gap-3 rounded-2xl px-3.5 py-3 text-sm font-[600] text-[#d7d9e7] transition-all hover:bg-white/7 hover:text-white"
+            onClick={() => navigate("/")}
+            className="flex w-full items-center gap-3 rounded-2xl px-3.5 py-3 text-sm font-[600] text-[#d7d9e7] transition-all hover:bg-rose-500/12 hover:text-rose-300"
           >
-            <MapPin className="h-4 w-4" />
-            Citizen View
-            <ChevronRight className="ml-auto h-3 w-3" />
+            <LogOut className="h-4 w-4" />
+            Sign Out
           </button>
         </div>
       </nav>
-
-      <div className="border-t border-white/10 px-4 pb-6 pt-4">
-        <button
-          onClick={() => navigate("/")}
-          className="flex w-full items-center gap-3 rounded-2xl px-3.5 py-3 text-sm font-[600] text-[#d7d9e7] transition-all hover:bg-rose-500/12 hover:text-rose-300"
-        >
-          <LogOut className="h-4 w-4" />
-          Sign Out
-        </button>
-      </div>
     </div>
   );
 
@@ -169,7 +158,7 @@ export default function AdminLayout() {
       )}
 
       <div className="relative z-10 flex min-h-screen flex-1 flex-col lg:ml-64">
-        <header className="sticky top-0 z-30 flex items-center gap-4 border-b border-white/15 bg-white/14 px-4 py-4 shadow-[0_8px_30px_rgba(15,23,42,0.12)] backdrop-blur-xl lg:px-8">
+        {/* <header className="sticky top-0 z-30 flex items-center gap-4 border-b border-white/15 bg-white/14 px-4 py-4 shadow-[0_8px_30px_rgba(15,23,42,0.12)] backdrop-blur-xl lg:px-8">
           <button
             className="text-white/85 lg:hidden"
             onClick={() => setSidebarOpen(true)}
@@ -191,7 +180,7 @@ export default function AdminLayout() {
               </span>
             </div>
           </div>
-        </header>
+        </header> */}
 
         <main className="flex-1 overflow-auto bg-white/8 p-4 backdrop-blur-[16px] lg:p-8">
           <Outlet />

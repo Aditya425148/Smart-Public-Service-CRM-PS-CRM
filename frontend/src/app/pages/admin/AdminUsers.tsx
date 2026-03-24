@@ -184,7 +184,7 @@ export default function AdminUsers() {
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
           <input
             type="text"
-            placeholder="Search by name, ID, or ward..."
+            placeholder="Search by name, ID, or area..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             className="w-full pl-9 pr-4 py-2.5 text-sm bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:border-violet-400 transition-colors"
@@ -221,7 +221,7 @@ export default function AdminUsers() {
                   Reports
                 </th>
                 <th className="text-center px-4 py-3 text-xs font-[700] text-slate-500 uppercase tracking-wider">
-                  Ward
+                  Area
                 </th>
                 <th className="text-center px-4 py-3 text-xs font-[700] text-slate-500 uppercase tracking-wider">
                   Status

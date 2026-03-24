@@ -25,7 +25,7 @@ export interface Complaint {
   status: ComplaintStatus;
   priorityScore: number;
   address: string;
-  ward: string;
+  area: string;
   lat: number;
   lng: number;
   slaDeadline: string;
@@ -358,12 +358,12 @@ export interface Officer {
   avatar: string;
   activeComplaints: number;
   resolvedThisWeek: number;
-  ward: string;
+  area: string;
   status: "Available" | "On Site" | "Off Duty";
 }
 
-export interface WardStats {
-  ward: string;
+export interface AreaStats {
+  area: string;
   totalComplaints: number;
   resolved: number;
   inProgress: number;
@@ -380,7 +380,7 @@ export const mockOfficers: Officer[] = [
     avatar: "PM",
     activeComplaints: 4,
     resolvedThisWeek: 12,
-    ward: "Ward 4",
+    area: "North Delhi",
     status: "On Site",
   },
   {
@@ -389,7 +389,7 @@ export const mockOfficers: Officer[] = [
     avatar: "RK",
     activeComplaints: 2,
     resolvedThisWeek: 8,
-    ward: "Ward 7",
+    area: "South Delhi",
     status: "Available",
   },
   {
@@ -398,7 +398,7 @@ export const mockOfficers: Officer[] = [
     avatar: "SR",
     activeComplaints: 5,
     resolvedThisWeek: 9,
-    ward: "Ward 2",
+    area: "East Delhi",
     status: "On Site",
   },
   {
@@ -407,7 +407,7 @@ export const mockOfficers: Officer[] = [
     avatar: "DV",
     activeComplaints: 3,
     resolvedThisWeek: 6,
-    ward: "Ward 3",
+    area: "West Delhi",
     status: "On Site",
   },
   {
@@ -416,14 +416,14 @@ export const mockOfficers: Officer[] = [
     avatar: "AP",
     activeComplaints: 1,
     resolvedThisWeek: 15,
-    ward: "Ward 1",
+    area: "Central Delhi",
     status: "Available",
   },
 ];
 
-export const mockWardStats: WardStats[] = [
+export const mockAreaStats: AreaStats[] = [
   {
-    ward: "Ward 7",
+    area: "Delhi Central",
     totalComplaints: 134,
     resolved: 118,
     inProgress: 10,
@@ -433,7 +433,7 @@ export const mockWardStats: WardStats[] = [
     rank: 1,
   },
   {
-    ward: "Ward 1",
+    area: "Noida Sector 62",
     totalComplaints: 98,
     resolved: 84,
     inProgress: 9,
@@ -443,7 +443,7 @@ export const mockWardStats: WardStats[] = [
     rank: 2,
   },
   {
-    ward: "Ward 4",
+    area: "Lucknow Central",
     totalComplaints: 142,
     resolved: 121,
     inProgress: 14,
@@ -453,7 +453,7 @@ export const mockWardStats: WardStats[] = [
     rank: 3,
   },
   {
-    ward: "Ward 2",
+    area: "South Delhi",
     totalComplaints: 87,
     resolved: 71,
     inProgress: 11,
@@ -463,7 +463,7 @@ export const mockWardStats: WardStats[] = [
     rank: 4,
   },
   {
-    ward: "Ward 5",
+    area: "Noida Sector 18",
     totalComplaints: 115,
     resolved: 88,
     inProgress: 16,
@@ -473,7 +473,7 @@ export const mockWardStats: WardStats[] = [
     rank: 5,
   },
   {
-    ward: "Ward 3",
+    area: "Ghaziabad Central",
     totalComplaints: 103,
     resolved: 72,
     inProgress: 20,
@@ -483,7 +483,7 @@ export const mockWardStats: WardStats[] = [
     rank: 6,
   },
   {
-    ward: "Ward 6",
+    area: "Lucknow Gomti Nagar",
     totalComplaints: 76,
     resolved: 48,
     inProgress: 18,
@@ -612,12 +612,12 @@ export const currentUser = {
     },
     {
       id: "ward_champion",
-      name: "Ward Champion",
+      name: "Area Champion",
       icon: "🏆",
       earned: false,
-      criteria: "Top contributor in ward for 3 months",
+      criteria: "Top contributor in area for 3 months",
     },
   ],
-  ward: "Ward 4",
+  area: "Noida Sector 62",
   nextMilestone: 500,
 };

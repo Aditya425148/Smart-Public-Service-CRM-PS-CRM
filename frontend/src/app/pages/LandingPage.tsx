@@ -218,7 +218,7 @@ const features = [
   {
     icon: BarChart3,
     title: "Analytics & Heatmaps",
-    desc: "Ward-level complaint density heatmaps, KPI dashboards (MTTA, MTTR, SLA compliance), and department-wise performance tracking for officials.",
+    desc: "Area-level complaint density heatmaps, KPI dashboards (MTTA, MTTR, SLA compliance), and department-wise performance tracking for officials.",
     color: "text-rose-500",
     bg: "bg-rose-50",
   },
@@ -252,21 +252,21 @@ const steps = [
 const testimonials = [
   {
     name: "Anjali Desai",
-    ward: "New Delhi, NCR",
+    area: "New Delhi, NCR",
     text: "I reported a garbage overflow and it was cleared in 8 hours. The before/after card was amazing — I could track the progress live!",
     rating: 5,
     badge: "🔎 Verified Contributor",
   },
   {
     name: "Rajesh Kumar",
-    ward: "Lucknow, UP",
+    area: "Lucknow, UP",
     text: "Finally a platform where our complaints actually get tracked and resolved. The SLA countdown keeps officials accountable.",
     rating: 5,
     badge: "🛠️ Problem Solver",
   },
   {
     name: "Priya Nair",
-    ward: "Noida, UP",
+    area: "Noida, UP",
     text: "The AI category suggestion is spot on. I just pointed my phone at the pothole and it knew exactly what it was. Super fast reporting.",
     rating: 5,
     badge: "🌱 First Reporter",
@@ -434,7 +434,7 @@ export default function LandingPage() {
               Real-time Feed
             </h4>
             <p className="text-xs text-slate-500">
-              Access anonymized complaint data filtered by ward or category.
+              Access anonymized complaint data filtered by area or category.
             </p>
             <h4 className="font-semibold text-slate-900 text-sm">
               SLA Reports
@@ -445,7 +445,7 @@ export default function LandingPage() {
           </div>
           <div className="p-3 bg-slate-900 rounded-lg">
             <code className="text-[10px] text-blue-300">
-              GET /api/v1/issues/public?ward=7
+              GET /api/v1/issues/public?area=delhi_central
             </code>
           </div>
         </div>
@@ -1221,7 +1221,7 @@ export default function LandingPage() {
                     <div className="text-sm font-[700] text-slate-900">
                       {t.name}
                     </div>
-                    <div className="text-xs text-slate-500">{t.ward}</div>
+                    <div className="text-xs text-slate-500">{t.area}</div>
                   </div>
                   <span className="ml-auto text-xs bg-blue-50 text-blue-600 px-2 py-1 rounded-full font-[500]">
                     {t.badge}

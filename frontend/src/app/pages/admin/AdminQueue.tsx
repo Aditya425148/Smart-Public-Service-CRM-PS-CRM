@@ -19,16 +19,16 @@ import { appwriteService } from "../../appwriteService";
 import { Complaint } from "../../data/mockData";
 
 const MOCK_MANAGERS = [
-  { id: "MGR-DEL-01", name: "Sanjay Sharma",  state: "Delhi" },
-  { id: "MGR-DEL-02", name: "Meena Kumari",   state: "Delhi" },
-  { id: "MGR-DEL-03", name: "Rajesh Tyagi",   state: "Delhi" },
-  { id: "MGR-DEL-04", name: "Anita Singh",    state: "Delhi" },
-  { id: "MGR-DEL-05", name: "Amit Goel",      state: "Delhi" },
-  { id: "MGR-UP-01",  name: "Yash Pal",       state: "Uttar Pradesh" },
-  { id: "MGR-UP-02",  name: "Priti Yadav",    state: "Uttar Pradesh" },
-  { id: "MGR-UP-03",  name: "Manoj Mishra",   state: "Uttar Pradesh" },
-  { id: "MGR-UP-04",  name: "Renu Devi",      state: "Uttar Pradesh" },
-  { id: "MGR-UP-05",  name: "Suresh Chandra", state: "Uttar Pradesh" },
+  { id: "MGR-DEL-01", name: "Sanjay Sharma", state: "Delhi" },
+  { id: "MGR-DEL-02", name: "Meena Kumari", state: "Delhi" },
+  { id: "MGR-DEL-03", name: "Rajesh Tyagi", state: "Delhi" },
+  { id: "MGR-DEL-04", name: "Anita Singh", state: "Delhi" },
+  { id: "MGR-DEL-05", name: "Amit Goel", state: "Delhi" },
+  { id: "MGR-UP-01", name: "Yash Pal", state: "Uttar Pradesh" },
+  { id: "MGR-UP-02", name: "Priti Yadav", state: "Uttar Pradesh" },
+  { id: "MGR-UP-03", name: "Manoj Mishra", state: "Uttar Pradesh" },
+  { id: "MGR-UP-04", name: "Renu Devi", state: "Uttar Pradesh" },
+  { id: "MGR-UP-05", name: "Suresh Chandra", state: "Uttar Pradesh" },
 ];
 
 const slaStatus = (remaining: number, status: string) => {
@@ -99,7 +99,7 @@ export default function AdminQueue() {
         c.slaRemainingHours < 12) ||
       (filterSLA === "On Track" && c.slaRemainingHours >= 12);
     const matchCat = filterCategory === "All" || c.category === filterCategory;
-    const matchWard = filterWard === "All" || c.ward === filterWard;
+    const matchWard = filterWard === "All" || c.area === filterWard;
     return matchSearch && matchSLA && matchCat && matchWard;
   });
 
@@ -135,13 +135,13 @@ export default function AdminQueue() {
   ];
   const wards = [
     "All",
-    "Ward 1",
-    "Ward 2",
-    "Ward 3",
-    "Ward 4",
-    "Ward 5",
-    "Ward 6",
-    "Ward 7",
+    "North Delhi",
+    "South Delhi",
+    "East Delhi",
+    "West Delhi",
+    "Central Delhi",
+    "Lucknow Central",
+    "Noida Sector 62",
   ];
 
   return (
@@ -412,10 +412,15 @@ export default function AdminQueue() {
                     className="accent-violet-600"
                   />
                   <div className="w-8 h-8 rounded-full bg-gradient-to-br from-sky-500 to-indigo-600 text-white flex items-center justify-center text-xs font-[700]">
-                    {mgr.name.split(" ").map((n) => n[0]).join("")}
+                    {mgr.name
+                      .split(" ")
+                      .map((n) => n[0])
+                      .join("")}
                   </div>
                   <div className="flex-1">
-                    <div className="text-sm font-[600] text-slate-800">{mgr.name}</div>
+                    <div className="text-sm font-[600] text-slate-800">
+                      {mgr.name}
+                    </div>
                     <div className="text-xs text-slate-400">{mgr.state}</div>
                   </div>
                 </label>
