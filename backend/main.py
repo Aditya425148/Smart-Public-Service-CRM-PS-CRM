@@ -6,6 +6,7 @@ from routes.complaints import router as complaints_router
 from routes.stats import router as stats_router
 from routes.uploads import router as uploads_router
 from routes.leaderboard import router as leaderboard_router
+from routes.users import router as users_router
 
 app = FastAPI(title="PS-CRM Backend", version="1.0.0")
 
@@ -46,6 +47,7 @@ app.include_router(complaints_router)
 app.include_router(stats_router)
 app.include_router(uploads_router)
 app.include_router(leaderboard_router)
+app.include_router(users_router)
 
 
 @app.get("/health")

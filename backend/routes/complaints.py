@@ -206,6 +206,11 @@ class StatusUpdate(BaseModel):
     actor: Optional[str] = "System"
 
 
+class AssignManager(BaseModel):
+    managerId: str
+    managerName: Optional[str] = ""
+
+
 # ── Routes ────────────────────────────────────────────────────────────────────
 
 @router.get("")
@@ -357,4 +362,47 @@ async def update_status(complaint_id: str, body: StatusUpdate):
     except Exception as e:
         print(f"STATUS_UPDATE_ERROR: {str(e)}")
         raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.patch("/{complaint_id}/assign")
+async def assign_manager(complaint_id: str, body: AssignManager):
+    """Assign a complaint to a specific manager."""
+    try:
+        # Validate manager exists
+        manager = next((m for m in MOCK_MANAGERS if m["id"] == body.managerId), None)
+        if not manager:
+            raise HTTPException(status_code=400, detail="Manager not found")
+        
+        doc = databases.get_document(DATABASE_ID, COLLECTION_ID, complaint_id)
+        timeline = doc.get("timeline", "[]")
+        if isinstance(timeline, str):
+            try:
+                timeline = json.loads(timeline)
+            except Exception:
+                timeline = []
+        
+        # Add assignment event to timeline
+        timeline.append({
+            "status": "Assigned",
+            "timestamp": datetime.now(UTC).isoformat(),
+            "note": f"Assigned to {manager['name']}",
+            "actor": "Admin",
+        })
+        
+        databases.update_document(DATABASE_ID, COLLECTION_ID, complaint_id, {
+            "assignedManagerId": body.managerId,
+            "assignedManagerName": manager["name"],
+            "status": "Assigned",
+            "timeline": json.dumps(timeline),
+            "updatedAt": datetime.now(UTC).isoformat(),
+        })
+        
+        updated = databases.get_document(DATABASE_ID, COLLECTION_ID, complaint_id)
+        return _map_doc(updated)
+    except HTTPException:
+        raise
+    except Exception as e:
+        print(f"ASSIGN_ERROR: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
+
 

@@ -173,6 +173,10 @@ export const appwriteService = {
     return api.get("/api/leaderboard/summary");
   },
 
+  async getAllUsers(): Promise<any[]> {
+    return api.get<any[]>("/api/users");
+  },
+
   async uploadPhoto(file: File): Promise<string> {
     const ALLOWED = [
       "image/jpeg",

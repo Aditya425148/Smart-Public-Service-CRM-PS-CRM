@@ -135,6 +135,38 @@ export default function ReportIssue() {
   const mapRef = useRef<any>(null);
   const mapInstanceRef = useRef<any>(null);
 
+  // Geofence boundaries for allowed service area (Delhi-NCR + Uttar Pradesh)
+  // Excludes Bihar and other states
+  const GEOFENCE_BOUNDS = {
+    minLat: 26.5,  // South boundary (exclude Bihar)
+    maxLat: 31.0,  // North boundary (include UP)
+    minLng: 76.5,  // West boundary
+    maxLng: 80.5,  // East boundary (include UP)
+  };
+
+  const isLocationAllowed = (lat: number, lng: number): boolean => {
+    const { minLat, maxLat, minLng, maxLng } = GEOFENCE_BOUNDS;
+    return lat >= minLat && lat <= maxLat && lng >= minLng && lng <= maxLng;
+  };
+
+  const getLocationErrorMessage = (lat: number, lng: number): string => {
+    const { minLat, maxLat, minLng, maxLng } = GEOFENCE_BOUNDS;
+    
+    if (lat < minLat) {
+      return "❌ This location is outside our service area (too far south - possibly Bihar). Please select a location within Delhi-NCR or Uttar Pradesh.";
+    }
+    if (lat > maxLat) {
+      return "❌ This location is outside our service area (too far north). Please select a location within Delhi-NCR or Uttar Pradesh.";
+    }
+    if (lng < minLng) {
+      return "❌ This location is outside our service area (too far west). Please select a location within Delhi-NCR or Uttar Pradesh.";
+    }
+    if (lng > maxLng) {
+      return "❌ This location is outside our service area (too far east). Please select a location within Delhi-NCR or Uttar Pradesh.";
+    }
+    return "This location is outside our service area.";
+  };
+
   // Initialize Leaflet map when map picker opens
   useEffect(() => {
     if (!showMapPicker) return;
@@ -356,6 +388,14 @@ export default function ReportIssue() {
     navigator.geolocation.getCurrentPosition(
       async (position) => {
         const { latitude, longitude } = position.coords;
+        
+        // Validate location is within allowed service area
+        if (!isLocationAllowed(latitude, longitude)) {
+          toast.error(getLocationErrorMessage(latitude, longitude));
+          setIsDetectingLocation(false);
+          return;
+        }
+
         setCoords({ lat: latitude, lng: longitude });
 
         try {
@@ -425,6 +465,13 @@ export default function ReportIssue() {
 
   // Handle when user selects a location from the map
   const handleMapLocationSelect = async (lat: number, lng: number) => {
+    // Validate location is within allowed service area
+    if (!isLocationAllowed(lat, lng)) {
+      toast.error(getLocationErrorMessage(lat, lng));
+      setCoords(null);
+      return;
+    }
+
     setCoords({ lat, lng });
 
     try {
@@ -469,24 +516,43 @@ export default function ReportIssue() {
   };
 
   const handleSearchLocation = async () => {
-    if (!searchQuery.trim()) return;
+    if (!searchQuery.trim()) {
+      toast.error("Please enter a location to search.");
+      return;
+    }
 
     try {
+      const searchTerm = `${searchQuery}`;
       const response = await fetch(
-        `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(searchQuery)}&limit=1`,
+        `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(searchTerm)}&limit=5&viewbox=76.5,26.5,80.5,31.0&bounded=1`,
       );
       const data = await response.json();
 
       if (data && data.length > 0) {
         const result = data[0];
-        handleMapLocationSelect(parseFloat(result.lat), parseFloat(result.lon));
-        toast.success("Location found!");
+        const lat = parseFloat(result.lat);
+        const lng = parseFloat(result.lon);
+        
+        // Validate location is within allowed bounds before proceeding
+        if (!isLocationAllowed(lat, lng)) {
+          toast.error(
+            `"${result.display_name}" is outside our service area. Please search for a location in Delhi-NCR or Uttar Pradesh.`
+          );
+          return;
+        }
+
+        // Found valid location - proceed with selection
+        setSearchQuery("");
+        handleMapLocationSelect(lat, lng);
+        toast.success(`Found: ${result.display_name}`);
       } else {
-        toast.error("Location not found. Try a different search.");
+        toast.error(
+          "Location not found in our service area. Try searching for a specific address, landmark, or city (Delhi, Noida, Lucknow, etc.)"
+        );
       }
     } catch (error) {
       console.error("Search failed:", error);
-      toast.error("Search failed. Please try again.");
+      toast.error("Search failed. Please try again or click on the map instead.");
     }
   };
 
@@ -516,6 +582,15 @@ export default function ReportIssue() {
           console.error("Auto-geocoding failed:", error);
           // Continue without coords, backend will try
         }
+      }
+
+      // Validate the location (either from user selection or auto-geocoding)
+      if (finalCoords && !isLocationAllowed(finalCoords.lat, finalCoords.lng)) {
+        toast.error(
+          `The location "${address || area}" is outside our service area. Please select a location within Delhi-NCR or Uttar Pradesh.`
+        );
+        setIsSubmitting(false);
+        return;
       }
 
       const payload = {
@@ -1059,14 +1134,21 @@ export default function ReportIssue() {
             <div className="mb-4 flex gap-2">
               <input
                 type="text"
-                placeholder="Search address or landmark..."
+                placeholder="Search address or landmark (e.g. 'Lotus Temple, Delhi')"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
+                onKeyPress={(e) => {
+                  if (e.key === 'Enter') {
+                    e.preventDefault();
+                    handleSearchLocation();
+                  }
+                }}
                 className="flex-1 rounded-lg border border-slate-300 px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-sky-500/20 focus:border-sky-500"
               />
               <button
                 onClick={() => handleSearchLocation()}
-                className="px-4 py-2.5 bg-sky-600 hover:bg-sky-700 text-white font-semibold rounded-lg transition"
+                disabled={!searchQuery.trim()}
+                className="px-4 py-2.5 bg-sky-600 hover:bg-sky-700 disabled:bg-slate-300 text-white font-semibold rounded-lg transition"
               >
                 Search
               </button>

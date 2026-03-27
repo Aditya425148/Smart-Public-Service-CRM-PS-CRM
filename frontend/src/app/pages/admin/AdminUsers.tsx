@@ -1,20 +1,19 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { motion } from "motion/react";
 import {
   Search,
-  Shield,
   AlertTriangle,
   Ban,
-  CheckCircle,
   Eye,
-  MoreHorizontal,
-  Filter,
+  Loader2,
 } from "lucide-react";
+import { appwriteService } from "../../appwriteService";
 
 const mockUsers = [
   {
     id: "USR-001",
     name: "Rahul Sharma",
+    email: "rahul.sharma@citizen.local",
     phone: "+91 98765 43210",
     tier: 2,
     reputation: 420,
@@ -27,6 +26,7 @@ const mockUsers = [
   {
     id: "USR-002",
     name: "Anjali Desai",
+    email: "anjali.desai@citizen.local",
     phone: "+91 87654 32109",
     tier: 1,
     reputation: 285,
@@ -39,6 +39,7 @@ const mockUsers = [
   {
     id: "USR-003",
     name: "Mohammed Farouk",
+    email: "mohammed.farouk@citizen.local",
     phone: "+91 76543 21098",
     tier: 1,
     reputation: 150,
@@ -51,6 +52,7 @@ const mockUsers = [
   {
     id: "USR-004",
     name: "Priya Singh",
+    email: "priya.singh@citizen.local",
     phone: "+91 65432 10987",
     tier: 2,
     reputation: 380,
@@ -63,6 +65,7 @@ const mockUsers = [
   {
     id: "USR-005",
     name: "Kiran Patel",
+    email: "kiran.patel@citizen.local",
     phone: "+91 54321 09876",
     tier: 1,
     reputation: 90,
@@ -75,6 +78,7 @@ const mockUsers = [
   {
     id: "USR-006",
     name: "Anonymous User",
+    email: "anonymous@citizen.local",
     phone: "N/A",
     tier: 0,
     reputation: 20,
@@ -87,6 +91,7 @@ const mockUsers = [
   {
     id: "USR-007",
     name: "Suresh Nair",
+    email: "suresh.nair@citizen.local",
     phone: "+91 43210 98765",
     tier: 2,
     reputation: -10,
@@ -99,6 +104,7 @@ const mockUsers = [
   {
     id: "USR-008",
     name: "Meena Kumari",
+    email: "meena.kumari@citizen.local",
     phone: "+91 32109 87654",
     tier: 1,
     reputation: 520,
@@ -111,13 +117,30 @@ const mockUsers = [
 ];
 
 export default function AdminUsers() {
+  const [users, setUsers] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
   const [filterStatus, setFilterStatus] = useState("All");
-  const [selectedUser, setSelectedUser] = useState<
-    (typeof mockUsers)[0] | null
-  >(null);
+  const [selectedUser, setSelectedUser] = useState<any | null>(null);
 
-  const filtered = mockUsers.filter((u) => {
+  useEffect(() => {
+    const fetchUsers = async () => {
+      try {
+        setLoading(true);
+        const data = await appwriteService.getAllUsers();
+        setUsers(data && data.length > 0 ? data : mockUsers);
+      } catch (error) {
+        console.error("Failed to fetch users:", error);
+        setUsers(mockUsers);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchUsers();
+  }, []);
+
+  const filtered = users.filter((u) => {
     const matchSearch =
       u.name.toLowerCase().includes(search.toLowerCase()) ||
       u.id.toLowerCase().includes(search.toLowerCase()) ||
@@ -125,6 +148,17 @@ export default function AdminUsers() {
     const matchStatus = filterStatus === "All" || u.status === filterStatus;
     return matchSearch && matchStatus;
   });
+
+  if (loading) {
+    return (
+      <div className="max-w-6xl mx-auto flex items-center justify-center min-h-[60vh]">
+        <div className="text-center">
+          <Loader2 className="w-8 h-8 animate-spin text-slate-400 mx-auto mb-3" />
+          <p className="text-sm text-slate-500">Loading users...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="max-w-6xl mx-auto space-y-6">
@@ -140,28 +174,28 @@ export default function AdminUsers() {
         {[
           {
             label: "Total Users",
-            value: mockUsers.length,
+            value: users.length,
             color: "text-blue-600",
             bg: "bg-blue-50",
           },
           {
             label: "Tier 2+ Citizens",
-            value: mockUsers.filter((u) => u.tier >= 2).length,
+            value: users.filter((u) => u.tier >= 2).length,
             color: "text-violet-600",
             bg: "bg-violet-50",
           },
           {
             label: "Flagged Accounts",
-            value: mockUsers.filter((u) => u.status === "Flagged").length,
+            value: users.filter((u) => u.status === "Flagged").length,
             color: "text-amber-600",
             bg: "bg-amber-50",
           },
           {
             label: "Avg Reputation",
-            value: Math.round(
-              mockUsers.reduce((a, u) => a + u.reputation, 0) /
-                mockUsers.length,
-            ),
+            value: users.length > 0 ? Math.round(
+              users.reduce((a, u) => a + u.reputation, 0) /
+                users.length,
+            ) : 0,
             color: "text-emerald-600",
             bg: "bg-emerald-50",
           },
@@ -232,111 +266,119 @@ export default function AdminUsers() {
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-50">
-              {filtered.map((user, i) => (
-                <motion.tr
-                  key={user.id}
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  transition={{ delay: i * 0.03 }}
-                  className={`hover:bg-slate-50 transition-colors ${user.status === "Flagged" ? "bg-amber-50/30" : ""}`}
-                >
-                  <td className="px-5 py-4">
-                    <div className="flex items-center gap-3">
-                      <div
-                        className={`w-9 h-9 rounded-full flex items-center justify-center text-white text-xs font-[700] ${
-                          user.tier === 0
-                            ? "bg-slate-400"
+              {filtered.length > 0 ? (
+                filtered.map((user, i) => (
+                  <motion.tr
+                    key={user.id}
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    transition={{ delay: i * 0.03 }}
+                    className={`hover:bg-slate-50 transition-colors ${user.status === "Flagged" ? "bg-amber-50/30" : ""}`}
+                  >
+                    <td className="px-5 py-4">
+                      <div className="flex items-center gap-3">
+                        <div
+                          className={`w-9 h-9 rounded-full flex items-center justify-center text-white text-xs font-[700] ${
+                            user.tier === 0
+                              ? "bg-slate-400"
+                              : user.tier === 1
+                                ? "bg-blue-500"
+                                : "bg-indigo-600"
+                          }`}
+                        >
+                          {user.name === "Anonymous User"
+                            ? "A"
+                            : user.name
+                                .split(" ")
+                                .map((n: string) => n[0])
+                                .join("")
+                                .slice(0, 2)}
+                        </div>
+                        <div>
+                          <div className="font-[600] text-slate-800">
+                            {user.name}
+                          </div>
+                          <div className="text-xs text-slate-400">
+                            {user.id} · {user.phone}
+                          </div>
+                        </div>
+                      </div>
+                    </td>
+                    <td className="px-4 py-4 text-center">
+                      <span
+                        className={`text-xs font-[700] px-2.5 py-1 rounded-full ${
+                          user.tier === 2
+                            ? "bg-indigo-100 text-indigo-700"
                             : user.tier === 1
-                              ? "bg-blue-500"
-                              : "bg-indigo-600"
+                              ? "bg-blue-100 text-blue-700"
+                              : "bg-slate-100 text-slate-500"
                         }`}
                       >
-                        {user.name === "Anonymous User"
-                          ? "A"
-                          : user.name
-                              .split(" ")
-                              .map((n) => n[0])
-                              .join("")
-                              .slice(0, 2)}
+                        Tier {user.tier}
+                      </span>
+                    </td>
+                    <td className="px-4 py-4 text-right">
+                      <span
+                        className={`font-[700] ${user.reputation < 0 ? "text-red-600" : user.reputation >= 300 ? "text-emerald-600" : "text-slate-700"}`}
+                      >
+                        {user.reputation}
+                      </span>
+                    </td>
+                    <td className="px-4 py-4 text-right">
+                      <span className="text-slate-700">{user.complaints}</span>
+                      <span className="text-slate-400 text-xs ml-1">
+                        ({user.resolved} resolved)
+                      </span>
+                    </td>
+                    <td className="px-4 py-4 text-center text-xs text-slate-600 font-[500]">
+                      {user.ward}
+                    </td>
+                    <td className="px-4 py-4 text-center">
+                      <span
+                        className={`text-xs px-2.5 py-1 rounded-full font-[600] ${
+                          user.status === "Active"
+                            ? "bg-emerald-100 text-emerald-700"
+                            : user.status === "Flagged"
+                              ? "bg-amber-100 text-amber-700"
+                              : "bg-red-100 text-red-700"
+                        }`}
+                      >
+                        {user.status === "Flagged" && "⚠ "}
+                        {user.status}
+                      </span>
+                    </td>
+                    <td className="px-4 py-4 text-center">
+                      <div className="flex items-center justify-center gap-1.5">
+                        <button
+                          onClick={() => setSelectedUser(user)}
+                          className="w-7 h-7 flex items-center justify-center text-slate-400 hover:text-blue-500 hover:bg-blue-50 rounded-lg transition-colors"
+                          title="View Details"
+                        >
+                          <Eye className="w-3.5 h-3.5" />
+                        </button>
+                        <button
+                          className="w-7 h-7 flex items-center justify-center text-slate-400 hover:text-amber-500 hover:bg-amber-50 rounded-lg transition-colors"
+                          title="Flag Account"
+                        >
+                          <AlertTriangle className="w-3.5 h-3.5" />
+                        </button>
+                        <button
+                          className="w-7 h-7 flex items-center justify-center text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors"
+                          title="Suspend Account"
+                        >
+                          <Ban className="w-3.5 h-3.5" />
+                        </button>
                       </div>
-                      <div>
-                        <div className="font-[600] text-slate-800">
-                          {user.name}
-                        </div>
-                        <div className="text-xs text-slate-400">
-                          {user.id} · {user.phone}
-                        </div>
-                      </div>
-                    </div>
+                    </td>
+                  </motion.tr>
+                ))
+              ) : (
+                <tr>
+                  <td colSpan={7} className="px-5 py-8 text-center text-slate-500">
+                    No users found matching your criteria
                   </td>
-                  <td className="px-4 py-4 text-center">
-                    <span
-                      className={`text-xs font-[700] px-2.5 py-1 rounded-full ${
-                        user.tier === 2
-                          ? "bg-indigo-100 text-indigo-700"
-                          : user.tier === 1
-                            ? "bg-blue-100 text-blue-700"
-                            : "bg-slate-100 text-slate-500"
-                      }`}
-                    >
-                      Tier {user.tier}
-                    </span>
-                  </td>
-                  <td className="px-4 py-4 text-right">
-                    <span
-                      className={`font-[700] ${user.reputation < 0 ? "text-red-600" : user.reputation >= 300 ? "text-emerald-600" : "text-slate-700"}`}
-                    >
-                      {user.reputation}
-                    </span>
-                  </td>
-                  <td className="px-4 py-4 text-right">
-                    <span className="text-slate-700">{user.complaints}</span>
-                    <span className="text-slate-400 text-xs ml-1">
-                      ({user.resolved} resolved)
-                    </span>
-                  </td>
-                  <td className="px-4 py-4 text-center text-xs text-slate-600 font-[500]">
-                    {user.ward}
-                  </td>
-                  <td className="px-4 py-4 text-center">
-                    <span
-                      className={`text-xs px-2.5 py-1 rounded-full font-[600] ${
-                        user.status === "Active"
-                          ? "bg-emerald-100 text-emerald-700"
-                          : user.status === "Flagged"
-                            ? "bg-amber-100 text-amber-700"
-                            : "bg-red-100 text-red-700"
-                      }`}
-                    >
-                      {user.status === "Flagged" && "⚠ "}
-                      {user.status}
-                    </span>
-                  </td>
-                  <td className="px-4 py-4 text-center">
-                    <div className="flex items-center justify-center gap-1.5">
-                      <button
-                        onClick={() => setSelectedUser(user)}
-                        className="w-7 h-7 flex items-center justify-center text-slate-400 hover:text-blue-500 hover:bg-blue-50 rounded-lg transition-colors"
-                        title="View Details"
-                      >
-                        <Eye className="w-3.5 h-3.5" />
-                      </button>
-                      <button
-                        className="w-7 h-7 flex items-center justify-center text-slate-400 hover:text-amber-500 hover:bg-amber-50 rounded-lg transition-colors"
-                        title="Flag Account"
-                      >
-                        <AlertTriangle className="w-3.5 h-3.5" />
-                      </button>
-                      <button
-                        className="w-7 h-7 flex items-center justify-center text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors"
-                        title="Suspend Account"
-                      >
-                        <Ban className="w-3.5 h-3.5" />
-                      </button>
-                    </div>
-                  </td>
-                </motion.tr>
-              ))}
+                </tr>
+              )}
             </tbody>
           </table>
         </div>
@@ -366,7 +408,7 @@ export default function AdminUsers() {
               <div className="w-14 h-14 rounded-full bg-gradient-to-br from-indigo-500 to-blue-600 flex items-center justify-center text-white text-lg font-[700]">
                 {selectedUser.name
                   .split(" ")
-                  .map((n) => n[0])
+                  .map((n: string) => n[0])
                   .join("")
                   .slice(0, 2)}
               </div>

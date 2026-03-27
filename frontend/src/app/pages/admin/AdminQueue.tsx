@@ -16,7 +16,9 @@ import {
   UserCheck,
 } from "lucide-react";
 import { appwriteService } from "../../appwriteService";
+import { api } from "../../api";
 import { Complaint } from "../../data/mockData";
+import { toast } from "sonner";
 
 const MOCK_MANAGERS = [
   { id: "MGR-DEL-01", name: "Sanjay Sharma", state: "Delhi" },
@@ -64,6 +66,7 @@ export default function AdminQueue() {
   const navigate = useNavigate();
   const [complaints, setComplaints] = useState<Complaint[]>([]);
   const [loading, setLoading] = useState(true);
+  const [assignLoading, setAssignLoading] = useState(false);
   const [search, setSearch] = useState("");
   const [filterSLA, setFilterSLA] = useState("All");
   const [filterCategory, setFilterCategory] = useState("All");
@@ -428,15 +431,45 @@ export default function AdminQueue() {
             </div>
             <div className="flex gap-3">
               <button
-                onClick={() => {
-                  setAssignModalOpen(false);
-                  setSelectedIds([]);
-                  setSelectedOfficer("");
+                onClick={async () => {
+                  if (!selectedOfficer) return;
+                  
+                  setAssignLoading(true);
+                  try {
+                    const manager = MOCK_MANAGERS.find(m => m.id === selectedOfficer);
+                    if (!manager) {
+                      toast.error("Manager not found");
+                      return;
+                    }
+                    
+                    // Assign each selected complaint to the manager
+                    for (const complaintId of selectedIds) {
+                      await api.patch(`/api/complaints/${complaintId}/assign`, {
+                        managerId: selectedOfficer,
+                        managerName: manager.name,
+                      });
+                    }
+                    
+                    toast.success(`Assigned ${selectedIds.length} complaint${selectedIds.length > 1 ? 's' : ''} to ${manager.name}`);
+                    
+                    // Refresh complaints list
+                    const data = await appwriteService.getAllComplaints();
+                    setComplaints(data);
+                    
+                    setAssignModalOpen(false);
+                    setSelectedIds([]);
+                    setSelectedOfficer("");
+                  } catch (error) {
+                    console.error("Assignment error:", error);
+                    toast.error("Failed to assign complaints");
+                  } finally {
+                    setAssignLoading(false);
+                  }
                 }}
                 className="flex-1 py-2.5 bg-violet-600 hover:bg-violet-700 text-white text-sm font-[600] rounded-xl transition-colors disabled:opacity-40"
-                disabled={!selectedOfficer}
+                disabled={!selectedOfficer || assignLoading}
               >
-                Confirm Assignment
+                {assignLoading ? "Assigning..." : "Confirm Assignment"}
               </button>
               <button
                 onClick={() => setAssignModalOpen(false)}

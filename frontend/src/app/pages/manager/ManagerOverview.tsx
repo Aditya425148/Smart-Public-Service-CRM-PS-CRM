@@ -52,7 +52,7 @@ export default function ManagerOverview() {
         // Find the mock config for this logged in user or use defaults
         const mockConfig = mockManagers.find(
           (m: Manager) => m.email === user.email,
-        ) || mockManagers[0];
+        ) || (managerId ? mockManagers.find((m) => m.id === managerId) : null) || mockManagers[0];
         setManager({
           ...user,
           // Use the mock manager ID (e.g. MGR-DEL-01) for complaint filtering
@@ -65,9 +65,16 @@ export default function ManagerOverview() {
         });
       })
       .catch(() => {
-        // Fallback: If no session exists, use the ID from URL or default
-        const fallback =
-          mockManagers.find((m) => m.id === managerId) || mockManagers[0];
+        // Fallback: If no session exists, use the ID from URL or first manager
+        if (!managerId) {
+          navigate("/login", { replace: true });
+          return;
+        }
+        const fallback = mockManagers.find((m) => m.id === managerId);
+        if (!fallback) {
+          navigate("/login", { replace: true });
+          return;
+        }
         setManager(fallback);
       });
   }, [managerId, navigate]);
