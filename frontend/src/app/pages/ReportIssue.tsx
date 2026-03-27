@@ -1,4 +1,4 @@
-import { useState, type ChangeEvent, useMemo } from "react";
+import { useState, type ChangeEvent, useMemo, useEffect, useRef } from "react";
 import { useNavigate } from "react-router";
 import {
   ArrowLeft,
@@ -118,6 +118,8 @@ export default function ReportIssue() {
   const [address, setAddress] = useState("");
   const [area, setArea] = useState("");
   const [pincode, setPincode] = useState("");
+  const [showMapPicker, setShowMapPicker] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [complaintId, setComplaintId] = useState("");
   const [isUploadingPhoto, setIsUploadingPhoto] = useState(false);
@@ -130,6 +132,148 @@ export default function ReportIssue() {
   );
 
   const steps = ["Category", "Location", "Details", "Photos", "Done"];
+  const mapRef = useRef<any>(null);
+  const mapInstanceRef = useRef<any>(null);
+
+  // Initialize Leaflet map when map picker opens
+  useEffect(() => {
+    if (!showMapPicker) return;
+
+    const initializeMap = () => {
+      const mapEl = document.getElementById("map");
+      if (!mapEl) return;
+
+      const L = (window as any).L;
+      const defaultLat = coords?.lat || 28.7041;
+      const defaultLng = coords?.lng || 77.1025;
+      const defaultZoom = coords ? 18 : 12;
+
+      if (mapInstanceRef.current) {
+        mapInstanceRef.current.remove();
+      }
+
+      const map = L.map("map").setView([defaultLat, defaultLng], defaultZoom);
+
+      L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+        attribution:
+          '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
+        maxZoom: 19,
+      }).addTo(map);
+
+      if (coords) {
+        L.marker([coords.lat, coords.lng])
+          .addTo(map)
+          .bindPopup("Selected Location");
+      }
+
+      map.on("click", (e: any) => {
+        setCoords({ lat: e.latlng.lat, lng: e.latlng.lng });
+        if (mapInstanceRef.current?.getLayers) {
+          const layers = mapInstanceRef.current.getLayers();
+          layers.forEach((layer: any) => {
+            if (layer instanceof (window as any).L.Marker) {
+              mapInstanceRef.current.removeLayer(layer);
+            }
+          });
+        }
+        L.marker([e.latlng.lat, e.latlng.lng])
+          .addTo(map)
+          .bindPopup("Selected Location");
+      });
+
+      mapInstanceRef.current = map;
+    };
+
+    // Load Leaflet CSS and JS if not already loaded
+    if (!document.querySelector('link[href*="leaflet.css"]')) {
+      const link = document.createElement("link");
+      link.rel = "stylesheet";
+      link.href =
+        "https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css";
+      document.head.appendChild(link);
+    }
+
+    if (!(window as any).L) {
+      const script = document.createElement("script");
+      script.src =
+        "https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js";
+      script.async = true;
+      script.onload = () => {
+        initializeMap();
+      };
+      document.body.appendChild(script);
+    } else {
+      initializeMap();
+    }
+  }, [showMapPicker, coords]);
+
+  // Geocode typed location and determine manager based on actual coordinates
+  useEffect(() => {
+    const searchText = `${address}${area ? `, ${area}` : ""}`.trim();
+    
+    // Only geocode if we have meaningful text and NO coordinates yet (not from map/GPS)
+    if (searchText.length < 5 || coords) return;
+
+    const timeoutId = setTimeout(async () => {
+      try {
+        const response = await fetch(
+          `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(searchText)}&limit=1`,
+        );
+        const data = await response.json();
+
+        if (data && data.length > 0) {
+          const result = data[0];
+          const lat = parseFloat(result.lat);
+          const lng = parseFloat(result.lng);
+          
+          // Get state from coordinates using backend's logic
+          try {
+            const stateResponse = await fetch(
+              `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}`
+            );
+            const stateData = await stateResponse.json();
+            
+            if (stateData && stateData.address) {
+              const addr = stateData.address;
+              // Extract state/province from response
+              const state = addr.state || 
+                          (addr.address.includes("Delhi") ? "Delhi" : 
+                           addr.address.includes("Uttar Pradesh") ? "Uttar Pradesh" : 
+                           "Unknown");
+              
+              // Show manager preview based on detected state
+              const preview = getManagerPreview(state);
+              if (preview) {
+                setAssignedManagerName(preview.manager.name);
+              }
+            }
+          } catch (error) {
+            console.error("State detection failed:", error);
+          }
+        }
+      } catch (error) {
+        console.error("Geocoding failed:", error);
+      }
+    }, 800); // Debounce 800ms while typing
+
+    return () => clearTimeout(timeoutId);
+  }, [address, area, coords]);
+
+  // Auto-assign manager: prioritize coordinates-based detection, fall back to text preview
+  useEffect(() => {
+    // If coordinates are available, let backend determine manager from geolocation
+    // Otherwise use the text-based preview
+    if (coords) {
+      // With coordinates, backend will do accurate geolocation
+      // Only set a preview manager if we have one from text, but note backend may override
+      if (managerPreview) {
+        setAssignedManagerName(managerPreview.manager.name);
+      }
+    } else if (managerPreview) {
+      // No coordinates: use text-based preview
+      setAssignedManagerName(managerPreview.manager.name);
+    }
+  }, [managerPreview, coords]);
 
   const handlePhotoUpload = async (event: ChangeEvent<HTMLInputElement>) => {
     const files = event.target.files;
@@ -216,47 +360,32 @@ export default function ReportIssue() {
 
         try {
           const response = await fetch(
-            `https://maps.googleapis.com/maps/api/geocode/json?latlng=${latitude},${longitude}&key=AIzaSyAc0wUSsARYzaJZUWX15rgxtvTS0Wd8mMs`,
+            `https://nominatim.openstreetmap.org/reverse?format=json&lat=${latitude}&lon=${longitude}`,
           );
           const data = await response.json();
 
-          if (data.status === "OK" && data.results.length > 0) {
-            const result = data.results[0];
-            const components = result.address_components;
-            const premise = components.find((c: any) =>
-              c.types.includes("premise"),
-            )?.long_name;
-            const subpremise = components.find((c: any) =>
-              c.types.includes("subpremise"),
-            )?.long_name;
-            const pointOfInterest = components.find((c: any) =>
-              c.types.includes("point_of_interest"),
-            )?.long_name;
-            const route = components.find((c: any) =>
-              c.types.includes("route"),
-            )?.long_name;
+          if (data && data.address) {
+            const addr = data.address;
             const locationName =
-              pointOfInterest ||
-              premise ||
-              subpremise ||
-              route ||
-              result.formatted_address.split(",")[0];
+              addr.building ||
+              addr.poi ||
+              addr.road ||
+              addr.residential ||
+              data.name ||
+              data.display_name.split(",")[0];
 
             setAddress(locationName);
 
-            const areaComponent =
-              components.find((c: any) =>
-                c.types.includes("sublocality_level_1"),
-              ) ||
-              components.find((c: any) => c.types.includes("sublocality")) ||
-              components.find((c: any) => c.types.includes("locality"));
+            const areaName =
+              addr.suburb ||
+              addr.village ||
+              addr.town ||
+              addr.city ||
+              addr.county;
 
-            if (areaComponent) setArea(areaComponent.long_name);
+            if (areaName) setArea(areaName);
 
-            const pinComponent = components.find((c: any) =>
-              c.types.includes("postal_code"),
-            );
-            if (pinComponent) setPincode(pinComponent.long_name);
+            if (addr.postcode) setPincode(addr.postcode);
           } else {
             setAddress(
               `Location: ${latitude.toFixed(4)}, ${longitude.toFixed(4)}`,
@@ -294,28 +423,120 @@ export default function ReportIssue() {
     );
   };
 
+  // Handle when user selects a location from the map
+  const handleMapLocationSelect = async (lat: number, lng: number) => {
+    setCoords({ lat, lng });
+
+    try {
+      const response = await fetch(
+        `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}`,
+      );
+      const data = await response.json();
+
+      if (data && data.address) {
+        const addr = data.address;
+        const locationName =
+          addr.building ||
+          addr.poi ||
+          addr.road ||
+          addr.residential ||
+          data.name ||
+          data.display_name.split(",")[0];
+
+        setAddress(locationName);
+
+        const areaName =
+          addr.suburb ||
+          addr.village ||
+          addr.town ||
+          addr.city ||
+          addr.county;
+
+        if (areaName) setArea(areaName);
+
+        if (addr.postcode) setPincode(addr.postcode);
+      } else {
+        setAddress(`Location: ${lat.toFixed(4)}, ${lng.toFixed(4)}`);
+      }
+    } catch (error) {
+      console.error("Geocoding failed:", error);
+      setAddress(`Location: ${lat.toFixed(4)}, ${lng.toFixed(4)}`);
+    }
+
+    setLocationDetected(true);
+    setShowMapPicker(false);
+    toast.success("Location selected from map.");
+  };
+
+  const handleSearchLocation = async () => {
+    if (!searchQuery.trim()) return;
+
+    try {
+      const response = await fetch(
+        `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(searchQuery)}&limit=1`,
+      );
+      const data = await response.json();
+
+      if (data && data.length > 0) {
+        const result = data[0];
+        handleMapLocationSelect(parseFloat(result.lat), parseFloat(result.lon));
+        toast.success("Location found!");
+      } else {
+        toast.error("Location not found. Try a different search.");
+      }
+    } catch (error) {
+      console.error("Search failed:", error);
+      toast.error("Search failed. Please try again.");
+    }
+  };
+
   const handleSubmit = async () => {
     if (isSubmitting) return;
     setIsSubmitting(true);
 
     try {
       const user = await account.get();
+      
+      // If no coordinates yet, geocode the typed location
+      let finalCoords = coords;
+      if (!finalCoords && address) {
+        try {
+          const searchText = `${address}${area ? `, ${area}` : ""}`;
+          const response = await fetch(
+            `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(searchText)}&limit=1`,
+          );
+          const data = await response.json();
+          if (data && data.length > 0) {
+            finalCoords = {
+              lat: parseFloat(data[0].lat),
+              lng: parseFloat(data[0].lng),
+            };
+          }
+        } catch (error) {
+          console.error("Auto-geocoding failed:", error);
+          // Continue without coords, backend will try
+        }
+      }
+
       const payload = {
         category: selectedCategory || "Other",
         subcategory: selectedSubcategory || "",
         description: description.trim() || "No description provided",
         address: `${address}${area ? `, ${area}` : ""}${pincode ? ` - ${pincode}` : ""}`,
-        coordinates: coords ? { lat: coords.lat, lng: coords.lng } : null,
+        coordinates: finalCoords ? { lat: finalCoords.lat, lng: finalCoords.lng } : null,
         photos: uploadedPhotos,
         ward: area || "General",
         reporterName: user.name || "Anonymous",
         reporterId: user.$id || "anon",
+        // Only send frontend manager if NO coordinates available (backend has better geolocation from coords)
+        assignedManagerName: finalCoords ? null : (assignedManagerName || managerPreview?.manager.name || null),
+        assignedManagerState: finalCoords ? null : (managerPreview?.state || null),
       };
 
       const result = await appwriteService.createComplaint(payload as any);
       // result may be a string (id) or object {id, assignedManager}
       const newId = typeof result === "string" ? result : (result as any).id;
-      const mgr = typeof result === "object" ? (result as any).assignedManager : (managerPreview?.manager.name || "");
+      const mgr = typeof result === "object" ? (result as any).assignedManager : (assignedManagerName || managerPreview?.manager.name || "");
       setComplaintId(newId);
       setAssignedManagerName(mgr);
       setStep(5);
@@ -468,32 +689,70 @@ export default function ReportIssue() {
         <section className="rounded-[24px] border border-slate-200 bg-white p-6 shadow-sm">
           <h2 className="text-xl font-semibold text-slate-900">Add location</h2>
           <p className="mt-1 text-sm text-slate-500">
-            Share your location automatically or enter it manually.
+            Share your location automatically or select it on a map.
           </p>
 
           <div className="mt-6 grid gap-6 lg:grid-cols-[1fr_1.2fr]">
-            <div className="rounded-2xl bg-sky-50 p-5">
-              <div className="flex items-center gap-2 text-sm font-medium text-slate-700">
+            {/* Location Detection Panel */}
+            <div className={`rounded-2xl p-5 transition-all ${
+              coords
+                ? "bg-emerald-50 border border-emerald-200"
+                : "bg-sky-50 border border-sky-100"
+            }`}>
+              <div className="flex items-center gap-2 text-sm font-medium text-slate-700 mb-2">
                 <LocateFixed className="h-4 w-4 text-sky-700" />
-                Current location
+                {coords ? "✓ Location Detected" : "Current Location"}
               </div>
-              <p className="mt-2 text-sm text-slate-500">
-                This helps map the issue faster and improves routing.
-              </p>
-              <button
-                onClick={handleDetectLocation}
-                disabled={isDetectingLocation}
-                className="mt-4 inline-flex items-center gap-2 rounded-full bg-sky-700 px-4 py-2 text-sm font-semibold text-white disabled:opacity-60"
-              >
-                {isDetectingLocation ? "Detecting..." : "Use my location"}
-              </button>
-              <div className="mt-4 text-sm text-slate-600">
+              <p className="text-sm text-slate-500 mb-4">
                 {coords
-                  ? `${coords.lat.toFixed(4)}, ${coords.lng.toFixed(4)}`
-                  : "No coordinates added yet"}
+                  ? "Coordinates found. You can refine using the map below."
+                  : "Auto-detect with GPS or pick on map."}
+              </p>
+              <div className="space-y-2 mb-4">
+                <button
+                  onClick={handleDetectLocation}
+                  disabled={isDetectingLocation || coords !== null}
+                  className={`w-full inline-flex items-center justify-center gap-2 rounded-lg px-4 py-2.5 text-sm font-semibold text-white transition ${
+                    isDetectingLocation
+                      ? "bg-slate-400"
+                      : coords
+                        ? "bg-emerald-600 hover:bg-emerald-700"
+                        : "bg-sky-700 hover:bg-sky-800"
+                  }`}
+                >
+                  {isDetectingLocation ? (
+                    <>
+                      <div className="inline-block h-4 w-4 animate-spin rounded-full border-2 border-white border-r-transparent" />
+                      Detecting...
+                    </>
+                  ) : coords ? (
+                    <>
+                      <CheckCircle2 size={16} />
+                      Location Confirmed
+                    </>
+                  ) : (
+                    <>
+                      <LocateFixed size={16} />
+                      Use My Location
+                    </>
+                  )}
+                </button>
+                <button
+                  onClick={() => setShowMapPicker(true)}
+                  className="w-full inline-flex items-center justify-center gap-2 rounded-lg px-4 py-2.5 text-sm font-semibold text-sky-700 bg-sky-100 hover:bg-sky-200 transition border border-sky-300"
+                >
+                  <MapPin size={16} />
+                  Select on Map
+                </button>
               </div>
+              {coords && (
+                <div className="rounded-lg bg-white/60 p-3 text-xs font-mono text-slate-600 border border-emerald-100">
+                  📍 {coords.lat.toFixed(5)}, {coords.lng.toFixed(5)}
+                </div>
+              )}
             </div>
 
+            {/* Manual Address Entry */}
             <div className="space-y-4">
               <div>
                 <label className="mb-2 block text-sm font-medium text-slate-700">
@@ -772,6 +1031,73 @@ export default function ReportIssue() {
             </button>
           </div>
         </section>
+      )}
+
+      {/* Map Picker Modal */}
+      {showMapPicker && (
+        <div className="fixed inset-0 z-50 flex items-end bg-black/30 backdrop-blur-sm sm:items-center sm:justify-center">
+          <div className="w-full max-w-2xl rounded-t-3xl sm:rounded-3xl bg-white p-6 shadow-2xl animate-in">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-lg font-bold text-slate-900">
+                Select Location on Map
+              </h3>
+              <button
+                onClick={() => setShowMapPicker(false)}
+                className="text-slate-500 hover:text-slate-700 transition"
+              >
+                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+
+            <p className="text-sm text-slate-500 mb-4">
+              Click on the map to select your location, or search for an address.
+            </p>
+
+            {/* Search Box */}
+            <div className="mb-4 flex gap-2">
+              <input
+                type="text"
+                placeholder="Search address or landmark..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="flex-1 rounded-lg border border-slate-300 px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-sky-500/20 focus:border-sky-500"
+              />
+              <button
+                onClick={() => handleSearchLocation()}
+                className="px-4 py-2.5 bg-sky-600 hover:bg-sky-700 text-white font-semibold rounded-lg transition"
+              >
+                Search
+              </button>
+            </div>
+
+            {/* Leaflet Map */}
+            <div className="w-full">
+              <div id="map" className="relative w-full h-96 rounded-2xl overflow-hidden border border-slate-200 mb-4 bg-slate-100" ref={mapRef} />
+              {coords && (
+                <div className="flex gap-3">
+                  <button
+                    onClick={() => handleMapLocationSelect(coords.lat, coords.lng)}
+                    className="flex-1 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white font-semibold py-2.5 transition"
+                  >
+                    Confirm Location
+                  </button>
+                  <button
+                    onClick={() => setCoords(null)}
+                    className="px-4 py-2.5 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold transition"
+                  >
+                    Reset
+                  </button>
+                </div>
+              )}
+            </div>
+
+            <p className="text-xs text-slate-500 mt-4 text-center">
+              📍 Powered by OpenStreetMap &amp; Leaflet
+            </p>
+          </div>
+        </div>
       )}
     </div>
   );

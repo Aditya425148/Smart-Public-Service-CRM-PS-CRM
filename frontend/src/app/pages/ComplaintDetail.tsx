@@ -2,6 +2,7 @@ import { useParams, useNavigate } from "react-router";
 import { useState, useEffect, useRef } from "react";
 import { appwriteService } from "../appwriteService";
 import { account } from "../appwrite";
+import { api } from "../api";
 import { motion } from "motion/react";
 import { toast } from "sonner";
 import { toPng } from "html-to-image";
@@ -47,6 +48,7 @@ export default function ComplaintDetail() {
   const [comment, setComment] = useState("");
   const [showEscalate, setShowEscalate] = useState(false);
   const [isSharing, setIsSharing] = useState(false);
+  const [isSubmittingRating, setIsSubmittingRating] = useState(false);
   const [currentUser, setCurrentUser] = useState<any>(null);
   const shareCardRef = useRef<HTMLDivElement>(null);
 
@@ -99,6 +101,9 @@ export default function ComplaintDetail() {
     (complaint.reporterId === currentUser.$id ||
       complaint.userId === currentUser.$id);
 
+  const isManager =
+    currentUser && sessionStorage.getItem("managerData") !== null;
+
   const handleCopyId = () => {
     navigator.clipboard.writeText(complaint.id);
     setCopied(true);
@@ -132,6 +137,59 @@ export default function ComplaintDetail() {
       toast.error("Failed to generate shareable image.");
     } finally {
       setIsSharing(false);
+    }
+  };
+
+  const handleSubmitRating = async () => {
+    if (rating === 0) {
+      toast.error("Please select a rating (1-5 stars).");
+      return;
+    }
+
+    setIsSubmittingRating(true);
+    try {
+      await api.patch(`/api/complaints/${complaint.id}/status`, {
+        status: "Closed",
+        note: comment || `Closed with ${rating}-star rating`,
+        actor: currentUser?.name || "Citizen",
+        rating: rating,
+        feedback: comment,
+      });
+
+      toast.success("Thank you! Your feedback has been submitted.");
+
+      // Refresh complaint data
+      const updated = await appwriteService.getComplaintById(complaint.id);
+      setComplaint(updated);
+      setRating(0);
+      setComment("");
+    } catch (error: any) {
+      console.error("Failed to submit rating:", error);
+      toast.error(error.message || "Failed to submit rating. Please try again.");
+    } finally {
+      setIsSubmittingRating(false);
+    }
+  };
+
+  const handleCloseComplaint = async () => {
+    setIsSubmittingRating(true);
+    try {
+      await api.patch(`/api/complaints/${complaint.id}/status`, {
+        status: "Closed",
+        note: "Closed by manager",
+        actor: currentUser?.name || "Manager",
+      });
+
+      toast.success("Complaint closed successfully.");
+
+      // Refresh complaint data
+      const updated = await appwriteService.getComplaintById(complaint.id);
+      setComplaint(updated);
+    } catch (error: any) {
+      console.error("Failed to close complaint:", error);
+      toast.error(error.message || "Failed to close complaint. Please try again.");
+    } finally {
+      setIsSubmittingRating(false);
     }
   };
 
@@ -563,7 +621,7 @@ export default function ComplaintDetail() {
               </div>
             )}
 
-            {/* Escalate / Reopen Buttons */}
+            {/* Escalate / Reopen / Close Buttons */}
             <div className="space-y-2">
               {canEscalate && !complaint.escalated && (
                 <button
@@ -577,6 +635,16 @@ export default function ComplaintDetail() {
               {canReopen && (
                 <button className="w-full flex items-center justify-center gap-2 py-2.5 bg-amber-50 hover:bg-amber-100 text-amber-700 text-sm font-[600] rounded-xl border border-amber-100 transition-colors">
                   Re-open Complaint (7 days)
+                </button>
+              )}
+              {isManager && complaint.status === "Resolved" && (
+                <button
+                  onClick={handleCloseComplaint}
+                  disabled={isSubmittingRating}
+                  className="w-full flex items-center justify-center gap-2 py-2.5 bg-emerald-50 hover:bg-emerald-100 disabled:bg-emerald-50 text-emerald-700 text-sm font-[600] rounded-xl border border-emerald-200 transition-colors disabled:cursor-not-allowed"
+                >
+                  <CheckCircle className="w-4 h-4" />
+                  {isSubmittingRating ? "Closing..." : "Close Complaint"}
                 </button>
               )}
             </div>
@@ -731,8 +799,12 @@ export default function ComplaintDetail() {
             className="w-full px-4 py-3 text-sm border border-slate-200 rounded-xl focus:outline-none focus:border-orange-400 resize-none bg-slate-50"
           />
           <div className="flex gap-3 mt-3">
-            <button className="flex-1 py-2.5 bg-orange-500 hover:bg-orange-600 text-white text-sm font-[600] rounded-xl transition-colors">
-              Submit Rating
+            <button
+              onClick={handleSubmitRating}
+              disabled={isSubmittingRating}
+              className="flex-1 py-2.5 bg-orange-500 hover:bg-orange-600 disabled:bg-orange-300 text-white text-sm font-[600] rounded-xl transition-colors disabled:cursor-not-allowed"
+            >
+              {isSubmittingRating ? "Submitting..." : "Submit Rating"}
             </button>
             <button className="flex items-center gap-2 px-4 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 text-sm font-[500] rounded-xl transition-colors">
               <Share2 className="w-4 h-4" />

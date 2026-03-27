@@ -2,6 +2,7 @@ export type ComplaintStatus =
   | "Submitted"
   | "Assigned"
   | "In Progress"
+  | "Pending Review"
   | "Resolved"
   | "Closed"
   | "Escalated"
@@ -344,6 +345,105 @@ export const mockWorkers: Worker[] = [
 ];
 
 export const mockComplaints: Complaint[] = [];
+
+// Worker Login Credentials for Testing
+// Worker Demo Credentials for Testing
+// Note: In production, workers will be created in Appwrite
+export interface WorkerCredential {
+  id: string;
+  name: string;
+  email: string;
+  password: string;
+  phone: string;
+  state: string;
+  area: string;
+}
+
+export const workerCredentials: WorkerCredential[] = [
+  // Delhi Workers
+  {
+    id: "WKR-DEL-01",
+    name: "Ramu",
+    email: "ramu@civicpulse.com",
+    password: "Worker@123",
+    phone: "+919001100111",
+    state: "Delhi",
+    area: "North Delhi",
+  },
+  {
+    id: "WKR-DEL-02",
+    name: "Shamu",
+    email: "shamu@civicpulse.com",
+    password: "Worker@123",
+    phone: "+919001100112",
+    state: "Delhi",
+    area: "North Delhi",
+  },
+  {
+    id: "WKR-DEL-04",
+    name: "Golu",
+    email: "golu@civicpulse.com",
+    password: "Worker@123",
+    phone: "+919001100114",
+    state: "Delhi",
+    area: "North Delhi",
+  },
+  {
+    id: "WKR-DEL-05",
+    name: "Vikram",
+    email: "vikram@civicpulse.com",
+    password: "Worker@123",
+    phone: "+919002200221",
+    state: "Delhi",
+    area: "Central Delhi",
+  },
+  {
+    id: "WKR-DEL-08",
+    name: "Anil",
+    email: "anil@civicpulse.com",
+    password: "Worker@123",
+    phone: "+919002200224",
+    state: "Delhi",
+    area: "Central Delhi",
+  },
+  // Uttar Pradesh Workers
+  {
+    id: "WKR-UP-01",
+    name: "Prakash",
+    email: "prakash@civicpulse.com",
+    password: "Worker@123",
+    phone: "+919111100111",
+    state: "Uttar Pradesh",
+    area: "Lucknow City",
+  },
+  {
+    id: "WKR-UP-03",
+    name: "Ved",
+    email: "ved@civicpulse.com",
+    password: "Worker@123",
+    phone: "+919111100113",
+    state: "Uttar Pradesh",
+    area: "Lucknow City",
+  },
+  {
+    id: "WKR-UP-04",
+    name: "Jai",
+    email: "jai@civicpulse.com",
+    password: "Worker@123",
+    phone: "+919111100114",
+    state: "Uttar Pradesh",
+    area: "Lucknow City",
+  },
+  {
+    id: "WKR-UP-05",
+    name: "Ravi",
+    email: "ravi@civicpulse.com",
+    password: "Worker@123",
+    phone: "+919112200221",
+    state: "Uttar Pradesh",
+    area: "Kanpur Central",
+  },
+];
 
 export interface TimelineEvent {
   status: ComplaintStatus;

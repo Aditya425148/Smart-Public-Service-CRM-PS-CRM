@@ -18,6 +18,10 @@ import AdminManagers from "./pages/admin/AdminManagers";
 import ManagerLayout from "./components/manager/ManagerLayout";
 import ManagerOverview from "./pages/manager/ManagerOverview";
 import ManagerWorkers from "./pages/manager/ManagerWorkers";
+import WorkerLayout from "./components/worker/WorkerLayout";
+import WorkerDashboard from "./pages/worker/WorkerDashboard";
+import WorkerResolved from "./pages/worker/WorkerResolved";
+import WorkerProfile from "./pages/worker/WorkerProfile";
 import NotFound from "./pages/NotFound";
 import OAuthCallback from "./pages/OAuthCallback";
 import ProtectedRoute from "./components/ProtectedRoute";
@@ -52,6 +56,20 @@ export const router = createBrowserRouter([
         children: [
           { index: true, Component: ManagerOverview },
           { path: "workers", Component: ManagerWorkers },
+        ],
+      },
+    ],
+  },
+  {
+    element: <ProtectedRoute allowedRoles={["worker"]} />,
+    children: [
+      {
+        path: "/worker",
+        Component: WorkerLayout,
+        children: [
+          { index: true, Component: WorkerDashboard },
+          { path: "resolved", Component: WorkerResolved },
+          { path: "profile", Component: WorkerProfile },
         ],
       },
     ],

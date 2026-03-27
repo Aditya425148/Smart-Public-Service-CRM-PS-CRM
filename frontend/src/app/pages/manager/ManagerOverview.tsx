@@ -3,7 +3,6 @@ import { useParams, useNavigate } from "react-router";
 import { motion, AnimatePresence } from "motion/react";
 import {
   Phone,
-  MessageSquare,
   MapPin,
   Clock,
   CheckCircle,
@@ -17,6 +16,8 @@ import {
   BarChart3,
   Mail,
   Smartphone,
+  Zap,
+  Map,
 } from "lucide-react";
 import {
   PieChart,
@@ -36,6 +37,7 @@ import {
 import { appwriteService } from "../../appwriteService";
 import { account } from "../../appwrite";
 import { api } from "../../api";
+import { toast } from "sonner";
 
 export default function ManagerOverview() {
   const { managerId } = useParams();
@@ -74,8 +76,15 @@ export default function ManagerOverview() {
   const [selectedComplaint, setSelectedComplaint] = useState<Complaint | null>(
     null,
   );
+  const [selectedReview, setSelectedReview] = useState<Complaint | null>(
+    null,
+  );
   const [showAssignModal, setShowAssignModal] = useState(false);
+  const [showReviewModal, setShowReviewModal] = useState(false);
+  const [reviewAction, setReviewAction] = useState<"approve" | "reject" | null>(null);
   const [searchTerm, setSearchTerm] = useState("");
+  const [showMapView, setShowMapView] = useState(false);
+  const [autoAssigning, setAutoAssigning] = useState(false);
 
   useEffect(() => {
     if (!manager) return;
@@ -103,7 +112,7 @@ export default function ManagerOverview() {
     const total = complaints.length;
     const submitted = complaints.filter((c) => c.status === "Submitted").length;
     const assigned = complaints.filter(
-      (c) => c.status === "Assigned" || c.status === "In Progress",
+      (c) => c.status === "Assigned" || c.status === "In Progress" || c.status === "Pending Review",
     ).length;
     const resolved = complaints.filter(
       (c) => c.status === "Resolved" || c.status === "Closed",
@@ -111,7 +120,7 @@ export default function ManagerOverview() {
 
     return [
       { name: "New (Submitted)", value: submitted, color: "#94a3b8" },
-      { name: "Assigned/Active", value: assigned, color: "#0ea5e9" },
+      { name: "Assigned/Active/Review", value: assigned, color: "#0ea5e9" },
       { name: "Resolved/Closed", value: resolved, color: "#10b981" },
     ];
   }, [complaints]);
@@ -125,26 +134,146 @@ export default function ManagerOverview() {
     [manager],
   );
 
+  // Auto-assignment logic - smart worker selection
+  const autoAssignWorker = (complaint: Complaint): Worker | null => {
+    const availableWorkers = stateWorkers.filter(
+      (w: Worker) => w.status === "Available"
+    );
+
+    if (availableWorkers.length === 0) return null;
+
+    // Sort by rating (higher is better)
+    const sorted = [...availableWorkers].sort((a, b) => b.rating - a.rating);
+    return sorted[0];
+  };
+
+  // Auto-assign all submitted complaints
+  const handleAutoAssignAll = async () => {
+    const submittedComplaints = complaints.filter(
+      (c) => c.status === "Submitted"
+    );
+
+    if (submittedComplaints.length === 0) {
+      toast.info("No submitted complaints to assign");
+      return;
+    }
+
+    setAutoAssigning(true);
+    let assigned = 0;
+
+    for (const complaint of submittedComplaints) {
+      const worker = autoAssignWorker(complaint);
+      if (worker) {
+        try {
+          // Update complaint status to Assigned
+          await api.patch(`/api/complaints/${complaint.id}/status`, {
+            status: "Assigned",
+            note: `Auto-assigned to ${worker.name}`,
+            actor: manager?.name || "Manager",
+          });
+
+          assigned++;
+
+          // Update local state
+          setComplaints((prev) =>
+            prev.map((c) =>
+              c.id === complaint.id
+                ? {
+                    ...c,
+                    status: "Assigned",
+                    assignedTo: worker.name,
+                  }
+                : c,
+            ),
+          );
+        } catch (error) {
+          console.error("Assignment error:", error);
+        }
+      }
+    }
+
+    setAutoAssigning(false);
+    toast.success(`Auto-assigned ${assigned} complaints`);
+  };
+
   const handleAssign = (worker: Worker) => {
     if (!selectedComplaint) return;
 
-    // Logic to update complaint status and notify via WhatsApp
-    const whatsappMsg = `Hi ${worker.name}, a new issue has been assigned to you in ${selectedComplaint.address}. Category: ${selectedComplaint.category}. Check portal for details.`;
-    const whatsappUrl = `https://wa.me/${worker.phone.replace("+", "")}?text=${encodeURIComponent(whatsappMsg)}`;
+    // Update API
+    api
+      .patch(`/api/complaints/${selectedComplaint.id}/status`, {
+        status: "Assigned",
+        note: `Assigned to ${worker.name}`,
+        actor: manager?.name || "Manager",
+      })
+      .then(() => {
+        // Update local state
+        setComplaints((prev) =>
+          prev.map((c) =>
+            c.id === selectedComplaint.id
+              ? { ...c, status: "Assigned", assignedTo: worker.name }
+              : c,
+          ),
+        );
+        setShowAssignModal(false);
+        setSelectedComplaint(null);
+        toast.success(`Assigned to ${worker.name}`);
+      })
+      .catch(() => {
+        // Optimistic update
+        setComplaints((prev) =>
+          prev.map((c) =>
+            c.id === selectedComplaint.id
+              ? { ...c, status: "Assigned", assignedTo: worker.name }
+              : c,
+          ),
+        );
+        setShowAssignModal(false);
+        setSelectedComplaint(null);
+        toast.success(`Assigned to ${worker.name}`);
+      });
+  };
 
-    window.open(whatsappUrl, "_blank");
+  // Review approval/rejection handler
+  const handleReviewDecision = (action: "approve" | "reject") => {
+    if (!selectedReview) return;
 
-    // Update local state (Mock)
-    setComplaints((prev) =>
-      prev.map((c) =>
-        c.id === selectedComplaint.id
-          ? { ...c, status: "Assigned", assignedTo: worker.name }
-          : c,
-      ),
-    );
+    const newStatus = action === "approve" ? "Resolved" : "Rejected";
+    const message =
+      action === "approve"
+        ? "Work approved! Citizen can now provide feedback."
+        : "Work rejected. Worker will be notified for corrections.";
 
-    setShowAssignModal(false);
-    setSelectedComplaint(null);
+    api
+      .patch(`/api/complaints/${selectedReview.id}/status`, {
+        status: newStatus,
+        note: `${action === "approve" ? "Approved" : "Rejected"} by manager`,
+        actor: manager?.name || "Manager",
+      })
+      .then(() => {
+        // Update local state
+        setComplaints((prev) =>
+          prev.map((c) =>
+            c.id === selectedReview.id ? { ...c, status: newStatus } : c,
+          ),
+        );
+        setShowReviewModal(false);
+        setSelectedReview(null);
+        setReviewAction(null);
+        toast.success(message);
+      })
+      .catch(() => {
+        // Optimistic update
+        setComplaints((prev) =>
+          prev.map((c) =>
+            c.id === selectedReview.id ? { ...c, status: newStatus } : c,
+          ),
+        );
+        setShowReviewModal(false);
+        setSelectedReview(null);
+        setReviewAction(null);
+        toast.success(message);
+      });
   };
 
   const filteredComplaints = complaints.filter(
@@ -222,7 +351,41 @@ export default function ManagerOverview() {
         </div>
       </div>
 
-      {/* 2. Stats & Analytics Section */}
+      {/* 2. Auto-Assignment Banner */}
+      {complaints.filter((c) => c.status === "Submitted").length > 0 && (
+        <motion.div
+          initial={{ opacity: 0, y: -10 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="bg-gradient-to-r from-amber-50 to-orange-50 rounded-[2rem] border-2 border-amber-200 p-6 shadow-sm"
+        >
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+            <div className="flex items-start gap-4">
+              <div className="w-12 h-12 rounded-full bg-amber-100 flex items-center justify-center flex-shrink-0">
+                <AlertCircle className="text-amber-600" size={24} />
+              </div>
+              <div>
+                <h3 className="font-bold text-slate-900">
+                  {complaints.filter((c) => c.status === "Submitted").length}{" "}
+                  New Complaints Waiting
+                </h3>
+                <p className="text-sm text-slate-600 mt-1">
+                  Use auto-assign to efficiently distribute tasks to your field
+                  workers
+                </p>
+              </div>
+            </div>
+            <button
+              onClick={handleAutoAssignAll}
+              disabled={autoAssigning}
+              className="flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-amber-600 to-orange-600 hover:from-amber-700 hover:to-orange-700 text-white font-bold rounded-2xl transition-all shadow-lg shadow-amber-600/20 disabled:opacity-50 flex-shrink-0 whitespace-nowrap"
+            >
+              <Zap size={18} /> {autoAssigning ? "Assigning..." : "Auto Assign All"}
+            </button>
+          </div>
+        </motion.div>
+      )}
+
+      {/* 3. Stats & Analytics Section */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <div className="lg:col-span-2 bg-white rounded-[2.5rem] border border-slate-100 p-8 shadow-sm">
           <div className="flex items-center justify-between mb-8">
@@ -305,28 +468,90 @@ export default function ManagerOverview() {
         </div>
       </div>
 
-      {/* 3. Main Operational Area */}
+      {/* 4. Pending Review Section */}
+      {complaints.filter((c) => c.status === "Pending Review").length > 0 && (
+        <div className="bg-gradient-to-br from-purple-50 to-pink-50 border border-purple-200 rounded-[2.5rem] p-8">
+          <h2 className="text-lg font-bold text-purple-900 mb-4 flex items-center gap-2">
+            <AlertCircle size={20} className="text-purple-600" />
+            Work Pending Review ({complaints.filter((c) => c.status === "Pending Review").length})
+          </h2>
+          <div className="grid gap-4 md:grid-cols-2">
+            {complaints
+              .filter((c) => c.status === "Pending Review")
+              .map((complaint) => (
+                <motion.div
+                  key={complaint.id}
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  className="bg-white rounded-2xl border border-purple-200 p-5 cursor-pointer hover:shadow-md transition-all"
+                  onClick={() => {
+                    setSelectedReview(complaint);
+                    setShowReviewModal(true);
+                  }}
+                >
+                  <div className="flex items-start justify-between mb-3">
+                    <div>
+                      <span className="px-2 py-1 bg-slate-900 text-white text-[9px] font-black rounded-md">
+                        {complaint.category}
+                      </span>
+                      <p className="font-bold text-slate-900 mt-2 text-sm">
+                        {complaint.address}
+                      </p>
+                    </div>
+                    <span className="px-2 py-1 bg-purple-100 text-purple-700 text-[10px] font-bold rounded-full">
+                      {complaint.assignedTo || "Unknown"}
+                    </span>
+                  </div>
+                  <p className="text-xs text-slate-600 line-clamp-2 mb-3">
+                    {complaint.description}
+                  </p>
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setSelectedReview(complaint);
+                      setShowReviewModal(true);
+                    }}
+                    className="w-full py-2 bg-purple-600 hover:bg-purple-700 text-white text-xs font-bold rounded-lg transition"
+                  >
+                    Review Resolution
+                  </button>
+                </motion.div>
+              ))}
+          </div>
+        </div>
+      )}
+
+      {/* 4. Main Operational Area */}
       <div className="grid gap-6 lg:grid-cols-2">
         <div className="space-y-6">
           <div className="flex items-center justify-between">
             <h2 className="text-sm font-[800] uppercase tracking-[0.2em] text-slate-400">
               Operational Queue
             </h2>
-            <div className="relative">
-              <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
-              <input
-                type="text"
-                placeholder="Search ticket ID / address..."
-                className="h-10 w-full rounded-xl border border-slate-200 bg-white pl-10 pr-4 text-xs focus:ring-2 focus:ring-sky-500/20 focus:border-sky-500 focus:outline-none sm:w-64 transition-all"
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-              />
+            <div className="flex gap-2">
+              <button
+                onClick={() => setShowMapView(!showMapView)}
+                className="p-2 hover:bg-slate-100 rounded-lg transition text-slate-600"
+                title="Toggle Map View"
+              >
+                <Map size={18} />
+              </button>
+              <div className="relative flex-1 sm:w-64">
+                <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+                <input
+                  type="text"
+                  placeholder="Search ticket ID / address..."
+                  className="h-10 w-full rounded-xl border border-slate-200 bg-white pl-10 pr-4 text-xs focus:ring-2 focus:ring-sky-500/20 focus:border-sky-500 focus:outline-none transition-all"
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                />
+              </div>
             </div>
           </div>
 
           <div className="space-y-4">
             {filteredComplaints
-              .filter((c) => c.status !== "Resolved")
+              .filter((c) => c.status !== "Resolved" && c.status !== "Pending Review" && c.status !== "Closed")
               .map((complaint) => (
                 <motion.div
                   initial={{ opacity: 0, y: 10 }}
@@ -357,7 +582,9 @@ export default function ManagerOverview() {
                       className={`px-2.5 py-1 rounded-full text-[10px] font-black uppercase tracking-wider ${
                         complaint.status === "Assigned"
                           ? "bg-amber-100 text-amber-700"
-                          : "bg-sky-100 text-sky-700"
+                          : complaint.status === "In Progress"
+                            ? "bg-blue-100 text-blue-700"
+                            : "bg-sky-100 text-sky-700"
                       }`}
                     >
                       {complaint.status}
@@ -449,10 +676,6 @@ export default function ManagerOverview() {
                     <Phone size={18} className="group-hover:shake" /> Contact
                     Citizen
                   </button>
-                  <button className="w-full flex items-center justify-center gap-3 rounded-2xl border-2 border-slate-100 bg-white py-4 text-sm font-black text-slate-700 transition hover:bg-slate-50">
-                    <MessageSquare size={18} className="text-emerald-500" />{" "}
-                    WhatsApp Update
-                  </button>
                 </div>
               </div>
             </motion.div>
@@ -528,6 +751,117 @@ export default function ManagerOverview() {
               >
                 Cancel
               </button>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      {/* Review Modal */}
+      <AnimatePresence>
+        {showReviewModal && selectedReview && (
+          <div className="fixed inset-0 z-[60] flex items-center justify-center p-4">
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="absolute inset-0 bg-slate-950/20 backdrop-blur-sm"
+              onClick={() => {
+                setShowReviewModal(false);
+                setReviewAction(null);
+              }}
+            />
+            <motion.div
+              initial={{ scale: 0.95, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.95, opacity: 0 }}
+              className="relative max-w-lg w-full bg-gradient-to-br from-white to-slate-50 rounded-3xl p-8 shadow-2xl border border-purple-200"
+            >
+              <h3 className="text-2xl font-bold text-slate-900 mb-2">
+                Review Work Submission
+              </h3>
+              <p className="text-sm text-slate-500 mb-6">
+                Submitted by: <span className="font-semibold text-slate-900">{selectedReview.assignedTo}</span>
+              </p>
+
+              <div className="bg-slate-50 rounded-2xl p-6 mb-6 border border-slate-100">
+                <div className="mb-4">
+                  <p className="text-xs font-bold text-slate-500 uppercase mb-2">
+                    Location
+                  </p>
+                  <p className="text-sm font-semibold text-slate-900">
+                    {selectedReview.address}
+                  </p>
+                </div>
+
+                <div className="mb-4">
+                  <p className="text-xs font-bold text-slate-500 uppercase mb-2">
+                    Issue
+                  </p>
+                  <p className="text-sm text-slate-700">{selectedReview.description}</p>
+                </div>
+
+                <div>
+                  <p className="text-xs font-bold text-slate-500 uppercase mb-2">
+                    Work Submitted
+                  </p>
+                  <p className="text-sm text-slate-700 italic">
+                    "{selectedReview.timeline?.[selectedReview.timeline.length - 1]?.note || 'Work completed and submitted for review'}"
+                  </p>
+                </div>
+              </div>
+
+              {!reviewAction ? (
+                <div className="space-y-3">
+                  <button
+                    onClick={() => setReviewAction("approve")}
+                    className="w-full py-3 px-4 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-xl transition flex items-center justify-center gap-2"
+                  >
+                    <Check size={18} /> Approve Work
+                  </button>
+                  <button
+                    onClick={() => setReviewAction("reject")}
+                    className="w-full py-3 px-4 bg-red-600 hover:bg-red-700 text-white font-bold rounded-xl transition"
+                  >
+                    Reject & Return to Worker
+                  </button>
+                  <button
+                    onClick={() => {
+                      setShowReviewModal(false);
+                      setReviewAction(null);
+                    }}
+                    className="w-full py-3 px-4 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold rounded-xl transition"
+                  >
+                    Cancel
+                  </button>
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  <div className="bg-blue-50 border border-blue-200 rounded-xl p-4">
+                    <p className="text-sm text-blue-900">
+                      {reviewAction === "approve"
+                        ? "✓ Approving this work will mark it as resolved. The citizen can then submit feedback."
+                        : "✓ Rejecting this work will mark it as rejected. The assigned worker will be notified."}
+                    </p>
+                  </div>
+                  <button
+                    onClick={() => handleReviewDecision(reviewAction)}
+                    className={`w-full py-3 px-4 text-white font-bold rounded-xl transition flex items-center justify-center gap-2 ${
+                      reviewAction === "approve"
+                        ? "bg-emerald-600 hover:bg-emerald-700"
+                        : "bg-red-600 hover:bg-red-700"
+                    }`}
+                  >
+                    <Check size={18} />
+                    {reviewAction === "approve" ? "Confirm Approval" : "Confirm Rejection"}
+                  </button>
+                  <button
+                    onClick={() => setReviewAction(null)}
+                    className="w-full py-2 text-slate-600 hover:text-slate-900 font-semibold transition"
+                  >
+                    Back
+                  </button>
+                </div>
+              )}
             </motion.div>
           </div>
         )}

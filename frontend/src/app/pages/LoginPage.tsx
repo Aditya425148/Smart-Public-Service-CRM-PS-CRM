@@ -1,10 +1,10 @@
 import { useState, useEffect } from "react";
 import { useNavigate, useLocation } from "react-router";
 import { motion } from "motion/react";
-import { Mail, Shield, Loader2, Eye, EyeOff } from "lucide-react";
+import { Mail, Shield, Loader2, Eye, EyeOff, ChevronLeft, Users, ArrowRight } from "lucide-react";
 import { authService } from "../appwriteService";
 import { getNetworkErrorMessage } from "../utils/connectionStatus";
-import { mockManagers } from "../data/mockData";
+import { mockManagers, workerCredentials } from "../data/mockData";
 
 export default function LoginPage() {
   const navigate = useNavigate();
@@ -57,31 +57,65 @@ export default function LoginPage() {
       setError("");
       setIsLoading(true);
 
-      // --- Official Credentials Enforcement ---
-      const isOfficialAdmin = email.toLowerCase() === "admin@civicpulse.com";
+      // Check if this is a manager demo account FIRST (before official email check)
       const manager = mockManagers.find(
         (m) => m.email.toLowerCase() === email.toLowerCase(),
       );
 
-      if (isOfficialAdmin && password !== "admin123456") {
-        setError("Invalid credentials for official account.");
-        setIsLoading(false);
+      if (manager) {
+        // Mock manager login (using anonymous auth for backend connection)
+        // For demo purposes, we accept any password for these specific emails
+        await authService.loginAnonymous();
+        navigate(`/manager/${manager.id}`, { replace: true });
         return;
       }
 
-      if (manager) {
-        const expectedPassword = `${manager.name.split(" ")[0].toLowerCase()}@123`;
-        if (password !== expectedPassword) {
-          setError(
-            `Invalid credentials. For managers, use: first_name@123 (e.g., ${expectedPassword})`,
-          );
+      // Check if this is a worker demo account BEFORE official email enforcement
+      console.log("Checking worker credentials. Total workers:", workerCredentials.length);
+      console.log("Looking for email:", email.toLowerCase());
+      console.log("Available worker emails:", workerCredentials.map(w => w.email.toLowerCase()));
+      
+      const worker = workerCredentials.find(
+        (w) => w.email.toLowerCase() === email.toLowerCase(),
+      );
+
+      console.log("Worker found:", !!worker);
+      
+      if (worker) {
+        console.log("Worker found:", worker.name);
+        // Verify worker password
+        if (password !== worker.password) {
+          console.log("Password mismatch. Entered:", password, "Expected:", worker.password);
+          setError("Invalid credentials for worker account.");
           setIsLoading(false);
           return;
         }
+        // Mock worker login (using anonymous auth for backend connection)
+        console.log("Attempting anonymous login...");
+        try {
+          await authService.loginAnonymous();
+          console.log("Anonymous login successful");
+        } catch (anonErr: any) {
+          console.error("Anonymous login failed:", anonErr);
+          setError("Authentication failed: " + (anonErr.message || "Unknown error"));
+          setIsLoading(false);
+          return;
+        }
+        // Store worker info in session for later use
+        sessionStorage.setItem("workerData", JSON.stringify(worker));
+        console.log("Worker data stored in sessionStorage");
+        navigate("/worker", { replace: true });
+        return;
+      }
 
-        // Mock manager login (using anonymous auth for backend connection)
-        await authService.loginAnonymous();
-        navigate(`/manager/${manager.id}`, { replace: true });
+      // --- Official Credentials Enforcement (after checking demo accounts) ---
+      const isOfficialAdmin =
+        email.toLowerCase().endsWith("@civicpulse.com") ||
+        email.toLowerCase() === "admin@civicpulse.com";
+
+      if (isOfficialAdmin && password !== "admin123456") {
+        setError("Invalid credentials for official account.");
+        setIsLoading(false);
         return;
       }
 
@@ -105,13 +139,10 @@ export default function LoginPage() {
         return;
       }
 
+      // Check if this is a regular user in Appwrite
       await authService.loginWithEmail(email, password);
       // Redirect based on email
-      if (isOfficialAdmin) {
-        navigate("/admin", { replace: true });
-      } else {
-        navigate("/dashboard", { replace: true });
-      }
+      navigate("/dashboard", { replace: true });
     } catch (err: any) {
       console.error("Login error:", err);
       // Handle specific Appwrite error codes if needed

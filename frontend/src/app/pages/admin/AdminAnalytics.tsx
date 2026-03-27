@@ -1,5 +1,6 @@
-import { useState } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { motion, AnimatePresence } from "motion/react";
+import { appwriteService } from "../../appwriteService";
 import {
   Download,
   AlertTriangle,
@@ -30,7 +31,6 @@ import {
   mockAreaStats,
   complaintTrendData,
   categoryBreakdown,
-  kpiData,
 } from "../../data/mockData";
 
 // Heatmap SVG Component
@@ -331,7 +331,8 @@ const resolutionTimeData = mockAreaStats.map((w) => ({
   target: 72,
 }));
 
-const slaHistoryData = [
+// These will be replaced with dynamic calculations in the component
+const defaultSlaHistoryData = [
   { month: "Oct", compliance: 71 },
   { month: "Nov", compliance: 74 },
   { month: "Dec", compliance: 77 },
@@ -340,7 +341,7 @@ const slaHistoryData = [
   { month: "Mar", compliance: 82 },
 ];
 
-const radarData = [
+const defaultRadarData = [
   { metric: "SLA Compliance", score: 82 },
   { metric: "Verification Rate", score: 67 },
   { metric: "Citizen Satisfaction", score: 84 },
@@ -349,9 +350,200 @@ const radarData = [
   { metric: "Participation", score: 63 },
 ];
 
+const defaultKpiData = {
+  mtta: 2.5,
+  mttr: 48,
+  slaCompliance: 82,
+  satisfactionScore: 4.1,
+};
+
 export default function AdminAnalytics() {
   const [dateRange, setDateRange] = useState("7d");
   const [activeCategory, setActiveCategory] = useState("All");
+  const [complaints, setComplaints] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const unsubscribe = appwriteService.subscribeToComplaints((data) => {
+      setComplaints(data);
+      setLoading(false);
+    });
+    return () => unsubscribe();
+  }, []);
+
+  // Calculate SLA history from actual data - last 6 months
+  const slaHistoryData = useMemo(() => {
+    const monthData: Record<string, { total: number; met: number }> = {};
+    
+    complaints.forEach((c) => {
+      if (!c.createdAt) return;
+      const date = new Date(c.createdAt);
+      const monthKey = date.toLocaleDateString("en-US", {
+        month: "short",
+        year: "2-digit",
+      });
+
+      if (!monthData[monthKey]) {
+        monthData[monthKey] = { total: 0, met: 0 };
+      }
+
+      if (["Resolved", "Closed"].includes(c.status)) {
+        monthData[monthKey].total++;
+        if ((c.slaRemainingHours || 1) >= 0) {
+          monthData[monthKey].met++;
+        }
+      }
+    });
+
+    // Get last 6 months
+    const months: any[] = [];
+    for (let i = 5; i >= 0; i--) {
+      const d = new Date();
+      d.setMonth(d.getMonth() - i);
+      const key = d.toLocaleDateString("en-US", {
+        month: "short",
+        year: "2-digit",
+      });
+      const data = monthData[key] || { total: 0, met: 0 };
+      months.push({
+        month: d.toLocaleDateString("en-US", { month: "short" }),
+        compliance: data.total > 0 ? Math.round((data.met / data.total) * 100) : 0,
+      });
+    }
+    return months;
+  }, [complaints]);
+
+  // Calculate performance metrics from actual data
+  const { kpiData, radarData, resolutionByArea, areaStats } = useMemo(() => {
+    if (complaints.length === 0) {
+      return {
+        kpiData: defaultKpiData,
+        radarData: defaultRadarData,
+        resolutionByArea: resolutionTimeData,
+        areaStats: mockAreaStats,
+      };
+    }
+
+    // Calculate MTTA - mean time to assignment (hours from submission to assigned)
+    const assignmentTimes = complaints
+      .filter((c) => c.assignedAt || c.createdAt)
+      .map((c) => {
+        const created = new Date(c.createdAt).getTime();
+        const assigned = c.assignedAt ? new Date(c.assignedAt).getTime() : created;
+        return (assigned - created) / (1000 * 60 * 60);
+      });
+    const mtta = assignmentTimes.length > 0 
+      ? Math.round(assignmentTimes.reduce((a, b) => a + b, 0) / assignmentTimes.length * 10) / 10
+      : defaultKpiData.mtta;
+
+    // Calculate MTTR - mean time to resolution
+    const resolutionTimes = complaints
+      .filter((c) => ["Resolved", "Closed"].includes(c.status))
+      .map((c) => {
+        const created = new Date(c.createdAt).getTime();
+        const updated = new Date(c.updatedAt).getTime();
+        return (updated - created) / (1000 * 60 * 60);
+      });
+    const mttr = resolutionTimes.length > 0
+      ? Math.round(resolutionTimes.reduce((a, b) => a + b, 0) / resolutionTimes.length * 10) / 10
+      : defaultKpiData.mttr;
+
+    // Calculate SLA Compliance
+    const resolved = complaints.filter((c) => ["Resolved", "Closed"].includes(c.status));
+    const slaMet = resolved.filter((c) => (c.slaRemainingHours || 1) >= 0).length;
+    const slaCompliance = resolved.length > 0 ? Math.round((slaMet / resolved.length) * 100) : 0;
+
+    // Calculate Satisfaction Score from ratings
+    const ratings = complaints.filter((c) => c.rating).map((c) => c.rating);
+    const satisfactionScore = ratings.length > 0
+      ? Math.round((ratings.reduce((a, b) => a + b, 0) / ratings.length) * 10) / 10
+      : defaultKpiData.satisfactionScore;
+
+    // Calculate metrics for radar
+    const escalated = complaints.filter((c) => c.escalated).length;
+    const escalationMgmt = 100 - Math.round((escalated / Math.max(complaints.length, 1)) * 100);
+
+    const verified = complaints.filter((c) => c.verifiedBy || c.status !== "Submitted").length;
+    const verificationRate = Math.round((verified / Math.max(complaints.length, 1)) * 100);
+
+    const resolutionSpeed = Math.min(100, Math.round(100 - (mttr / 72) * 50));
+
+    const radarScores = [
+      { metric: "SLA Compliance", score: slaCompliance },
+      { metric: "Verification Rate", score: verificationRate },
+      { metric: "Citizen Satisfaction", score: Math.round(satisfactionScore * 20) },
+      { metric: "Resolution Speed", score: resolutionSpeed },
+      { metric: "Escalation Mgmt", score: escalationMgmt },
+      { metric: "Participation", score: Math.min(100, Math.round((complaints.length / 100) * 100)) },
+    ];
+
+    // Group by area with full stats
+    const areaStatsMap: Record<string, any> = {};
+    complaints.forEach((c) => {
+      const area = c.area || c.ward || "Other";
+      if (!areaStatsMap[area]) {
+        areaStatsMap[area] = {
+          area,
+          totalComplaints: 0,
+          resolved: 0,
+          times: [],
+        };
+      }
+      areaStatsMap[area].totalComplaints++;
+      if (["Resolved", "Closed"].includes(c.status)) {
+        areaStatsMap[area].resolved++;
+        const created = new Date(c.createdAt).getTime();
+        const updated = new Date(c.updatedAt).getTime();
+        const hours = (updated - created) / (1000 * 60 * 60);
+        areaStatsMap[area].times.push(hours);
+      }
+    });
+
+    const areaStatsWithMetrics = Object.values(areaStatsMap)
+      .map((stat: any) => ({
+        ...stat,
+        avgResolutionHours: stat.times.length > 0 
+          ? Math.round(stat.times.reduce((a: number, b: number) => a + b, 0) / stat.times.length) 
+          : 0,
+        civicHealthScore: Math.max(
+          40,
+          Math.min(
+            100,
+            Math.round(
+              (stat.resolved / Math.max(stat.totalComplaints, 1)) * 80 +
+              (Math.max(0, 72 - (stat.times.length > 0 ? stat.times.reduce((a: number, b: number) => a + b, 0) / stat.times.length : 0)) / 72) * 20
+            )
+          )
+        ),
+      }))
+      .sort((a, b) => b.totalComplaints - a.totalComplaints);
+
+    const resolutionByAreaData = areaStatsWithMetrics
+      .map((stat: any) => ({
+        area: stat.area,
+        avgTime: stat.avgResolutionHours,
+        target: 72,
+      }))
+      .slice(0, 8);
+
+    return {
+      kpiData: { mtta, mttr, slaCompliance, satisfactionScore },
+      radarData: radarScores,
+      resolutionByArea: resolutionByAreaData,
+      areaStats: areaStatsWithMetrics,
+    };
+  }, [complaints]);
+
+  if (loading && complaints.length === 0) {
+    return (
+      <div className="flex items-center justify-center min-h-[60vh] p-8 text-slate-500">
+        <div className="animate-pulse flex flex-col items-center gap-4">
+          <div className="w-12 h-12 bg-slate-200 rounded-full"></div>
+          <div className="h-4 w-32 bg-slate-200 rounded"></div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6 max-w-7xl mx-auto">
@@ -538,7 +730,7 @@ export default function AdminAnalytics() {
           </h3>
           <p className="text-xs text-slate-400 mb-4">Hours · Target: 72h</p>
           <ResponsiveContainer width="100%" height={200}>
-            <BarChart data={resolutionTimeData} layout="vertical">
+            <BarChart data={resolutionByArea} layout="vertical">
               <CartesianGrid
                 strokeDasharray="3 3"
                 stroke="#f1f5f9"
@@ -568,7 +760,7 @@ export default function AdminAnalytics() {
                 }}
               />
               <Bar dataKey="avgTime" radius={[0, 6, 6, 0]}>
-                {resolutionTimeData.map((entry, i) => (
+                {resolutionByArea.map((entry, i) => (
                   <Cell
                     key={i}
                     fill={
@@ -647,7 +839,7 @@ export default function AdminAnalytics() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-50">
-                {mockAreaStats.map((w) => (
+                {(areaStats && areaStats.length > 0 ? areaStats : mockAreaStats).map((w) => (
                   <tr
                     key={w.area}
                     className="hover:bg-slate-50 transition-colors"
@@ -716,7 +908,7 @@ export default function AdminAnalytics() {
           </span>
         </div>
         <div className="grid sm:grid-cols-2 gap-4">
-          {mockAreaStats.slice(0, 4).map((w) => (
+          {(areaStats && areaStats.length > 0 ? areaStats.slice(0, 4) : mockAreaStats.slice(0, 4)).map((w) => (
             <div
               key={w.area}
               className="bg-slate-800/50 rounded-xl p-4 border border-slate-700/50"

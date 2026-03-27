@@ -196,6 +196,8 @@ class ComplaintCreate(BaseModel):
     photos: Optional[list] = []
     reporterName: Optional[str] = "Anonymous"
     reporterId: Optional[str] = "anon"
+    assignedManagerName: Optional[str] = None
+    assignedManagerState: Optional[str] = None
 
 
 class StatusUpdate(BaseModel):
@@ -264,12 +266,22 @@ async def create_complaint(body: ComplaintCreate):
             state = get_state_from_coords(body.coordinates["lat"], body.coordinates["lng"])
         if state == "Unknown" and body.address:
             state = get_state_from_address_text(body.address)
+        
+        # Use frontend-provided manager if available, otherwise auto-assign
+        if body.assignedManagerName and body.assignedManagerState:
+            # Use the manager specified by the frontend
+            assigned_manager = {"id": f"MGR-{body.assignedManagerState[:3].upper()}", "name": body.assignedManagerName}
+        else:
+            # Assign manager based on location (least-loaded manager for this state)
+            assigned_manager = assign_manager_to_complaint(state)
 
-        # Assign manager based on location (least-loaded manager for this state)
-        assigned_manager = assign_manager_to_complaint(state)
-
+        # Create payload without assignedManagerName and assignedManagerState (Appwrite doesn't have these fields)
+        payload_dict = body.model_dump()
+        payload_dict.pop("assignedManagerName", None)
+        payload_dict.pop("assignedManagerState", None)
+        
         payload = {
-            **body.model_dump(),
+            **payload_dict,
             "status": "Submitted",
             "createdAt": now,
             "updatedAt": now,
