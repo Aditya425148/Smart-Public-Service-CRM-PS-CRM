@@ -12,7 +12,7 @@ import {
   AlertCircle,
 } from "lucide-react";
 import { account } from "../../appwrite";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion, AnimatePresence } from "motion/react";
 
 export default function WorkerLayout() {
   const navigate = useNavigate();

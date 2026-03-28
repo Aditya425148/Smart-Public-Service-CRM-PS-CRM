@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { User, Mail, Phone, MapPin, Star, Edit2 } from "lucide-react";
-import { motion } from "framer-motion";
+import { motion } from "motion/react";
 import { account } from "../../appwrite";
 import { toast } from "sonner";
 

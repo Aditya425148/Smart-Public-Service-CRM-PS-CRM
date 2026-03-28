@@ -8,7 +8,7 @@ import {
   Phone,
   Search,
 } from "lucide-react";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion, AnimatePresence } from "motion/react";
 import { toast } from "sonner";
 import { api } from "../../api";
 import { account } from "../../appwrite";

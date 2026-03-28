@@ -20,7 +20,7 @@ import {
   Manager,
 } from "../../data/mockData";
 import { account } from "../../appwrite";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion, AnimatePresence } from "motion/react";
 import { toast } from "sonner";
 
 export default function ManagerWorkers() {

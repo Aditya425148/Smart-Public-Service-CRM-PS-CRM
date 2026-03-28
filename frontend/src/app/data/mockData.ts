@@ -192,18 +192,6 @@ export const mockManagers: Manager[] = [
   },
 ];
 
-export const mockWorkers: Worker[] = workerCredentials.map((w) => ({
-  id: w.id,
-  name: w.name,
-  phone: w.phone,
-  state: w.state,
-  area: w.area,
-  status: "Available",
-  rating: 4.5,
-}));
-
-export const mockComplaints: Complaint[] = [];
-
 // Worker Login Credentials for Testing
 // Worker Demo Credentials for Testing
 // Note: In production, workers will be created in Appwrite
@@ -311,6 +299,18 @@ export const workerCredentials: WorkerCredential[] = [
     area: "Kanpur Central",
   },
 ];
+
+export const mockWorkers: Worker[] = workerCredentials.map((w) => ({
+  id: w.id,
+  name: w.name,
+  phone: w.phone,
+  state: w.state,
+  area: w.area,
+  status: "Available",
+  rating: 4.5,
+}));
+
+export const mockComplaints: Complaint[] = [];
 
 export interface TimelineEvent {
   status: ComplaintStatus;
