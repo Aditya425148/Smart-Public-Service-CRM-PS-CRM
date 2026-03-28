@@ -19,24 +19,32 @@ export default function ManagerLayout() {
       .get()
       .then((user) => {
         // Prioritize the name from mockManagers for consistent branding
+        // Use the manual email override if it exists, otherwise use account email
+        const userEmail = localStorage.getItem("manager_email_override") || user.email;
         const mockConfig = mockManagers.find(
-          (m) => m.email.toLowerCase() === user.email.toLowerCase(),
+          (m) => m.email.toLowerCase() === userEmail.toLowerCase(),
         );
         setManager({
           ...user,
-          name: mockConfig?.name || user.name || "Sanjay Sharma",
+          name: mockConfig?.name || user.name || "Manager",
+          email: userEmail,
         });
       })
       .catch(() => {
-        // Fallback for demo/dev purposes
+        // Fallback for demo/dev purposes - check if we have a name in localStorage
+        const overrideEmail = localStorage.getItem("manager_email_override");
+        const mockConfig = mockManagers.find(
+          (m) => m.email.toLowerCase() === (overrideEmail?.toLowerCase() || ""),
+        );
         setManager({
-          name: "Sanjay Sharma",
-          email: "sanjay@pscrm.gov.in",
+          name: mockConfig?.name || "Sanjay Sharma",
+          email: overrideEmail || "sanjay@pscrm.gov.in",
         });
       });
   }, [navigate]);
 
   const handleLogout = async () => {
+    localStorage.removeItem("manager_email_override");
     await account.deleteSession("current");
     navigate("/login");
   };
@@ -91,7 +99,7 @@ export default function ManagerLayout() {
           <div className="flex items-center gap-3">
             <div className="hidden lg:block">
               <div className="text-sm font-bold text-slate-900">
-                Welcome back, {manager?.name?.split(" ")[0] || "Sanjay"}
+                Welcome back, {manager?.name?.split(" ")[0]}
               </div>
             </div>
           </div>
@@ -104,7 +112,7 @@ export default function ManagerLayout() {
               <Menu className="h-6 w-6" />
             </button>
             <div className="h-10 w-10 rounded-2xl bg-gradient-to-br from-sky-500 to-indigo-600 flex items-center justify-center text-white text-lg font-black shadow-lg shadow-sky-200 border-2 border-white">
-              {manager?.name?.charAt(0) || "S"}
+              {manager?.name?.charAt(0)}
             </div>
           </div>
         </div>

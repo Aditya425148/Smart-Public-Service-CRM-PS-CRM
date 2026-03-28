@@ -66,6 +66,8 @@ export default function LoginPage() {
         // Mock manager login (using anonymous auth for backend connection)
         // For demo purposes, we accept any password for these specific emails
         await authService.loginAnonymous();
+        // Save the email override for ManagerLayout to pick up the correct name 
+        localStorage.setItem("manager_email_override", email);
         navigate(`/manager/${manager.id}`, { replace: true });
         return;
       }
