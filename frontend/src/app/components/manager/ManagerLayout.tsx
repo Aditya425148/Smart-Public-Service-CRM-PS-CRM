@@ -20,7 +20,8 @@ export default function ManagerLayout() {
       .then((user) => {
         // Prioritize the name from mockManagers for consistent branding
         // Use the manual email override if it exists, otherwise use account email
-        const userEmail = localStorage.getItem("manager_email_override") || user.email;
+        const userEmail =
+          localStorage.getItem("manager_email_override") || user.email;
         const mockConfig = mockManagers.find(
           (m) => m.email.toLowerCase() === userEmail.toLowerCase(),
         );

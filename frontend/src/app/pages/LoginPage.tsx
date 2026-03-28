@@ -1,7 +1,16 @@
 import { useState, useEffect } from "react";
 import { useNavigate, useLocation } from "react-router";
 import { motion } from "motion/react";
-import { Mail, Shield, Loader2, Eye, EyeOff, ChevronLeft, Users, ArrowRight } from "lucide-react";
+import {
+  Mail,
+  Shield,
+  Loader2,
+  Eye,
+  EyeOff,
+  ChevronLeft,
+  Users,
+  ArrowRight,
+} from "lucide-react";
 import { authService } from "../appwriteService";
 import { getNetworkErrorMessage } from "../utils/connectionStatus";
 import { mockManagers, workerCredentials } from "../data/mockData";
@@ -66,28 +75,39 @@ export default function LoginPage() {
         // Mock manager login (using anonymous auth for backend connection)
         // For demo purposes, we accept any password for these specific emails
         await authService.loginAnonymous();
-        // Save the email override for ManagerLayout to pick up the correct name 
+        // Save the email override for ManagerLayout to pick up the correct name
         localStorage.setItem("manager_email_override", email);
         navigate(`/manager/${manager.id}`, { replace: true });
         return;
       }
 
       // Check if this is a worker demo account BEFORE official email enforcement
-      console.log("Checking worker credentials. Total workers:", workerCredentials.length);
+      console.log(
+        "Checking worker credentials. Total workers:",
+        workerCredentials.length,
+      );
       console.log("Looking for email:", email.toLowerCase());
-      console.log("Available worker emails:", workerCredentials.map(w => w.email.toLowerCase()));
-      
+      console.log(
+        "Available worker emails:",
+        workerCredentials.map((w) => w.email.toLowerCase()),
+      );
+
       const worker = workerCredentials.find(
         (w) => w.email.toLowerCase() === email.toLowerCase(),
       );
 
       console.log("Worker found:", !!worker);
-      
+
       if (worker) {
         console.log("Worker found:", worker.name);
         // Verify worker password
         if (password !== worker.password) {
-          console.log("Password mismatch. Entered:", password, "Expected:", worker.password);
+          console.log(
+            "Password mismatch. Entered:",
+            password,
+            "Expected:",
+            worker.password,
+          );
           setError("Invalid credentials for worker account.");
           setIsLoading(false);
           return;
@@ -99,7 +119,9 @@ export default function LoginPage() {
           console.log("Anonymous login successful");
         } catch (anonErr: any) {
           console.error("Anonymous login failed:", anonErr);
-          setError("Authentication failed: " + (anonErr.message || "Unknown error"));
+          setError(
+            "Authentication failed: " + (anonErr.message || "Unknown error"),
+          );
           setIsLoading(false);
           return;
         }
