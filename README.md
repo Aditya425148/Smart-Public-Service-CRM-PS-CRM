@@ -12,28 +12,36 @@
 ## 🏗️ Multi-Portal Ecosystem
 
 ### 👨‍💼 Citizen Portal
-*Empowering community action through engagement.*
+
+_Empowering community action through engagement._
+
 - **📍 Smart Reporting**: Report issues (potholes, garbage, etc.) with GPS auto-detection and AI-assisted category suggestions.
 - **🗺️ Interactive Map**: View nearby issues, status updates, and community verifications in real-time.
 - **🏆 Civic Credits**: Earn reputation points for verified reports and successful resolutions.
 - **📈 Personal Dashboard**: Track your contribution history and follow the lifecycle of your complaints.
 
 ### 🛡️ Admin Portal
-*High-level oversight and system-wide management.*
+
+_High-level oversight and system-wide management._
+
 - **📊 Global Analytics**: Monitor MTTR (Mean Time to Resolution) and overall SLA compliance across all wards.
 - **👥 User Management**: Manage user accounts, monitor reputation trends, and moderate reported content.
 - **📥 Unified Queue**: Global inbox to filter, search, and oversee every complaint in the system.
 - **⚙️ SLA Configuration**: Define and adjust resolution timelines based on issue categories.
 
 ### 📂 Manager Portal
-*Regional operations and workflow optimization.*
+
+_Regional operations and workflow optimization._
+
 - **📍 Jurisdiction Overview**: Real-time monitoring of active complaints within specific states or regions.
 - **👷 Worker Assignment**: Intelligent task routing to field officers based on location and current workload.
 - **📈 Team Performance**: Track worker efficiency and regional resolution metrics.
 - **🔄 Automated Routing**: Backend-driven logic for seamless transition from "Verified" to "Assigned".
 
 ### 👷 Worker Portal
-*Field execution and resolution verification.*
+
+_Field execution and resolution verification._
+
 - **📋 Task Dashboard**: Mobile-optimized list of assigned tasks sorted by SLA urgency.
 - **✅ Status Updates**: Direct updates from "En Route" to "Resolved" with field-level clarity.
 - **📸 GPS-Locked Proof**: Resolution photos can only be uploaded within 150m of the GPS pin for total transparency.
@@ -60,22 +68,22 @@
 
 ## 📁 Project Structure
 
-| Path | Purpose |
-| ----------- | -------------------------------------------- |
-| `backend/` | 🐍 FastAPI Application (Business Logic & AI Endpoints) |
-| `frontend/` | ⚛️ React Multi-Portal Application (Vite + Tailwind) |
-| `docs/` | 📝 Comprehensive [PRD](docs/PRD.md) and [Feature Guides](docs/Final_features.md) |
+| Path        | Purpose                                                                          |
+| ----------- | -------------------------------------------------------------------------------- |
+| `backend/`  | 🐍 FastAPI Application (Business Logic & AI Endpoints)                           |
+| `frontend/` | ⚛️ React Multi-Portal Application (Vite + Tailwind)                              |
+| `docs/`     | 📝 Comprehensive [PRD](docs/PRD.md) and [Feature Guides](docs/Final_features.md) |
 
 ---
 
 ## 📜 Portals Quick Reference
 
-| Portal | Primary User | Key Goal |
-| --- | --- | --- |
-| **Citizen** | General Public | Report & Track Issues |
-| **Admin** | System Admins | Global Monitoring & Settings |
-| **Manager** | Regional Managers | Task Routing & Supervision |
-| **Worker** | Field Officers | Task Resolution & Verification |
+| Portal      | Primary User      | Key Goal                       |
+| ----------- | ----------------- | ------------------------------ |
+| **Citizen** | General Public    | Report & Track Issues          |
+| **Admin**   | System Admins     | Global Monitoring & Settings   |
+| **Manager** | Regional Managers | Task Routing & Supervision     |
+| **Worker**  | Field Officers    | Task Resolution & Verification |
 
 ---
 
