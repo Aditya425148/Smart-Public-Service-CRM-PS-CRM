@@ -204,6 +204,7 @@ class StatusUpdate(BaseModel):
     status: str
     note: Optional[str] = ""
     actor: Optional[str] = "System"
+    assignedTo: Optional[str] = None
 
 
 class AssignManager(BaseModel):
@@ -350,11 +351,18 @@ async def update_status(complaint_id: str, body: StatusUpdate):
             "note": body.note,
             "actor": body.actor,
         })
-        databases.update_document(DATABASE_ID, COLLECTION_ID, complaint_id, {
+        
+        # Build update payload - include assignedTo if provided
+        update_payload = {
             "status": body.status,
             "timeline": json.dumps(timeline),
             "updatedAt": datetime.now(UTC).isoformat(),
-        })
+        }
+        
+        if body.assignedTo:
+            update_payload["assignedTo"] = body.assignedTo
+        
+        databases.update_document(DATABASE_ID, COLLECTION_ID, complaint_id, update_payload)
         updated = databases.get_document(DATABASE_ID, COLLECTION_ID, complaint_id)
         return _map_doc(updated)
     except HTTPException:

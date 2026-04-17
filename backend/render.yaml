@@ -18,3 +18,41 @@ services:
         sync: false
       - key: APPWRITE_BUCKET_ID
         sync: false
+
+  - type: worker
+    name: civicpulse-cron
+    env: python
+    rootDir: backend
+    buildCommand: pip install -r requirements.txt
+    startCommand: python cron_job.py
+    envVars:
+      - key: APPWRITE_ENDPOINT
+        fromService:
+          type: web
+          name: civicpulse-backend
+          envVar: APPWRITE_ENDPOINT
+      - key: APPWRITE_PROJECT_ID
+        fromService:
+          type: web
+          name: civicpulse-backend
+          envVar: APPWRITE_PROJECT_ID
+      - key: APPWRITE_API_KEY
+        fromService:
+          type: web
+          name: civicpulse-backend
+          envVar: APPWRITE_API_KEY
+      - key: APPWRITE_DATABASE_ID
+        fromService:
+          type: web
+          name: civicpulse-backend
+          envVar: APPWRITE_DATABASE_ID
+      - key: SMTP_SERVER
+        value: smtp.gmail.com
+      - key: SMTP_PORT
+        value: "587"
+      - key: SMTP_USER
+        value: nehulgoyal18@gmail.com
+      - key: SMTP_PASS
+        value: decr vsqk ggqn pptc
+      - key: ADMIN_EMAIL
+        value: nehulgoyal18@gmail.com

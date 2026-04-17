@@ -89,6 +89,7 @@ export default function ManagerOverview() {
   const [showAssignModal, setShowAssignModal] = useState(false);
   const [showReviewModal, setShowReviewModal] = useState(false);
   const [reviewAction, setReviewAction] = useState<"approve" | "reject" | null>(null);
+  const [showReassignModal, setShowReassignModal] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
   const [showMapView, setShowMapView] = useState(false);
   const [autoAssigning, setAutoAssigning] = useState(false);
@@ -177,6 +178,7 @@ export default function ManagerOverview() {
             status: "Assigned",
             note: `Auto-assigned to ${worker.name}`,
             actor: manager?.name || "Manager",
+            assignedTo: worker.name,
           });
 
           assigned++;
@@ -212,6 +214,7 @@ export default function ManagerOverview() {
         status: "Assigned",
         note: `Assigned to ${worker.name}`,
         actor: manager?.name || "Manager",
+        assignedTo: worker.name,
       })
       .then(() => {
         // Update local state
@@ -249,7 +252,7 @@ export default function ManagerOverview() {
     const message =
       action === "approve"
         ? "Work approved! Citizen can now provide feedback."
-        : "Work rejected. Worker will be notified for corrections.";
+        : "Work rejected. Worker will be notified. Now assign another worker.";
 
     api
       .patch(`/api/complaints/${selectedReview.id}/status`, {
@@ -264,9 +267,18 @@ export default function ManagerOverview() {
             c.id === selectedReview.id ? { ...c, status: newStatus } : c,
           ),
         );
-        setShowReviewModal(false);
-        setSelectedReview(null);
-        setReviewAction(null);
+        
+        if (action === "approve") {
+          setShowReviewModal(false);
+          setSelectedReview(null);
+          setReviewAction(null);
+        } else {
+          // For rejection, show reassignment modal
+          setReviewAction(null);
+          setShowReviewModal(false);
+          setShowReassignModal(true);
+        }
+        
         toast.success(message);
       })
       .catch(() => {
@@ -276,10 +288,58 @@ export default function ManagerOverview() {
             c.id === selectedReview.id ? { ...c, status: newStatus } : c,
           ),
         );
-        setShowReviewModal(false);
-        setSelectedReview(null);
-        setReviewAction(null);
+        
+        if (action === "approve") {
+          setShowReviewModal(false);
+          setSelectedReview(null);
+          setReviewAction(null);
+        } else {
+          // For rejection, show reassignment modal
+          setReviewAction(null);
+          setShowReviewModal(false);
+          setShowReassignModal(true);
+        }
+        
         toast.success(message);
+      });
+  };
+
+  // Reassign worker after rejection
+  const handleReassignWorker = (worker: Worker) => {
+    if (!selectedReview) return;
+
+    api
+      .patch(`/api/complaints/${selectedReview.id}/status`, {
+        status: "Assigned",
+        note: `Reassigned to ${worker.name} after rejection`,
+        actor: manager?.name || "Manager",
+        assignedTo: worker.name,
+      })
+      .then(() => {
+        // Update local state
+        setComplaints((prev) =>
+          prev.map((c) =>
+            c.id === selectedReview.id
+              ? { ...c, status: "Assigned", assignedTo: worker.name }
+              : c,
+          ),
+        );
+        setShowReassignModal(false);
+        setSelectedReview(null);
+        toast.success(`Reassigned to ${worker.name}`);
+      })
+      .catch(() => {
+        // Optimistic update
+        setComplaints((prev) =>
+          prev.map((c) =>
+            c.id === selectedReview.id
+              ? { ...c, status: "Assigned", assignedTo: worker.name }
+              : c,
+          ),
+        );
+        setShowReassignModal(false);
+        setSelectedReview(null);
+        toast.success(`Reassigned to ${worker.name}`);
       });
   };
 
@@ -869,6 +929,71 @@ export default function ManagerOverview() {
                   </button>
                 </div>
               )}
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      {/* Reassign Worker Modal (after rejection) */}
+      <AnimatePresence>
+        {showReassignModal && selectedReview && (
+          <div className="fixed inset-0 z-[60] flex items-center justify-center p-4">
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="absolute inset-0 bg-slate-950/20 backdrop-blur-sm"
+              onClick={() => setShowReassignModal(false)}
+            />
+            <motion.div
+              initial={{ scale: 0.95, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.95, opacity: 0 }}
+              className="relative w-full max-w-md rounded-[2rem] bg-gradient-to-br from-white to-slate-50 p-6 shadow-2xl border border-red-200"
+            >
+              <h3 className="text-xl font-bold text-slate-900 mb-2">
+                Assign New Worker
+              </h3>
+              <p className="text-sm text-slate-600 mb-6">
+                Ticket rejected from {selectedReview.assignedTo}. Select a different worker to reassign.
+              </p>
+
+              <div className="bg-red-50 border border-red-200 rounded-xl p-3 mb-6">
+                <p className="text-xs text-red-900 font-semibold">
+                  📍 {selectedReview.address}
+                </p>
+              </div>
+
+              <div className="space-y-3 max-h-[300px] overflow-y-auto pr-2">
+                {stateWorkers
+                  .filter((w) => w.name !== selectedReview.assignedTo) // Don't show the rejected worker
+                  .map((worker: Worker) => (
+                    <button
+                      key={worker.id}
+                      onClick={() => handleReassignWorker(worker)}
+                      className="w-full flex items-center justify-between p-4 rounded-2xl border border-slate-100 bg-slate-50/50 hover:bg-emerald-50 hover:border-emerald-200 transition-all text-left group"
+                    >
+                      <div>
+                        <div className="font-bold text-slate-900 group-hover:text-emerald-700">
+                          {worker.name}
+                        </div>
+                        <div className="text-xs text-slate-500">
+                          Rating: {worker.rating} ⭐ • {worker.status}
+                        </div>
+                      </div>
+                      <div className="text-emerald-600 group-hover:text-emerald-700">
+                        →
+                      </div>
+                    </button>
+                  ))}
+              </div>
+
+              <button
+                onClick={() => setShowReassignModal(false)}
+                className="mt-6 w-full py-3 text-sm font-bold text-slate-500 hover:text-slate-900 transition"
+              >
+                Cancel Reassignment
+              </button>
             </motion.div>
           </div>
         )}
