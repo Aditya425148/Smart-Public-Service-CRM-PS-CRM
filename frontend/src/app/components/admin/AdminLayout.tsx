@@ -53,7 +53,7 @@ export default function AdminLayout() {
           <div>
             <div className="text-sm font-[700] text-white">Municipal Admin</div>
             <div className="text-xs text-[#d8c8e8]/80">
-              Area Manager · Delhi & UP
+              Area Manager · Delhi NCT Zones
             </div>
           </div>
         </div>

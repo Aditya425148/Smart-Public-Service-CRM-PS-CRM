@@ -36,135 +36,236 @@ import {
   categoryBreakdown,
 } from "../../data/mockData";
 
-// Heatmap SVG Component
-function CityHeatmap({ activeCategory }: { activeCategory: string }) {
-  const [hoveredRegion, setHoveredRegion] = useState<string | null>(null);
+type DelhiZoneId =
+  | "south"
+  | "central_new"
+  | "east_shahdara"
+  | "west"
+  | "north_nw";
 
-  // Define the main regions with refined grid alignment
-  const regions = [
-    {
-      id: "delhi",
-      name: "Delhi",
-      displayName: "National Capital Territory",
-      x: 5,
-      y: 12,
-      w: 43,
-      h: 72,
-      subAreas: [
-        {
-          id: "d-north",
-          name: "North Delhi",
-          x: 8,
-          y: 18,
-          w: 17,
-          h: 20,
-          pending: 12,
-          intensity: 0.8,
-        },
-        {
-          id: "d-east",
-          name: "East Delhi",
-          x: 28,
-          y: 18,
-          w: 17,
-          h: 20,
-          pending: 15,
-          intensity: 0.9,
-        },
-        {
-          id: "d-west",
-          name: "West Delhi",
-          x: 8,
-          y: 41,
-          w: 17,
-          h: 20,
-          pending: 5,
-          intensity: 0.3,
-        },
-        {
-          id: "d-south",
-          name: "South Delhi",
-          x: 28,
-          y: 41,
-          w: 17,
-          h: 20,
-          pending: 8,
-          intensity: 0.5,
-        },
-        {
-          id: "d-central",
-          name: "Central",
-          x: 18,
-          y: 64,
-          w: 17,
-          h: 17,
-          pending: 20,
-          intensity: 0.95,
-        },
-      ],
-    },
-    {
-      id: "up",
-      name: "Uttar Pradesh",
-      displayName: "Uttar Pradesh",
-      x: 52,
-      y: 12,
-      w: 43,
-      h: 72,
-      subAreas: [
-        {
-          id: "up-noida",
-          name: "Noida",
-          x: 55,
-          y: 18,
-          w: 17,
-          h: 20,
-          pending: 10,
-          intensity: 0.6,
-        },
-        {
-          id: "up-gzb",
-          name: "Ghaziabad",
-          x: 75,
-          y: 18,
-          w: 17,
-          h: 20,
-          pending: 7,
-          intensity: 0.4,
-        },
-        {
-          id: "up-lko",
-          name: "Lucknow",
-          x: 55,
-          y: 41,
-          w: 17,
-          h: 20,
-          pending: 25,
-          intensity: 0.9,
-        },
-        {
-          id: "up-knp",
-          name: "Kanpur",
-          x: 75,
-          y: 41,
-          w: 17,
-          h: 20,
-          pending: 18,
-          intensity: 0.75,
-        },
-        {
-          id: "up-vns",
-          name: "Varanasi",
-          x: 65,
-          y: 64,
-          w: 17,
-          h: 17,
-          pending: 14,
-          intensity: 0.65,
-        },
-      ],
-    },
-  ];
+type ZoneStats = {
+  id: DelhiZoneId;
+  name: string;
+  localities: string[];
+  target: string;
+  total: number;
+  pending: number;
+  resolved: number;
+  escalated: number;
+};
+
+const DELHI_BOUNDS = {
+  minLat: 28.39,
+  maxLat: 28.89,
+  minLng: 76.84,
+  maxLng: 77.35,
+};
+
+const DELHI_ZONE_CONFIG: Array<{
+  id: DelhiZoneId;
+  name: string;
+  localities: string[];
+  target: string;
+  keywords: string[];
+  x: number;
+  y: number;
+  w: number;
+  h: number;
+}> = [
+  {
+    id: "south",
+    name: "South Delhi",
+    localities: ["Saket", "GK", "Hauz Khas", "Vasant Vihar"],
+    target: "High-income households, expats, luxury consumers",
+    keywords: [
+      "south delhi",
+      "saket",
+      "gk",
+      "greater kailash",
+      "hauz khas",
+      "vasant vihar",
+      "malviya nagar",
+      "defence colony",
+    ],
+    x: 10,
+    y: 58,
+    w: 38,
+    h: 30,
+  },
+  {
+    id: "central_new",
+    name: "Central & New Delhi",
+    localities: ["Connaught Place", "Karol Bagh", "Daryaganj", "Civil Lines"],
+    target: "Corporates, high-street shoppers, tourists, government employees",
+    keywords: [
+      "central delhi",
+      "new delhi",
+      "connaught place",
+      "cp",
+      "karol bagh",
+      "daryaganj",
+      "civil lines",
+      "paharganj",
+    ],
+    x: 30,
+    y: 38,
+    w: 32,
+    h: 20,
+  },
+  {
+    id: "east_shahdara",
+    name: "East Delhi & Shahdara",
+    localities: ["Laxmi Nagar", "Preet Vihar", "Mayur Vihar", "Gandhi Nagar"],
+    target: "Young professionals, students, mid-income families",
+    keywords: [
+      "east delhi",
+      "shahdara",
+      "laxmi nagar",
+      "preet vihar",
+      "mayur vihar",
+      "gandhi nagar",
+      "anand vihar",
+      "vivek vihar",
+    ],
+    x: 62,
+    y: 42,
+    w: 28,
+    h: 34,
+  },
+  {
+    id: "west",
+    name: "West Delhi",
+    localities: ["Rajouri Garden", "Punjabi Bagh", "Janakpuri", "Patel Nagar"],
+    target: "Retail consumers, residential communities, family businesses",
+    keywords: [
+      "west delhi",
+      "rajouri garden",
+      "punjabi bagh",
+      "janakpuri",
+      "patel nagar",
+      "tilak nagar",
+      "vikaspuri",
+      "dwarka",
+    ],
+    x: 8,
+    y: 28,
+    w: 28,
+    h: 30,
+  },
+  {
+    id: "north_nw",
+    name: "North & North-West Delhi",
+    localities: ["Rohini", "Model Town", "Delhi University Campus", "Narela"],
+    target: "Students, tech-enabled youth, industrial professionals",
+    keywords: [
+      "north delhi",
+      "north west delhi",
+      "north-west delhi",
+      "rohini",
+      "model town",
+      "narela",
+      "delhi university",
+      "du campus",
+      "burari",
+      "pitampura",
+    ],
+    x: 26,
+    y: 8,
+    w: 42,
+    h: 28,
+  },
+];
+
+const DEFAULT_ZONE = DELHI_ZONE_CONFIG.find((z) => z.id === "central_new")!;
+
+function isDelhiComplaint(complaint: any): boolean {
+  const searchable = [
+    complaint?.state,
+    complaint?.address,
+    complaint?.area,
+    complaint?.ward,
+    complaint?.description,
+  ]
+    .filter(Boolean)
+    .join(" ")
+    .toLowerCase();
+
+  if (
+    searchable.includes("delhi") ||
+    searchable.includes("new delhi") ||
+    searchable.includes("nct")
+  ) {
+    return true;
+  }
+
+  const coords = complaint?.coordinates;
+  if (coords && typeof coords === "object") {
+    const lat = Number(coords.lat ?? coords.latitude);
+    const lng = Number(coords.lng ?? coords.longitude);
+    if (!Number.isNaN(lat) && !Number.isNaN(lng)) {
+      return (
+        lat >= DELHI_BOUNDS.minLat &&
+        lat <= DELHI_BOUNDS.maxLat &&
+        lng >= DELHI_BOUNDS.minLng &&
+        lng <= DELHI_BOUNDS.maxLng
+      );
+    }
+  }
+
+  return false;
+}
+
+function inferDelhiZone(complaint: any): DelhiZoneId {
+  const searchable = [
+    complaint?.area,
+    complaint?.ward,
+    complaint?.address,
+    complaint?.description,
+  ]
+    .filter(Boolean)
+    .join(" ")
+    .toLowerCase();
+
+  for (const zone of DELHI_ZONE_CONFIG) {
+    if (zone.keywords.some((keyword) => searchable.includes(keyword))) {
+      return zone.id;
+    }
+  }
+
+  const coords = complaint?.coordinates;
+  if (coords && typeof coords === "object") {
+    const lat = Number(coords.lat ?? coords.latitude);
+    const lng = Number(coords.lng ?? coords.longitude);
+
+    if (!Number.isNaN(lat) && !Number.isNaN(lng)) {
+      if (lat >= 28.72) return "north_nw";
+      if (lat <= 28.56) return "south";
+      if (lng >= 77.23) return "east_shahdara";
+      if (lng <= 77.08) return "west";
+    }
+  }
+
+  return DEFAULT_ZONE.id;
+}
+
+// Heatmap SVG Component
+function CityHeatmap({
+  activeCategory,
+  zoneStats,
+}: {
+  activeCategory: string;
+  zoneStats: ZoneStats[];
+}) {
+  const [hoveredRegion, setHoveredRegion] = useState<string | null>(null);
+  const zoneMap = useMemo(() => {
+    const map: Record<string, ZoneStats> = {};
+    zoneStats.forEach((zone) => {
+      map[zone.id] = zone;
+    });
+    return map;
+  }, [zoneStats]);
+
+  const maxPending = Math.max(...zoneStats.map((z) => z.pending), 1);
 
   const getColor = (intensity: number) => {
     if (intensity >= 0.8) return "rgba(220, 38, 38, 0.85)"; // Red-600
@@ -193,120 +294,152 @@ function CityHeatmap({ activeCategory }: { activeCategory: string }) {
         viewBox="0 0 100 100"
         preserveAspectRatio="none"
       >
-        {regions.map((region) => (
-          <g
-            key={region.id}
-            onMouseEnter={() => setHoveredRegion(region.name)}
-            onMouseLeave={() => setHoveredRegion(null)}
-          >
-            {/* Region Backdrop */}
-            <motion.rect
-              animate={{
-                fill:
-                  hoveredRegion === region.name
-                    ? "rgba(15, 23, 42, 0.6)"
-                    : "rgba(15, 23, 42, 0.2)",
-                stroke:
-                  hoveredRegion === region.name
-                    ? "rgba(59, 130, 246, 0.5)"
-                    : "rgba(51, 65, 85, 0.3)",
-              }}
-              x={region.x}
-              y={region.y}
-              width={region.w}
-              height={region.h}
-              rx="2"
-              strokeWidth="0.5"
-            />
+        <text
+          x={50}
+          y={5}
+          textAnchor="middle"
+          fill="rgba(255,255,255,0.9)"
+          fontSize="3"
+          fontWeight="800"
+          style={{ letterSpacing: "0.12em", textTransform: "uppercase" }}
+        >
+          Delhi NCT Live Complaint Heatmap
+        </text>
 
-            {/* Region Title */}
-            <motion.text
-              animate={{
-                opacity: hoveredRegion === region.name ? 0.2 : 0.9,
-                letterSpacing:
-                  hoveredRegion === region.name ? "0.4em" : "0.2em",
-              }}
-              x={region.x + region.w / 2}
-              y={region.y - 4}
-              textAnchor="middle"
-              fill="white"
-              fontSize="4.2"
-              fontWeight="900"
-              className="tracking-tighter"
-              style={{ textTransform: "uppercase" }}
+        {DELHI_ZONE_CONFIG.map((region) => {
+          const metrics = zoneMap[region.id] || {
+            id: region.id,
+            name: region.name,
+            localities: region.localities,
+            target: region.target,
+            total: 0,
+            pending: 0,
+            resolved: 0,
+            escalated: 0,
+          };
+          const intensity = Math.max(0.2, metrics.pending / maxPending);
+
+          return (
+            <g
+              key={region.id}
+              onMouseEnter={() => setHoveredRegion(region.name)}
+              onMouseLeave={() => setHoveredRegion(null)}
             >
-              {region.name}
-            </motion.text>
+              {/* Region Backdrop */}
+              <motion.rect
+                animate={{
+                  fill:
+                    hoveredRegion === region.name
+                      ? "rgba(15, 23, 42, 0.6)"
+                      : "rgba(15, 23, 42, 0.2)",
+                  stroke:
+                    hoveredRegion === region.name
+                      ? "rgba(59, 130, 246, 0.5)"
+                      : "rgba(51, 65, 85, 0.3)",
+                }}
+                x={region.x}
+                y={region.y}
+                width={region.w}
+                height={region.h}
+                rx="2"
+                strokeWidth="0.5"
+              />
 
-            {/* Sub-Areas Grid */}
-            {region.subAreas.map((area) => (
-              <g key={area.id}>
-                <motion.rect
-                  initial={{ opacity: 0 }}
-                  animate={{
-                    opacity: hoveredRegion === region.name ? 1 : 0.3,
-                    filter:
-                      hoveredRegion === region.name
-                        ? "blur(0px)"
-                        : "blur(10px)",
-                    scale: hoveredRegion === region.name ? 1 : 0.9,
-                  }}
-                  transition={{ type: "spring", stiffness: 300, damping: 30 }}
-                  x={area.x}
-                  y={area.y}
-                  width={area.w}
-                  height={area.h}
-                  fill={getColor(area.intensity)}
-                  rx="4"
-                />
+              {/* Region Title */}
+              <motion.text
+                animate={{
+                  opacity: hoveredRegion === region.name ? 0.45 : 0.95,
+                  letterSpacing:
+                    hoveredRegion === region.name ? "0.4em" : "0.2em",
+                }}
+                x={region.x + region.w / 2}
+                y={region.y - 4}
+                textAnchor="middle"
+                fill="white"
+                fontSize="2.8"
+                fontWeight="900"
+                className="tracking-tighter"
+                style={{ textTransform: "uppercase" }}
+              >
+                {region.name}
+              </motion.text>
 
-                <AnimatePresence>
-                  {hoveredRegion === region.name && (
-                    <motion.g
-                      initial={{ opacity: 0, y: 5 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      exit={{ opacity: 0 }}
+              <motion.rect
+                initial={{ opacity: 0 }}
+                animate={{
+                  opacity: hoveredRegion === region.name ? 1 : 0.8,
+                  filter:
+                    hoveredRegion === region.name ? "blur(0px)" : "blur(2px)",
+                  scale: hoveredRegion === region.name ? 1.01 : 0.99,
+                }}
+                transition={{ type: "spring", stiffness: 300, damping: 30 }}
+                x={region.x}
+                y={region.y}
+                width={region.w}
+                height={region.h}
+                fill={getColor(intensity)}
+                rx="4"
+              />
+
+              <AnimatePresence>
+                {hoveredRegion === region.name && (
+                  <motion.g
+                    initial={{ opacity: 0, y: 5 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0 }}
+                  >
+                    <text
+                      x={region.x + region.w / 2}
+                      y={region.y + region.h / 2 - 4.5}
+                      textAnchor="middle"
+                      dominantBaseline="middle"
+                      fill="white"
+                      fontSize="2.4"
+                      fontWeight="900"
+                      style={{
+                        pointerEvents: "none",
+                        textShadow: "0 2px 4px rgba(0,0,0,0.8)",
+                      }}
                     >
-                      <text
-                        x={area.x + area.w / 2}
-                        y={area.y + area.h / 2 - 1.5}
-                        textAnchor="middle"
-                        dominantBaseline="middle"
-                        fill="white"
-                        fontSize="2.8"
-                        fontWeight="900"
-                        style={{
-                          pointerEvents: "none",
-                          textShadow: "0 2px 4px rgba(0,0,0,0.8)",
-                        }}
-                      >
-                        {area.name}
-                      </text>
-                      <text
-                        x={area.x + area.w / 2}
-                        y={area.y + area.h / 2 + 2.5}
-                        textAnchor="middle"
-                        dominantBaseline="middle"
-                        fill="rgba(255,255,255,0.9)"
-                        fontSize="1.8"
-                        fontWeight="700"
-                        style={{ pointerEvents: "none" }}
-                      >
-                        {area.pending} PENDING
-                      </text>
-                    </motion.g>
-                  )}
-                </AnimatePresence>
-              </g>
-            ))}
-          </g>
-        ))}
+                      {metrics.name}
+                    </text>
+                    <text
+                      x={region.x + region.w / 2}
+                      y={region.y + region.h / 2 - 0.8}
+                      textAnchor="middle"
+                      dominantBaseline="middle"
+                      fill="rgba(255,255,255,0.95)"
+                      fontSize="1.8"
+                      fontWeight="800"
+                      style={{ pointerEvents: "none" }}
+                    >
+                      {metrics.pending} active | {metrics.resolved} resolved
+                    </text>
+                    <text
+                      x={region.x + region.w / 2}
+                      y={region.y + region.h / 2 + 2.4}
+                      textAnchor="middle"
+                      dominantBaseline="middle"
+                      fill="rgba(255,255,255,0.78)"
+                      fontSize="1.45"
+                      fontWeight="700"
+                      style={{ pointerEvents: "none" }}
+                    >
+                      {region.localities.join(" • ")}
+                    </text>
+                  </motion.g>
+                )}
+              </AnimatePresence>
+            </g>
+          );
+        })}
       </svg>
 
       {/* Legend */}
       <div className="absolute bottom-6 left-6 flex items-center gap-6 px-5 py-3 rounded-xl bg-slate-900/60 backdrop-blur-md border border-slate-700/50">
         <span className="text-[10px] uppercase tracking-widest font-black text-slate-400">
-          Density Index
+          Delhi Density Index (
+          {activeCategory === "All" ? "all categories" : activeCategory})
         </span>
         <div className="flex items-center gap-4">
           {[
@@ -378,7 +511,7 @@ export default function AdminAnalytics() {
   // Calculate SLA history from actual data - last 6 months
   const slaHistoryData = useMemo(() => {
     const monthData: Record<string, { total: number; met: number }> = {};
-    
+
     complaints.forEach((c) => {
       if (!c.createdAt) return;
       const date = new Date(c.createdAt);
@@ -411,11 +544,57 @@ export default function AdminAnalytics() {
       const data = monthData[key] || { total: 0, met: 0 };
       months.push({
         month: d.toLocaleDateString("en-US", { month: "short" }),
-        compliance: data.total > 0 ? Math.round((data.met / data.total) * 100) : 0,
+        compliance:
+          data.total > 0 ? Math.round((data.met / data.total) * 100) : 0,
       });
     }
     return months;
   }, [complaints]);
+
+  const delhiComplaints = useMemo(
+    () => complaints.filter((c) => isDelhiComplaint(c)),
+    [complaints],
+  );
+
+  const heatmapZoneStats = useMemo<ZoneStats[]>(() => {
+    const statsByZone: Record<DelhiZoneId, ZoneStats> =
+      DELHI_ZONE_CONFIG.reduce(
+        (acc, zone) => {
+          acc[zone.id] = {
+            id: zone.id,
+            name: zone.name,
+            localities: zone.localities,
+            target: zone.target,
+            total: 0,
+            pending: 0,
+            resolved: 0,
+            escalated: 0,
+          };
+          return acc;
+        },
+        {} as Record<DelhiZoneId, ZoneStats>,
+      );
+
+    delhiComplaints
+      .filter((c) => activeCategory === "All" || c.category === activeCategory)
+      .forEach((complaint) => {
+        const zoneId = inferDelhiZone(complaint);
+        const zone = statsByZone[zoneId];
+        zone.total += 1;
+
+        if (["Resolved", "Closed"].includes(complaint.status)) {
+          zone.resolved += 1;
+        } else {
+          zone.pending += 1;
+        }
+
+        if (complaint.escalated) {
+          zone.escalated += 1;
+        }
+      });
+
+    return DELHI_ZONE_CONFIG.map((zone) => statsByZone[zone.id]);
+  }, [activeCategory, delhiComplaints]);
 
   // Calculate performance metrics from actual data
   const { kpiData, radarData, resolutionByArea, areaStats } = useMemo(() => {
@@ -433,12 +612,19 @@ export default function AdminAnalytics() {
       .filter((c) => c.assignedAt || c.createdAt)
       .map((c) => {
         const created = new Date(c.createdAt).getTime();
-        const assigned = c.assignedAt ? new Date(c.assignedAt).getTime() : created;
+        const assigned = c.assignedAt
+          ? new Date(c.assignedAt).getTime()
+          : created;
         return (assigned - created) / (1000 * 60 * 60);
       });
-    const mtta = assignmentTimes.length > 0 
-      ? Math.round(assignmentTimes.reduce((a, b) => a + b, 0) / assignmentTimes.length * 10) / 10
-      : defaultKpiData.mtta;
+    const mtta =
+      assignmentTimes.length > 0
+        ? Math.round(
+            (assignmentTimes.reduce((a, b) => a + b, 0) /
+              assignmentTimes.length) *
+              10,
+          ) / 10
+        : defaultKpiData.mtta;
 
     // Calculate MTTR - mean time to resolution
     const resolutionTimes = complaints
@@ -448,37 +634,61 @@ export default function AdminAnalytics() {
         const updated = new Date(c.updatedAt).getTime();
         return (updated - created) / (1000 * 60 * 60);
       });
-    const mttr = resolutionTimes.length > 0
-      ? Math.round(resolutionTimes.reduce((a, b) => a + b, 0) / resolutionTimes.length * 10) / 10
-      : defaultKpiData.mttr;
+    const mttr =
+      resolutionTimes.length > 0
+        ? Math.round(
+            (resolutionTimes.reduce((a, b) => a + b, 0) /
+              resolutionTimes.length) *
+              10,
+          ) / 10
+        : defaultKpiData.mttr;
 
     // Calculate SLA Compliance
-    const resolved = complaints.filter((c) => ["Resolved", "Closed"].includes(c.status));
-    const slaMet = resolved.filter((c) => (c.slaRemainingHours || 1) >= 0).length;
-    const slaCompliance = resolved.length > 0 ? Math.round((slaMet / resolved.length) * 100) : 0;
+    const resolved = complaints.filter((c) =>
+      ["Resolved", "Closed"].includes(c.status),
+    );
+    const slaMet = resolved.filter(
+      (c) => (c.slaRemainingHours || 1) >= 0,
+    ).length;
+    const slaCompliance =
+      resolved.length > 0 ? Math.round((slaMet / resolved.length) * 100) : 0;
 
     // Calculate Satisfaction Score from ratings
     const ratings = complaints.filter((c) => c.rating).map((c) => c.rating);
-    const satisfactionScore = ratings.length > 0
-      ? Math.round((ratings.reduce((a, b) => a + b, 0) / ratings.length) * 10) / 10
-      : defaultKpiData.satisfactionScore;
+    const satisfactionScore =
+      ratings.length > 0
+        ? Math.round(
+            (ratings.reduce((a, b) => a + b, 0) / ratings.length) * 10,
+          ) / 10
+        : defaultKpiData.satisfactionScore;
 
     // Calculate metrics for radar
     const escalated = complaints.filter((c) => c.escalated).length;
-    const escalationMgmt = 100 - Math.round((escalated / Math.max(complaints.length, 1)) * 100);
+    const escalationMgmt =
+      100 - Math.round((escalated / Math.max(complaints.length, 1)) * 100);
 
-    const verified = complaints.filter((c) => c.verifiedBy || c.status !== "Submitted").length;
-    const verificationRate = Math.round((verified / Math.max(complaints.length, 1)) * 100);
+    const verified = complaints.filter(
+      (c) => c.verifiedBy || c.status !== "Submitted",
+    ).length;
+    const verificationRate = Math.round(
+      (verified / Math.max(complaints.length, 1)) * 100,
+    );
 
     const resolutionSpeed = Math.min(100, Math.round(100 - (mttr / 72) * 50));
 
     const radarScores = [
       { metric: "SLA Compliance", score: slaCompliance },
       { metric: "Verification Rate", score: verificationRate },
-      { metric: "Citizen Satisfaction", score: Math.round(satisfactionScore * 20) },
+      {
+        metric: "Citizen Satisfaction",
+        score: Math.round(satisfactionScore * 20),
+      },
       { metric: "Resolution Speed", score: resolutionSpeed },
       { metric: "Escalation Mgmt", score: escalationMgmt },
-      { metric: "Participation", score: Math.min(100, Math.round((complaints.length / 100) * 100)) },
+      {
+        metric: "Participation",
+        score: Math.min(100, Math.round((complaints.length / 100) * 100)),
+      },
     ];
 
     // Group by area with full stats
@@ -506,18 +716,31 @@ export default function AdminAnalytics() {
     const areaStatsWithMetrics = Object.values(areaStatsMap)
       .map((stat: any) => ({
         ...stat,
-        avgResolutionHours: stat.times.length > 0 
-          ? Math.round(stat.times.reduce((a: number, b: number) => a + b, 0) / stat.times.length) 
-          : 0,
+        avgResolutionHours:
+          stat.times.length > 0
+            ? Math.round(
+                stat.times.reduce((a: number, b: number) => a + b, 0) /
+                  stat.times.length,
+              )
+            : 0,
         civicHealthScore: Math.max(
           40,
           Math.min(
             100,
             Math.round(
               (stat.resolved / Math.max(stat.totalComplaints, 1)) * 80 +
-              (Math.max(0, 72 - (stat.times.length > 0 ? stat.times.reduce((a: number, b: number) => a + b, 0) / stat.times.length : 0)) / 72) * 20
-            )
-          )
+                (Math.max(
+                  0,
+                  72 -
+                    (stat.times.length > 0
+                      ? stat.times.reduce((a: number, b: number) => a + b, 0) /
+                        stat.times.length
+                      : 0),
+                ) /
+                  72) *
+                  20,
+            ),
+          ),
         ),
       }))
       .sort((a, b) => b.totalComplaints - a.totalComplaints);
@@ -558,7 +781,7 @@ export default function AdminAnalytics() {
             Analytics & Heatmap
           </h1>
           <p className="text-white/90 text-sm mt-1">
-            City-wide civic intelligence dashboard
+            Delhi NCT civic intelligence dashboard
           </p>
         </div>
         <div className="flex gap-2">
@@ -581,7 +804,11 @@ export default function AdminAnalytics() {
             onClick={async () => {
               try {
                 setIsExporting(true);
-                await exportToPDF("analytics-dashboard", "admin-analytics", "Complaint Analytics Report");
+                await exportToPDF(
+                  "analytics-dashboard",
+                  "admin-analytics",
+                  "Complaint Analytics Report",
+                );
                 toast.success("PDF exported successfully");
               } catch (error) {
                 console.error("Export failed:", error);
@@ -593,7 +820,11 @@ export default function AdminAnalytics() {
             disabled={isExporting}
             className="flex items-center gap-2 px-4 py-2 text-sm text-slate-600 bg-white/88 backdrop-blur-xl border border-white rounded-2xl hover:bg-white transition-colors shadow-sm disabled:opacity-50"
           >
-            {isExporting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Download className="w-4 h-4" />}
+            {isExporting ? (
+              <Loader2 className="w-4 h-4 animate-spin" />
+            ) : (
+              <Download className="w-4 h-4" />
+            )}
             {isExporting ? "Exporting..." : "Export PDF"}
           </button>
         </div>
@@ -607,7 +838,7 @@ export default function AdminAnalytics() {
               Live Complaint Heatmap
             </h3>
             <p className="text-xs text-slate-400 mt-0.5">
-              Area-level density with Red Zone alerts
+              Delhi-only zone density with live complaint intensity
             </p>
           </div>
           <div className="flex gap-2">
@@ -623,13 +854,43 @@ export default function AdminAnalytics() {
                 "Water",
                 "Streetlight",
                 "Safety",
+                "Sanitation",
+                "Construction",
+                "Other",
               ].map((c) => (
                 <option key={c}>{c}</option>
               ))}
             </select>
           </div>
         </div>
-        <CityHeatmap activeCategory={activeCategory} />
+        <CityHeatmap
+          activeCategory={activeCategory}
+          zoneStats={heatmapZoneStats}
+        />
+
+        <div className="mt-4 grid sm:grid-cols-2 lg:grid-cols-5 gap-3">
+          {heatmapZoneStats.map((zone) => (
+            <div
+              key={zone.id}
+              className="rounded-xl border border-slate-100 bg-slate-50/70 px-3 py-2"
+            >
+              <p className="text-[11px] font-[700] text-slate-700 truncate">
+                {zone.name}
+              </p>
+              <p className="text-[11px] text-slate-500 mt-1">
+                Active:{" "}
+                <span className="font-[700] text-rose-600">{zone.pending}</span>{" "}
+                · Resolved:{" "}
+                <span className="font-[700] text-emerald-600">
+                  {zone.resolved}
+                </span>
+              </p>
+              <p className="text-[10px] text-slate-400 mt-1 line-clamp-2">
+                Target: {zone.target}
+              </p>
+            </div>
+          ))}
+        </div>
       </div>
 
       {/* KPI Metrics */}
@@ -859,7 +1120,10 @@ export default function AdminAnalytics() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-50">
-                {(areaStats && areaStats.length > 0 ? areaStats : mockAreaStats).map((w) => (
+                {(areaStats && areaStats.length > 0
+                  ? areaStats
+                  : mockAreaStats
+                ).map((w) => (
                   <tr
                     key={w.area}
                     className="hover:bg-slate-50 transition-colors"
@@ -928,7 +1192,10 @@ export default function AdminAnalytics() {
           </span>
         </div>
         <div className="grid sm:grid-cols-2 gap-4">
-          {(areaStats && areaStats.length > 0 ? areaStats.slice(0, 4) : mockAreaStats.slice(0, 4)).map((w) => (
+          {(areaStats && areaStats.length > 0
+            ? areaStats.slice(0, 4)
+            : mockAreaStats.slice(0, 4)
+          ).map((w) => (
             <div
               key={w.area}
               className="bg-slate-800/50 rounded-xl p-4 border border-slate-700/50"

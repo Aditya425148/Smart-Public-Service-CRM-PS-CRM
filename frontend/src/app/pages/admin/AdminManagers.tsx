@@ -12,16 +12,41 @@ import {
 } from "lucide-react";
 
 const MOCK_MANAGERS = [
-  { id: "MGR-DEL-01", name: "Sanjay Sharma",  state: "Delhi",        email: "sanjay@civicpulse.com" },
-  { id: "MGR-DEL-02", name: "Meena Kumari",   state: "Delhi",        email: "meena@civicpulse.com" },
-  { id: "MGR-DEL-03", name: "Rajesh Tyagi",   state: "Delhi",        email: "rajesh@civicpulse.com" },
-  { id: "MGR-DEL-04", name: "Anita Singh",    state: "Delhi",        email: "anita@civicpulse.com" },
-  { id: "MGR-DEL-05", name: "Amit Goel",      state: "Delhi",        email: "amit@civicpulse.com" },
-  { id: "MGR-UP-01",  name: "Yash Pal",       state: "Uttar Pradesh", email: "yash@civicpulse.com" },
-  { id: "MGR-UP-02",  name: "Priti Yadav",    state: "Uttar Pradesh", email: "priti@civicpulse.com" },
-  { id: "MGR-UP-03",  name: "Manoj Mishra",   state: "Uttar Pradesh", email: "manoj@civicpulse.com" },
-  { id: "MGR-UP-04",  name: "Renu Devi",      state: "Uttar Pradesh", email: "renu@civicpulse.com" },
-  { id: "MGR-UP-05",  name: "Suresh Chandra", state: "Uttar Pradesh", email: "suresh@civicpulse.com" },
+  {
+    id: "MGR-DEL-S01",
+    name: "Sanjay Sharma",
+    state: "Delhi",
+    zone: "South Delhi",
+    email: "sanjay@civicpulse.com",
+  },
+  {
+    id: "MGR-DEL-C01",
+    name: "Meena Kumari",
+    state: "Delhi",
+    zone: "Central & New Delhi",
+    email: "meena@civicpulse.com",
+  },
+  {
+    id: "MGR-DEL-E01",
+    name: "Rajesh Tyagi",
+    state: "Delhi",
+    zone: "East Delhi & Shahdara",
+    email: "rajesh@civicpulse.com",
+  },
+  {
+    id: "MGR-DEL-W01",
+    name: "Anita Singh",
+    state: "Delhi",
+    zone: "West Delhi",
+    email: "anita@civicpulse.com",
+  },
+  {
+    id: "MGR-DEL-N01",
+    name: "Amit Goel",
+    state: "Delhi",
+    zone: "North & North-West Delhi",
+    email: "amit@civicpulse.com",
+  },
 ];
 
 const STATUS_COLORS: Record<string, string> = {
@@ -34,13 +59,20 @@ const STATUS_COLORS: Record<string, string> = {
 };
 
 function initials(name: string) {
-  return name.split(" ").map((n) => n[0]).join("").slice(0, 2).toUpperCase();
+  return name
+    .split(" ")
+    .map((n) => n[0])
+    .join("")
+    .slice(0, 2)
+    .toUpperCase();
 }
 
 export default function AdminManagers() {
   const [complaints, setComplaints] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
-  const [selectedMgr, setSelectedMgr] = useState<typeof MOCK_MANAGERS[0] | null>(null);
+  const [selectedMgr, setSelectedMgr] = useState<
+    (typeof MOCK_MANAGERS)[0] | null
+  >(null);
   const [drawerOpen, setDrawerOpen] = useState(false);
 
   useEffect(() => {
@@ -55,13 +87,26 @@ export default function AdminManagers() {
   const managerStats = useMemo(() => {
     return MOCK_MANAGERS.map((mgr) => {
       const mine = complaints.filter((c) => c.assignedManagerId === mgr.id);
-      const active = mine.filter((c) => !["Resolved", "Closed"].includes(c.status)).length;
-      const resolved = mine.filter((c) => ["Resolved", "Closed"].includes(c.status)).length;
+      const active = mine.filter(
+        (c) => !["Resolved", "Closed"].includes(c.status),
+      ).length;
+      const resolved = mine.filter((c) =>
+        ["Resolved", "Closed"].includes(c.status),
+      ).length;
       const escalated = mine.filter((c) => c.escalated).length;
       const slaBreached = mine.filter(
-        (c) => (c.slaRemainingHours ?? 1) < 0 && !["Resolved", "Closed"].includes(c.status)
+        (c) =>
+          (c.slaRemainingHours ?? 1) < 0 &&
+          !["Resolved", "Closed"].includes(c.status),
       ).length;
-      return { ...mgr, total: mine.length, active, resolved, escalated, slaBreached };
+      return {
+        ...mgr,
+        total: mine.length,
+        active,
+        resolved,
+        escalated,
+        slaBreached,
+      };
     });
   }, [complaints]);
 
@@ -69,34 +114,68 @@ export default function AdminManagers() {
     if (!selectedMgr) return [];
     return complaints
       .filter((c) => c.assignedManagerId === selectedMgr.id)
-      .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+      .sort(
+        (a, b) =>
+          new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
+      );
   }, [complaints, selectedMgr]);
 
-  const openDrawer = (mgr: typeof MOCK_MANAGERS[0]) => {
+  const openDrawer = (mgr: (typeof MOCK_MANAGERS)[0]) => {
     setSelectedMgr(mgr);
     setDrawerOpen(true);
   };
 
-  const totalManaged = complaints.filter((c) => c.assignedManagerId && c.assignedManagerId !== "SYSTEM").length;
+  const totalManaged = complaints.filter(
+    (c) => c.assignedManagerId && c.assignedManagerId !== "SYSTEM",
+  ).length;
 
   return (
     <div className="max-w-7xl mx-auto space-y-6">
       <div>
         <h1 className="text-2xl font-[800] text-[#ffcbd1]">Manager Overview</h1>
-        <p className="text-white/90 text-sm mt-1">Live workload across all district managers</p>
+        <p className="text-white/90 text-sm mt-1">
+          Live workload across all district managers
+        </p>
       </div>
 
       {/* Summary KPIs */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
         {[
-          { label: "Total Managers", value: MOCK_MANAGERS.length, color: "text-sky-600" },
-          { label: "Complaints Assigned", value: totalManaged, color: "text-violet-600" },
-          { label: "Currently Active", value: complaints.filter((c) => !["Resolved","Closed","Rejected"].includes(c.status)).length, color: "text-amber-600" },
-          { label: "Resolved Overall", value: complaints.filter((c) => ["Resolved","Closed"].includes(c.status)).length, color: "text-emerald-600" },
+          {
+            label: "Total Managers",
+            value: MOCK_MANAGERS.length,
+            color: "text-sky-600",
+          },
+          {
+            label: "Complaints Assigned",
+            value: totalManaged,
+            color: "text-violet-600",
+          },
+          {
+            label: "Currently Active",
+            value: complaints.filter(
+              (c) => !["Resolved", "Closed", "Rejected"].includes(c.status),
+            ).length,
+            color: "text-amber-600",
+          },
+          {
+            label: "Resolved Overall",
+            value: complaints.filter((c) =>
+              ["Resolved", "Closed"].includes(c.status),
+            ).length,
+            color: "text-emerald-600",
+          },
         ].map(({ label, value, color }) => (
-          <div key={label} className="bg-white/88 backdrop-blur-xl rounded-[1.75rem] p-4 border border-white shadow-[0_18px_45px_rgba(148,163,184,0.14)]">
-            <div className={`text-2xl font-[800] ${color}`}>{loading ? "—" : value}</div>
-            <div className="text-xs text-slate-500 font-[500] mt-1">{label}</div>
+          <div
+            key={label}
+            className="bg-white/88 backdrop-blur-xl rounded-[1.75rem] p-4 border border-white shadow-[0_18px_45px_rgba(148,163,184,0.14)]"
+          >
+            <div className={`text-2xl font-[800] ${color}`}>
+              {loading ? "—" : value}
+            </div>
+            <div className="text-xs text-slate-500 font-[500] mt-1">
+              {label}
+            </div>
           </div>
         ))}
       </div>
@@ -118,8 +197,12 @@ export default function AdminManagers() {
                 {initials(mgr.name)}
               </div>
               <div className="flex-1 min-w-0">
-                <div className="text-sm font-[700] text-slate-900 truncate">{mgr.name}</div>
-                <div className="text-xs text-slate-400">{mgr.state} · {mgr.id}</div>
+                <div className="text-sm font-[700] text-slate-900 truncate">
+                  {mgr.name}
+                </div>
+                <div className="text-xs text-slate-400">
+                  {mgr.zone} · {mgr.id}
+                </div>
               </div>
               <ChevronRight className="w-4 h-4 text-slate-300 group-hover:text-slate-500 transition-colors shrink-0" />
             </div>
@@ -128,7 +211,8 @@ export default function AdminManagers() {
             <div className="flex gap-2 mb-4 flex-wrap">
               {mgr.slaBreached > 0 && (
                 <span className="text-[10px] font-[700] bg-red-100 text-red-600 px-2 py-0.5 rounded-full">
-                  🔴 {mgr.slaBreached} SLA breach{mgr.slaBreached > 1 ? "es" : ""}
+                  🔴 {mgr.slaBreached} SLA breach
+                  {mgr.slaBreached > 1 ? "es" : ""}
                 </span>
               )}
               {mgr.escalated > 0 && (
@@ -146,16 +230,28 @@ export default function AdminManagers() {
             {/* Stats */}
             <div className="grid grid-cols-3 gap-2 text-center">
               <div className="bg-slate-50 rounded-xl p-2.5">
-                <div className="text-base font-[800] text-amber-600">{loading ? "—" : mgr.active}</div>
-                <div className="text-[9px] font-[600] text-slate-400 uppercase mt-0.5">Active</div>
+                <div className="text-base font-[800] text-amber-600">
+                  {loading ? "—" : mgr.active}
+                </div>
+                <div className="text-[9px] font-[600] text-slate-400 uppercase mt-0.5">
+                  Active
+                </div>
               </div>
               <div className="bg-slate-50 rounded-xl p-2.5">
-                <div className="text-base font-[800] text-emerald-600">{loading ? "—" : mgr.resolved}</div>
-                <div className="text-[9px] font-[600] text-slate-400 uppercase mt-0.5">Resolved</div>
+                <div className="text-base font-[800] text-emerald-600">
+                  {loading ? "—" : mgr.resolved}
+                </div>
+                <div className="text-[9px] font-[600] text-slate-400 uppercase mt-0.5">
+                  Resolved
+                </div>
               </div>
               <div className="bg-slate-50 rounded-xl p-2.5">
-                <div className="text-base font-[800] text-slate-700">{loading ? "—" : mgr.total}</div>
-                <div className="text-[9px] font-[600] text-slate-400 uppercase mt-0.5">Total</div>
+                <div className="text-base font-[800] text-slate-700">
+                  {loading ? "—" : mgr.total}
+                </div>
+                <div className="text-[9px] font-[600] text-slate-400 uppercase mt-0.5">
+                  Total
+                </div>
               </div>
             </div>
 
@@ -163,19 +259,25 @@ export default function AdminManagers() {
               <div className="mt-3">
                 <div className="flex justify-between text-[10px] text-slate-400 mb-1">
                   <span>Resolution rate</span>
-                  <span className="font-[700] text-slate-600">{Math.round((mgr.resolved / mgr.total) * 100)}%</span>
+                  <span className="font-[700] text-slate-600">
+                    {Math.round((mgr.resolved / mgr.total) * 100)}%
+                  </span>
                 </div>
                 <div className="w-full h-1.5 bg-slate-100 rounded-full overflow-hidden">
                   <div
                     className="h-full rounded-full bg-gradient-to-r from-emerald-400 to-emerald-600 transition-all"
-                    style={{ width: `${Math.round((mgr.resolved / mgr.total) * 100)}%` }}
+                    style={{
+                      width: `${Math.round((mgr.resolved / mgr.total) * 100)}%`,
+                    }}
                   />
                 </div>
               </div>
             )}
 
             {mgr.total === 0 && (
-              <div className="mt-3 text-center text-xs text-slate-400 italic">No complaints assigned yet</div>
+              <div className="mt-3 text-center text-xs text-slate-400 italic">
+                No complaints assigned yet
+              </div>
             )}
           </motion.div>
         ))}
@@ -208,8 +310,12 @@ export default function AdminManagers() {
                   {initials(selectedMgr.name)}
                 </div>
                 <div className="flex-1">
-                  <div className="text-base font-[700] text-slate-900">{selectedMgr.name}</div>
-                  <div className="text-xs text-slate-500">{selectedMgr.state} · {selectedMgr.id}</div>
+                  <div className="text-base font-[700] text-slate-900">
+                    {selectedMgr.name}
+                  </div>
+                  <div className="text-xs text-slate-500">
+                    {selectedMgr.zone} · {selectedMgr.id}
+                  </div>
                 </div>
                 <button
                   onClick={() => setDrawerOpen(false)}
@@ -221,20 +327,34 @@ export default function AdminManagers() {
 
               {/* Quick Stats */}
               {(() => {
-                const stats = managerStats.find((m) => m.id === selectedMgr.id)!;
+                const stats = managerStats.find(
+                  (m) => m.id === selectedMgr.id,
+                )!;
                 return (
                   <div className="grid grid-cols-3 gap-3 p-4 border-b border-slate-100">
                     <div className="text-center">
-                      <div className="text-lg font-[800] text-amber-600">{stats.active}</div>
-                      <div className="text-[10px] text-slate-400 font-[600] uppercase">Active</div>
+                      <div className="text-lg font-[800] text-amber-600">
+                        {stats.active}
+                      </div>
+                      <div className="text-[10px] text-slate-400 font-[600] uppercase">
+                        Active
+                      </div>
                     </div>
                     <div className="text-center">
-                      <div className="text-lg font-[800] text-emerald-600">{stats.resolved}</div>
-                      <div className="text-[10px] text-slate-400 font-[600] uppercase">Resolved</div>
+                      <div className="text-lg font-[800] text-emerald-600">
+                        {stats.resolved}
+                      </div>
+                      <div className="text-[10px] text-slate-400 font-[600] uppercase">
+                        Resolved
+                      </div>
                     </div>
                     <div className="text-center">
-                      <div className="text-lg font-[800] text-red-500">{stats.slaBreached}</div>
-                      <div className="text-[10px] text-slate-400 font-[600] uppercase">SLA Breached</div>
+                      <div className="text-lg font-[800] text-red-500">
+                        {stats.slaBreached}
+                      </div>
+                      <div className="text-[10px] text-slate-400 font-[600] uppercase">
+                        SLA Breached
+                      </div>
                     </div>
                   </div>
                 );
@@ -256,49 +376,81 @@ export default function AdminManagers() {
                 ) : (
                   <div className="divide-y divide-slate-50">
                     {selectedMgrComplaints.map((c) => (
-                      <div key={c.id} className="px-4 py-3.5 hover:bg-slate-50 transition-colors">
+                      <div
+                        key={c.id}
+                        className="px-4 py-3.5 hover:bg-slate-50 transition-colors"
+                      >
                         <div className="flex items-start gap-3">
-                          <div className={`mt-0.5 flex-shrink-0 w-2 h-2 rounded-full ${
-                            c.escalated ? "bg-red-500" :
-                            (c.slaRemainingHours ?? 1) < 0 ? "bg-amber-500" :
-                            ["Resolved","Closed"].includes(c.status) ? "bg-emerald-500" : "bg-sky-400"
-                          }`} />
+                          <div
+                            className={`mt-0.5 flex-shrink-0 w-2 h-2 rounded-full ${
+                              c.escalated
+                                ? "bg-red-500"
+                                : (c.slaRemainingHours ?? 1) < 0
+                                  ? "bg-amber-500"
+                                  : ["Resolved", "Closed"].includes(c.status)
+                                    ? "bg-emerald-500"
+                                    : "bg-sky-400"
+                            }`}
+                          />
                           <div className="flex-1 min-w-0">
                             <div className="flex items-center gap-2 flex-wrap">
-                              <span className="text-xs font-[700] text-slate-700 font-mono">{c.id}</span>
-                              <span className={`text-[10px] font-[600] px-1.5 py-0.5 rounded-full ${STATUS_COLORS[c.status] || "bg-slate-100 text-slate-600"}`}>
+                              <span className="text-xs font-[700] text-slate-700 font-mono">
+                                {c.id}
+                              </span>
+                              <span
+                                className={`text-[10px] font-[600] px-1.5 py-0.5 rounded-full ${STATUS_COLORS[c.status] || "bg-slate-100 text-slate-600"}`}
+                              >
                                 {c.status}
                               </span>
                               {c.escalated && (
-                                <span className="text-[10px] font-[700] text-red-600 bg-red-50 px-1.5 py-0.5 rounded-full">🔴 Escalated</span>
+                                <span className="text-[10px] font-[700] text-red-600 bg-red-50 px-1.5 py-0.5 rounded-full">
+                                  🔴 Escalated
+                                </span>
                               )}
                             </div>
                             <div className="flex items-center gap-1 mt-1">
-                              <span className="text-xs text-slate-500">{c.category}</span>
-                              {c.subcategory && <><span className="text-slate-300">·</span><span className="text-xs text-slate-400">{c.subcategory}</span></>}
+                              <span className="text-xs text-slate-500">
+                                {c.category}
+                              </span>
+                              {c.subcategory && (
+                                <>
+                                  <span className="text-slate-300">·</span>
+                                  <span className="text-xs text-slate-400">
+                                    {c.subcategory}
+                                  </span>
+                                </>
+                              )}
                             </div>
                             {c.address && (
                               <div className="flex items-center gap-1 mt-0.5">
                                 <MapPin className="w-3 h-3 text-slate-300 shrink-0" />
-                                <span className="text-xs text-slate-400 truncate">{c.address}</span>
+                                <span className="text-xs text-slate-400 truncate">
+                                  {c.address}
+                                </span>
                               </div>
                             )}
                             <div className="flex items-center gap-3 mt-1.5">
-                              {(c.slaRemainingHours ?? 1) < 0 && !["Resolved","Closed"].includes(c.status) ? (
+                              {(c.slaRemainingHours ?? 1) < 0 &&
+                              !["Resolved", "Closed"].includes(c.status) ? (
                                 <span className="flex items-center gap-0.5 text-[10px] font-[700] text-red-500">
-                                  <AlertTriangle className="w-2.5 h-2.5" /> {Math.abs(c.slaRemainingHours)}h overdue
+                                  <AlertTriangle className="w-2.5 h-2.5" />{" "}
+                                  {Math.abs(c.slaRemainingHours)}h overdue
                                 </span>
-                              ) : ["Resolved","Closed"].includes(c.status) ? (
+                              ) : ["Resolved", "Closed"].includes(c.status) ? (
                                 <span className="flex items-center gap-0.5 text-[10px] font-[600] text-emerald-600">
                                   <CheckCircle className="w-2.5 h-2.5" /> Done
                                 </span>
                               ) : (
                                 <span className="flex items-center gap-0.5 text-[10px] text-slate-400">
-                                  <Clock className="w-2.5 h-2.5" /> {c.slaRemainingHours}h left
+                                  <Clock className="w-2.5 h-2.5" />{" "}
+                                  {c.slaRemainingHours}h left
                                 </span>
                               )}
                               <span className="text-[10px] text-slate-300">
-                                {new Date(c.createdAt).toLocaleDateString("en-IN", { day: "numeric", month: "short" })}
+                                {new Date(c.createdAt).toLocaleDateString(
+                                  "en-IN",
+                                  { day: "numeric", month: "short" },
+                                )}
                               </span>
                             </div>
                           </div>

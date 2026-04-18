@@ -585,7 +585,7 @@ export default function AdminOverview() {
                           : `${Math.abs(c.slaRemainingHours || 0)}h Overdue`}
                       </div>
                       <div className="text-xs text-slate-400 text-right">
-                        {c.area || "Delhi/UP"}
+                        {c.area || "Delhi Zone"}
                       </div>
                     </div>
                   </div>

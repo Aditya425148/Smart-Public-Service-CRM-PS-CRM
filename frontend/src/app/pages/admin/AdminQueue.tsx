@@ -23,16 +23,11 @@ import { Complaint } from "../../data/mockData";
 import { toast } from "sonner";
 
 const MOCK_MANAGERS = [
-  { id: "MGR-DEL-01", name: "Sanjay Sharma", state: "Delhi" },
-  { id: "MGR-DEL-02", name: "Meena Kumari", state: "Delhi" },
-  { id: "MGR-DEL-03", name: "Rajesh Tyagi", state: "Delhi" },
-  { id: "MGR-DEL-04", name: "Anita Singh", state: "Delhi" },
-  { id: "MGR-DEL-05", name: "Amit Goel", state: "Delhi" },
-  { id: "MGR-UP-01", name: "Yash Pal", state: "Uttar Pradesh" },
-  { id: "MGR-UP-02", name: "Priti Yadav", state: "Uttar Pradesh" },
-  { id: "MGR-UP-03", name: "Manoj Mishra", state: "Uttar Pradesh" },
-  { id: "MGR-UP-04", name: "Renu Devi", state: "Uttar Pradesh" },
-  { id: "MGR-UP-05", name: "Suresh Chandra", state: "Uttar Pradesh" },
+  { id: "MGR-DEL-S01", name: "Sanjay Sharma", state: "South Delhi" },
+  { id: "MGR-DEL-C01", name: "Meena Kumari", state: "Central & New Delhi" },
+  { id: "MGR-DEL-E01", name: "Rajesh Tyagi", state: "East Delhi & Shahdara" },
+  { id: "MGR-DEL-W01", name: "Anita Singh", state: "West Delhi" },
+  { id: "MGR-DEL-N01", name: "Amit Goel", state: "North & North-West Delhi" },
 ];
 
 const slaStatus = (remaining: number, status: string) => {
@@ -78,7 +73,8 @@ export default function AdminQueue() {
   const [assignModalOpen, setAssignModalOpen] = useState(false);
   const [selectedOfficer, setSelectedOfficer] = useState("");
   const [reassignModalOpen, setReassignModalOpen] = useState(false);
-  const [selectedRejectedComplaint, setSelectedRejectedComplaint] = useState<Complaint | null>(null);
+  const [selectedRejectedComplaint, setSelectedRejectedComplaint] =
+    useState<Complaint | null>(null);
   const [selectedReassignManager, setSelectedReassignManager] = useState("");
   const [reassignLoading, setReassignLoading] = useState(false);
 
@@ -145,13 +141,11 @@ export default function AdminQueue() {
   ];
   const wards = [
     "All",
-    "North Delhi",
     "South Delhi",
-    "East Delhi",
+    "Central & New Delhi",
+    "East Delhi & Shahdara",
     "West Delhi",
-    "Central Delhi",
-    "Lucknow Central",
-    "Noida Sector 62",
+    "North & North-West Delhi",
   ];
 
   return (
@@ -188,8 +182,13 @@ export default function AdminQueue() {
                   ...c,
                   createdAt: new Date(c.createdAt).toLocaleDateString(),
                 }));
-                
-                await exportDataToPDF(displayData, columns, "complaint-queue", "Complaint Queue Report");
+
+                await exportDataToPDF(
+                  displayData,
+                  columns,
+                  "complaint-queue",
+                  "Complaint Queue Report",
+                );
                 toast.success("Export completed successfully");
               } catch (error) {
                 console.error("Export failed:", error);
@@ -201,7 +200,11 @@ export default function AdminQueue() {
             disabled={isExporting || complaints.length === 0}
             className="flex items-center gap-2 px-3 py-2 text-sm text-slate-600 bg-white/85 backdrop-blur-xl border border-white rounded-2xl hover:bg-white transition-colors shadow-sm disabled:opacity-50"
           >
-            {isExporting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Download className="w-4 h-4" />}
+            {isExporting ? (
+              <Loader2 className="w-4 h-4 animate-spin" />
+            ) : (
+              <Download className="w-4 h-4" />
+            )}
             {isExporting ? "Exporting..." : "Export PDF"}
           </button>
           {selectedIds.length > 0 && (
@@ -452,7 +455,9 @@ export default function AdminQueue() {
               <br />
               <strong>Status:</strong> {selectedRejectedComplaint.status}
             </div>
-            <p className="text-xs text-slate-600 font-[600] mb-3">Select a manager to reassign:</p>
+            <p className="text-xs text-slate-600 font-[600] mb-3">
+              Select a manager to reassign:
+            </p>
             <div className="space-y-2 mb-5 max-h-64 overflow-y-auto">
               {MOCK_MANAGERS.map((mgr) => (
                 <label
@@ -489,28 +494,34 @@ export default function AdminQueue() {
             <div className="flex gap-3">
               <button
                 onClick={async () => {
-                  if (!selectedReassignManager || !selectedRejectedComplaint) return;
-                  
+                  if (!selectedReassignManager || !selectedRejectedComplaint)
+                    return;
+
                   setReassignLoading(true);
                   try {
-                    const manager = MOCK_MANAGERS.find(m => m.id === selectedReassignManager);
+                    const manager = MOCK_MANAGERS.find(
+                      (m) => m.id === selectedReassignManager,
+                    );
                     if (!manager) {
                       toast.error("Manager not found");
                       return;
                     }
-                    
+
                     // Reassign complaint to new manager
-                    await api.patch(`/api/complaints/${selectedRejectedComplaint.id}/assign`, {
-                      managerId: selectedReassignManager,
-                      managerName: manager.name,
-                    });
-                    
+                    await api.patch(
+                      `/api/complaints/${selectedRejectedComplaint.id}/assign`,
+                      {
+                        managerId: selectedReassignManager,
+                        managerName: manager.name,
+                      },
+                    );
+
                     toast.success(`Complaint reassigned to ${manager.name}`);
-                    
+
                     // Refresh complaints list
                     const data = await appwriteService.getAllComplaints();
                     setComplaints(data);
-                    
+
                     setReassignModalOpen(false);
                     setSelectedRejectedComplaint(null);
                     setSelectedReassignManager("");
@@ -593,15 +604,17 @@ export default function AdminQueue() {
               <button
                 onClick={async () => {
                   if (!selectedOfficer) return;
-                  
+
                   setAssignLoading(true);
                   try {
-                    const manager = MOCK_MANAGERS.find(m => m.id === selectedOfficer);
+                    const manager = MOCK_MANAGERS.find(
+                      (m) => m.id === selectedOfficer,
+                    );
                     if (!manager) {
                       toast.error("Manager not found");
                       return;
                     }
-                    
+
                     // Assign each selected complaint to the manager
                     for (const complaintId of selectedIds) {
                       await api.patch(`/api/complaints/${complaintId}/assign`, {
@@ -609,13 +622,15 @@ export default function AdminQueue() {
                         managerName: manager.name,
                       });
                     }
-                    
-                    toast.success(`Assigned ${selectedIds.length} complaint${selectedIds.length > 1 ? 's' : ''} to ${manager.name}`);
-                    
+
+                    toast.success(
+                      `Assigned ${selectedIds.length} complaint${selectedIds.length > 1 ? "s" : ""} to ${manager.name}`,
+                    );
+
                     // Refresh complaints list
                     const data = await appwriteService.getAllComplaints();
                     setComplaints(data);
-                    
+
                     setAssignModalOpen(false);
                     setSelectedIds([]);
                     setSelectedOfficer("");
