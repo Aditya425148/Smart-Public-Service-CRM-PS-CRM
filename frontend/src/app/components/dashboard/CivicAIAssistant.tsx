@@ -17,15 +17,51 @@ const quickQuestions = [
 
 function buildBotReply(question: string): string {
   const q = question.toLowerCase();
-  const includesAny = (keywords: string[]) => keywords.some((k) => q.includes(k));
+  const includesAny = (keywords: string[]) =>
+    keywords.some((k) => q.includes(k));
 
   const replySections: Array<{ title: string; text: string }> = [];
 
-  const reportIntent = includesAny(["report", "issue", "raise", "submit", "file complaint", "new complaint"]);
-  const shareIntent = includesAny(["share", "download", "send", "forward", "post"]);
-  const statusIntent = includesAny(["status", "timeline", "update", "progress", "track", "pending", "resolved"]);
-  const galleryIntent = includesAny(["gallery", "save", "image", "photo", "auto save", "autosave"]);
-  const profileIntent = includesAny(["badge", "badges", "profile", "certificate", "history", "points"]);
+  const reportIntent = includesAny([
+    "report",
+    "issue",
+    "raise",
+    "submit",
+    "file complaint",
+    "new complaint",
+  ]);
+  const shareIntent = includesAny([
+    "share",
+    "download",
+    "send",
+    "forward",
+    "post",
+  ]);
+  const statusIntent = includesAny([
+    "status",
+    "timeline",
+    "update",
+    "progress",
+    "track",
+    "pending",
+    "resolved",
+  ]);
+  const galleryIntent = includesAny([
+    "gallery",
+    "save",
+    "image",
+    "photo",
+    "auto save",
+    "autosave",
+  ]);
+  const profileIntent = includesAny([
+    "badge",
+    "badges",
+    "profile",
+    "certificate",
+    "history",
+    "points",
+  ]);
 
   if (reportIntent) {
     replySections.push({
@@ -64,7 +100,9 @@ function buildBotReply(question: string): string {
 
   if (replySections.length > 0) {
     return replySections
-      .map((section, index) => `${index + 1}. ${section.title}: ${section.text}`)
+      .map(
+        (section, index) => `${index + 1}. ${section.title}: ${section.text}`,
+      )
       .join("\n\n");
   }
 
@@ -124,7 +162,11 @@ export default function CivicAIAssistant() {
         title="Open Civic AI Assistant"
       >
         <div className="absolute -top-1 -right-1 h-4 w-4 rounded-full bg-emerald-400 ring-2 ring-white" />
-        {isOpen ? <X className="mx-auto h-6 w-6" /> : <HelpCircle className="mx-auto h-6 w-6" />}
+        {isOpen ? (
+          <X className="mx-auto h-6 w-6" />
+        ) : (
+          <HelpCircle className="mx-auto h-6 w-6" />
+        )}
       </button>
 
       {isOpen && (
@@ -134,12 +176,20 @@ export default function CivicAIAssistant() {
               <Bot className="h-5 w-5" />
               <div className="font-bold tracking-tight">Civic AI Assistant</div>
             </div>
-            <div className="mt-1 text-xs text-sky-100">Ask anything about report, status, gallery, and complaint sharing.</div>
+            <div className="mt-1 text-xs text-sky-100">
+              Ask anything about report, status, gallery, and complaint sharing.
+            </div>
           </div>
 
-          <div ref={messagesContainerRef} className="max-h-[280px] space-y-3 overflow-y-auto px-4 py-3">
+          <div
+            ref={messagesContainerRef}
+            className="max-h-[280px] space-y-3 overflow-y-auto px-4 py-3"
+          >
             {messages.map((m) => (
-              <div key={m.id} className={m.from === "user" ? "text-right" : "text-left"}>
+              <div
+                key={m.id}
+                className={m.from === "user" ? "text-right" : "text-left"}
+              >
                 <div
                   className={`inline-block max-w-[90%] rounded-2xl px-3 py-2 text-sm leading-relaxed ${
                     m.from === "user"
