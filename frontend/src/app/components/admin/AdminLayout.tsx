@@ -7,12 +7,9 @@ import {
   Settings,
   Users,
   Shield,
-  MapPin,
-  Menu,
   LogOut,
-  ChevronRight,
-  AlertTriangle,
 } from "lucide-react";
+import AdminAIAssistant from "./AdminAIAssistant";
 
 const navItems = [
   { to: "/admin", icon: LayoutDashboard, label: "Overview", end: true },
@@ -186,6 +183,8 @@ export default function AdminLayout() {
           <Outlet />
         </main>
       </div>
+
+      <AdminAIAssistant />
     </div>
   );
 }

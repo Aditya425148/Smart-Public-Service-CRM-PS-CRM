@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo } from "react";
-import { motion, AnimatePresence } from "motion/react";
+import { motion } from "motion/react";
 import { appwriteService } from "../../appwriteService";
 import { exportToPDF } from "../../utils/pdfExport";
 import { toast } from "sonner";
@@ -35,218 +35,13 @@ import {
   complaintTrendData,
   categoryBreakdown,
 } from "../../data/mockData";
-
-type DelhiZoneId =
-  | "south"
-  | "central_new"
-  | "east_shahdara"
-  | "west"
-  | "north_nw";
-
-type ZoneStats = {
-  id: DelhiZoneId;
-  name: string;
-  localities: string[];
-  target: string;
-  total: number;
-  pending: number;
-  resolved: number;
-  escalated: number;
-};
-
-const DELHI_BOUNDS = {
-  minLat: 28.39,
-  maxLat: 28.89,
-  minLng: 76.84,
-  maxLng: 77.35,
-};
-
-const DELHI_ZONE_CONFIG: Array<{
-  id: DelhiZoneId;
-  name: string;
-  localities: string[];
-  target: string;
-  keywords: string[];
-  x: number;
-  y: number;
-  w: number;
-  h: number;
-}> = [
-  {
-    id: "south",
-    name: "South Delhi",
-    localities: ["Saket", "GK", "Hauz Khas", "Vasant Vihar"],
-    target: "High-income households, expats, luxury consumers",
-    keywords: [
-      "south delhi",
-      "saket",
-      "gk",
-      "greater kailash",
-      "hauz khas",
-      "vasant vihar",
-      "malviya nagar",
-      "defence colony",
-    ],
-    x: 10,
-    y: 58,
-    w: 38,
-    h: 30,
-  },
-  {
-    id: "central_new",
-    name: "Central & New Delhi",
-    localities: ["Connaught Place", "Karol Bagh", "Daryaganj", "Civil Lines"],
-    target: "Corporates, high-street shoppers, tourists, government employees",
-    keywords: [
-      "central delhi",
-      "new delhi",
-      "connaught place",
-      "cp",
-      "karol bagh",
-      "daryaganj",
-      "civil lines",
-      "paharganj",
-    ],
-    x: 30,
-    y: 38,
-    w: 32,
-    h: 20,
-  },
-  {
-    id: "east_shahdara",
-    name: "East Delhi & Shahdara",
-    localities: ["Laxmi Nagar", "Preet Vihar", "Mayur Vihar", "Gandhi Nagar"],
-    target: "Young professionals, students, mid-income families",
-    keywords: [
-      "east delhi",
-      "shahdara",
-      "laxmi nagar",
-      "preet vihar",
-      "mayur vihar",
-      "gandhi nagar",
-      "anand vihar",
-      "vivek vihar",
-    ],
-    x: 62,
-    y: 42,
-    w: 28,
-    h: 34,
-  },
-  {
-    id: "west",
-    name: "West Delhi",
-    localities: ["Rajouri Garden", "Punjabi Bagh", "Janakpuri", "Patel Nagar"],
-    target: "Retail consumers, residential communities, family businesses",
-    keywords: [
-      "west delhi",
-      "rajouri garden",
-      "punjabi bagh",
-      "janakpuri",
-      "patel nagar",
-      "tilak nagar",
-      "vikaspuri",
-      "dwarka",
-    ],
-    x: 8,
-    y: 28,
-    w: 28,
-    h: 30,
-  },
-  {
-    id: "north_nw",
-    name: "North & North-West Delhi",
-    localities: ["Rohini", "Model Town", "Delhi University Campus", "Narela"],
-    target: "Students, tech-enabled youth, industrial professionals",
-    keywords: [
-      "north delhi",
-      "north west delhi",
-      "north-west delhi",
-      "rohini",
-      "model town",
-      "narela",
-      "delhi university",
-      "du campus",
-      "burari",
-      "pitampura",
-    ],
-    x: 26,
-    y: 8,
-    w: 42,
-    h: 28,
-  },
-];
-
-const DEFAULT_ZONE = DELHI_ZONE_CONFIG.find((z) => z.id === "central_new")!;
-
-function isDelhiComplaint(complaint: any): boolean {
-  const searchable = [
-    complaint?.state,
-    complaint?.address,
-    complaint?.area,
-    complaint?.ward,
-    complaint?.description,
-  ]
-    .filter(Boolean)
-    .join(" ")
-    .toLowerCase();
-
-  if (
-    searchable.includes("delhi") ||
-    searchable.includes("new delhi") ||
-    searchable.includes("nct")
-  ) {
-    return true;
-  }
-
-  const coords = complaint?.coordinates;
-  if (coords && typeof coords === "object") {
-    const lat = Number(coords.lat ?? coords.latitude);
-    const lng = Number(coords.lng ?? coords.longitude);
-    if (!Number.isNaN(lat) && !Number.isNaN(lng)) {
-      return (
-        lat >= DELHI_BOUNDS.minLat &&
-        lat <= DELHI_BOUNDS.maxLat &&
-        lng >= DELHI_BOUNDS.minLng &&
-        lng <= DELHI_BOUNDS.maxLng
-      );
-    }
-  }
-
-  return false;
-}
-
-function inferDelhiZone(complaint: any): DelhiZoneId {
-  const searchable = [
-    complaint?.area,
-    complaint?.ward,
-    complaint?.address,
-    complaint?.description,
-  ]
-    .filter(Boolean)
-    .join(" ")
-    .toLowerCase();
-
-  for (const zone of DELHI_ZONE_CONFIG) {
-    if (zone.keywords.some((keyword) => searchable.includes(keyword))) {
-      return zone.id;
-    }
-  }
-
-  const coords = complaint?.coordinates;
-  if (coords && typeof coords === "object") {
-    const lat = Number(coords.lat ?? coords.latitude);
-    const lng = Number(coords.lng ?? coords.longitude);
-
-    if (!Number.isNaN(lat) && !Number.isNaN(lng)) {
-      if (lat >= 28.72) return "north_nw";
-      if (lat <= 28.56) return "south";
-      if (lng >= 77.23) return "east_shahdara";
-      if (lng <= 77.08) return "west";
-    }
-  }
-
-  return DEFAULT_ZONE.id;
-}
+import {
+  DELHI_ZONE_CONFIG,
+  inferDelhiZone,
+  isDelhiComplaint,
+  type DelhiZoneId,
+  type ZoneStats,
+} from "../../utils/adminInsights";
 
 // Heatmap SVG Component
 function CityHeatmap({
@@ -256,9 +51,9 @@ function CityHeatmap({
   activeCategory: string;
   zoneStats: ZoneStats[];
 }) {
-  const [hoveredRegion, setHoveredRegion] = useState<string | null>(null);
+  const [hoveredRegion, setHoveredRegion] = useState<DelhiZoneId | null>(null);
   const zoneMap = useMemo(() => {
-    const map: Record<string, ZoneStats> = {};
+    const map = {} as Record<DelhiZoneId, ZoneStats>;
     zoneStats.forEach((zone) => {
       map[zone.id] = zone;
     });
@@ -266,12 +61,27 @@ function CityHeatmap({
   }, [zoneStats]);
 
   const maxPending = Math.max(...zoneStats.map((z) => z.pending), 1);
+  const hoveredMetrics = hoveredRegion
+    ? zoneMap[hoveredRegion]
+    : zoneStats.reduce((top, zone) => (zone.pending > top.pending ? zone : top));
+  const hoveredRegionConfig = hoveredRegion
+    ? DELHI_ZONE_CONFIG.find((zone) => zone.id === hoveredRegion) || null
+    : null;
 
   const getColor = (intensity: number) => {
     if (intensity >= 0.8) return "rgba(220, 38, 38, 0.85)"; // Red-600
     if (intensity >= 0.6) return "rgba(217, 119, 6, 0.75)"; // Amber-600
     if (intensity >= 0.4) return "rgba(37, 99, 235, 0.65)"; // Blue-600
     return "rgba(5, 150, 105, 0.55)"; // Emerald-600
+  };
+
+  const getShortLabel = (name: string) => {
+    if (name === "Central & New Delhi") return "Central";
+    if (name === "East Delhi & Shahdara") return "East";
+    if (name === "North & North-West Delhi") return "North-West";
+    if (name === "South Delhi") return "South";
+    if (name === "West Delhi") return "West";
+    return name;
   };
 
   return (
@@ -287,6 +97,34 @@ function CityHeatmap({
           backgroundSize: "24px 24px",
         }}
       />
+
+      <div className="absolute left-5 top-5 right-5 z-10 flex items-start justify-between gap-4">
+        <div className="rounded-2xl border border-slate-700/50 bg-slate-950/60 px-4 py-3 backdrop-blur-md">
+          <div className="text-[10px] font-black uppercase tracking-[0.28em] text-slate-500">
+            Hover Insight
+          </div>
+          <div className="mt-2 text-sm font-[800] text-white">
+            {hoveredRegionConfig ? hoveredRegionConfig.name : "Move over a Delhi zone"}
+          </div>
+          <div className="mt-1 text-[11px] leading-relaxed text-slate-300">
+            {hoveredRegionConfig
+              ? "Live complaint metrics for the selected zone."
+              : "Detailed zone metrics will appear here on hover."}
+          </div>
+        </div>
+
+        <div className="hidden rounded-2xl border border-slate-700/50 bg-slate-950/60 px-4 py-3 text-right backdrop-blur-md md:block">
+          <div className="text-[10px] font-black uppercase tracking-[0.28em] text-slate-500">
+            Density Focus
+          </div>
+          <div className="mt-2 text-sm font-[800] text-white">
+            {hoveredMetrics?.name || "Delhi Overview"}
+          </div>
+          <div className="mt-1 text-[11px] text-slate-300">
+            {hoveredMetrics?.pending ?? 0} active complaints in focus
+          </div>
+        </div>
+      </div>
 
       {/* Main SVG Layer */}
       <svg
@@ -306,6 +144,17 @@ function CityHeatmap({
           Delhi NCT Live Complaint Heatmap
         </text>
 
+        <rect
+          x="6"
+          y="11"
+          width="88"
+          height="72"
+          rx="5"
+          fill="rgba(2,6,23,0.1)"
+          stroke="rgba(148,163,184,0.12)"
+          strokeWidth="0.3"
+        />
+
         {DELHI_ZONE_CONFIG.map((region) => {
           const metrics = zoneMap[region.id] || {
             id: region.id,
@@ -322,18 +171,17 @@ function CityHeatmap({
           return (
             <g
               key={region.id}
-              onMouseEnter={() => setHoveredRegion(region.name)}
+              onMouseEnter={() => setHoveredRegion(region.id)}
               onMouseLeave={() => setHoveredRegion(null)}
             >
-              {/* Region Backdrop */}
               <motion.rect
                 animate={{
                   fill:
-                    hoveredRegion === region.name
+                    hoveredRegion === region.id
                       ? "rgba(15, 23, 42, 0.6)"
                       : "rgba(15, 23, 42, 0.2)",
                   stroke:
-                    hoveredRegion === region.name
+                    hoveredRegion === region.id
                       ? "rgba(59, 130, 246, 0.5)"
                       : "rgba(51, 65, 85, 0.3)",
                 }}
@@ -345,32 +193,17 @@ function CityHeatmap({
                 strokeWidth="0.5"
               />
 
-              {/* Region Title */}
-              <motion.text
-                animate={{
-                  opacity: hoveredRegion === region.name ? 0.45 : 0.95,
-                  letterSpacing:
-                    hoveredRegion === region.name ? "0.4em" : "0.2em",
-                }}
-                x={region.x + region.w / 2}
-                y={region.y - 4}
-                textAnchor="middle"
-                fill="white"
-                fontSize="2.8"
-                fontWeight="900"
-                className="tracking-tighter"
-                style={{ textTransform: "uppercase" }}
-              >
-                {region.name}
-              </motion.text>
-
               <motion.rect
                 initial={{ opacity: 0 }}
                 animate={{
-                  opacity: hoveredRegion === region.name ? 1 : 0.8,
+                  opacity: hoveredRegion === region.id ? 1 : 0.82,
                   filter:
-                    hoveredRegion === region.name ? "blur(0px)" : "blur(2px)",
-                  scale: hoveredRegion === region.name ? 1.01 : 0.99,
+                    hoveredRegion === region.id ? "blur(0px)" : "blur(1.6px)",
+                  scale: hoveredRegion === region.id ? 1.01 : 0.99,
+                  stroke:
+                    hoveredRegion === region.id
+                      ? "rgba(255,255,255,0.8)"
+                      : "rgba(255,255,255,0.18)",
                 }}
                 transition={{ type: "spring", stiffness: 300, damping: 30 }}
                 x={region.x}
@@ -379,69 +212,105 @@ function CityHeatmap({
                 height={region.h}
                 fill={getColor(intensity)}
                 rx="4"
+                strokeWidth="0.42"
               />
 
-              <AnimatePresence>
-                {hoveredRegion === region.name && (
-                  <motion.g
-                    initial={{ opacity: 0, y: 5 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    exit={{ opacity: 0 }}
-                  >
-                    <text
-                      x={region.x + region.w / 2}
-                      y={region.y + region.h / 2 - 4.5}
-                      textAnchor="middle"
-                      dominantBaseline="middle"
-                      fill="white"
-                      fontSize="2.4"
-                      fontWeight="900"
-                      style={{
-                        pointerEvents: "none",
-                        textShadow: "0 2px 4px rgba(0,0,0,0.8)",
-                      }}
-                    >
-                      {metrics.name}
-                    </text>
-                    <text
-                      x={region.x + region.w / 2}
-                      y={region.y + region.h / 2 - 0.8}
-                      textAnchor="middle"
-                      dominantBaseline="middle"
-                      fill="rgba(255,255,255,0.95)"
-                      fontSize="1.8"
-                      fontWeight="800"
-                      style={{ pointerEvents: "none" }}
-                    >
-                      {metrics.pending} active | {metrics.resolved} resolved
-                    </text>
-                    <text
-                      x={region.x + region.w / 2}
-                      y={region.y + region.h / 2 + 2.4}
-                      textAnchor="middle"
-                      dominantBaseline="middle"
-                      fill="rgba(255,255,255,0.78)"
-                      fontSize="1.45"
-                      fontWeight="700"
-                      style={{ pointerEvents: "none" }}
-                    >
-                      {region.localities.join(" • ")}
-                    </text>
-                  </motion.g>
-                )}
-              </AnimatePresence>
+              <motion.rect
+                animate={{
+                  opacity: hoveredRegion === region.id ? 1 : 0,
+                  filter:
+                    hoveredRegion === region.id
+                      ? "drop-shadow(0 0 16px rgba(96,165,250,0.6))"
+                      : "drop-shadow(0 0 0 rgba(0,0,0,0))",
+                }}
+                x={region.x - 0.9}
+                y={region.y - 0.9}
+                width={region.w + 1.8}
+                height={region.h + 1.8}
+                rx="4.8"
+                fill="transparent"
+                stroke="rgba(147,197,253,0.9)"
+                strokeWidth="0.5"
+              />
+
+              <rect
+                x={region.x + 1.4}
+                y={region.y + 2.3}
+                width={Math.min(region.w - 2.8, 20)}
+                height="5.5"
+                rx="2"
+                fill="rgba(2,6,23,0.56)"
+                stroke="rgba(148,163,184,0.22)"
+                strokeWidth="0.3"
+              />
+              <text
+                x={region.x + 2.8}
+                y={region.y + 5.8}
+                fill="rgba(255,255,255,0.96)"
+                fontSize="1.45"
+                fontWeight="800"
+                style={{ pointerEvents: "none" }}
+              >
+                {getShortLabel(metrics.name)}
+              </text>
             </g>
           );
         })}
       </svg>
 
+      <div className="pointer-events-none absolute right-6 top-[6.75rem] z-20 w-[280px] rounded-[1.6rem] border border-slate-700/60 bg-slate-950/78 p-4 text-white shadow-[0_18px_50px_rgba(2,6,23,0.45)] backdrop-blur-xl">
+        <div className="flex items-start justify-between gap-3">
+          <div>
+            <div className="text-[10px] font-black uppercase tracking-[0.28em] text-slate-500">
+              {hoveredRegionConfig ? "Selected Zone" : "Hover to Inspect"}
+            </div>
+            <div className="mt-2 text-lg font-[800] leading-tight text-white">
+              {hoveredMetrics?.name || "Delhi Zone Details"}
+            </div>
+          </div>
+          <div className="rounded-full border border-white/10 bg-white/5 px-2.5 py-1 text-[10px] font-[800] uppercase tracking-[0.2em] text-slate-300">
+            {hoveredRegionConfig ? "Live" : "Standby"}
+          </div>
+        </div>
+
+        <div className="mt-4 grid grid-cols-3 gap-2 text-[11px]">
+          <div className="rounded-xl bg-rose-500/10 px-3 py-2">
+            <div className="font-[800] text-rose-300">{hoveredMetrics?.pending ?? 0}</div>
+            <div className="mt-1 text-slate-400">Active</div>
+          </div>
+          <div className="rounded-xl bg-emerald-500/10 px-3 py-2">
+            <div className="font-[800] text-emerald-300">{hoveredMetrics?.resolved ?? 0}</div>
+            <div className="mt-1 text-slate-400">Resolved</div>
+          </div>
+          <div className="rounded-xl bg-amber-500/10 px-3 py-2">
+            <div className="font-[800] text-amber-300">{hoveredMetrics?.escalated ?? 0}</div>
+            <div className="mt-1 text-slate-400">Escalated</div>
+          </div>
+        </div>
+
+        <div className="mt-4 rounded-2xl border border-white/8 bg-white/5 px-3 py-3">
+          <div className="text-[10px] font-black uppercase tracking-[0.22em] text-slate-500">
+            Localities
+          </div>
+          <div className="mt-2 text-[12px] leading-relaxed text-slate-200">
+            {hoveredMetrics?.localities.join(", ") ||
+              "Hover over a zone to reveal its localities and civic profile."}
+          </div>
+        </div>
+
+        <div className="mt-3 text-[11px] leading-relaxed text-slate-300">
+          {hoveredMetrics?.target ||
+            "The hover panel will surface zone-specific complaint context here."}
+        </div>
+      </div>
+
       {/* Legend */}
-      <div className="absolute bottom-6 left-6 flex items-center gap-6 px-5 py-3 rounded-xl bg-slate-900/60 backdrop-blur-md border border-slate-700/50">
+      <div className="absolute bottom-6 left-6 right-6 flex flex-wrap items-center gap-4 rounded-xl border border-slate-700/50 bg-slate-900/60 px-5 py-3 backdrop-blur-md">
         <span className="text-[10px] uppercase tracking-widest font-black text-slate-400">
           Delhi Density Index (
           {activeCategory === "All" ? "all categories" : activeCategory})
         </span>
-        <div className="flex items-center gap-4">
+        <div className="flex flex-wrap items-center gap-4">
           {[
             { color: "bg-emerald-400", label: "Safe" },
             { color: "bg-blue-500", label: "Moderate" },
@@ -1229,3 +1098,4 @@ export default function AdminAnalytics() {
     </div>
   );
 }
+
