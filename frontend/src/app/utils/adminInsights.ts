@@ -163,6 +163,7 @@ export const DEFAULT_ZONE =
   DELHI_ZONE_CONFIG[0];
 
 export const MOCK_ADMIN_MANAGERS: AdminManager[] = [
+  // South Delhi
   {
     id: "MGR-DEL-S01",
     name: "Sanjay Sharma",
@@ -171,12 +172,28 @@ export const MOCK_ADMIN_MANAGERS: AdminManager[] = [
     email: "sanjay@civicpulse.com",
   },
   {
+    id: "MGR-DEL-S02",
+    name: "Kavita Mehra",
+    state: "Delhi",
+    zone: "South Delhi",
+    email: "kavita@civicpulse.com",
+  },
+  // Central & New Delhi
+  {
     id: "MGR-DEL-C01",
     name: "Meena Kumari",
     state: "Delhi",
     zone: "Central & New Delhi",
     email: "meena@civicpulse.com",
   },
+  {
+    id: "MGR-DEL-C02",
+    name: "Vikram Khanna",
+    state: "Delhi",
+    zone: "Central & New Delhi",
+    email: "vikram@civicpulse.com",
+  },
+  // East Delhi & Shahdara
   {
     id: "MGR-DEL-E01",
     name: "Rajesh Tyagi",
@@ -185,6 +202,14 @@ export const MOCK_ADMIN_MANAGERS: AdminManager[] = [
     email: "rajesh@civicpulse.com",
   },
   {
+    id: "MGR-DEL-E02",
+    name: "Pooja Verma",
+    state: "Delhi",
+    zone: "East Delhi & Shahdara",
+    email: "pooja@civicpulse.com",
+  },
+  // West Delhi
+  {
     id: "MGR-DEL-W01",
     name: "Anita Singh",
     state: "Delhi",
@@ -192,11 +217,26 @@ export const MOCK_ADMIN_MANAGERS: AdminManager[] = [
     email: "anita@civicpulse.com",
   },
   {
+    id: "MGR-DEL-W02",
+    name: "Rakesh Gupta",
+    state: "Delhi",
+    zone: "West Delhi",
+    email: "rakesh@civicpulse.com",
+  },
+  // North & North-West Delhi
+  {
     id: "MGR-DEL-N01",
     name: "Amit Goel",
     state: "Delhi",
     zone: "North & North-West Delhi",
     email: "amit@civicpulse.com",
+  },
+  {
+    id: "MGR-DEL-N02",
+    name: "Sunita Devi",
+    state: "Delhi",
+    zone: "North & North-West Delhi",
+    email: "sunita@civicpulse.com",
   },
 ];
 
@@ -262,7 +302,7 @@ export function inferDelhiZone(complaint: any): DelhiZoneId {
     if (!Number.isNaN(lat) && !Number.isNaN(lng)) {
       if (lat >= 28.72) return "north_nw";
       if (lat <= 28.56) return "south";
-      if (lng >= 77.23) return "east_shahdara";
+      if (lng >= 77.28) return "east_shahdara";
       if (lng <= 77.08) return "west";
     }
   }

@@ -13,29 +13,117 @@ router = APIRouter(prefix="/api/complaints", tags=["complaints"])
 # Geocoder for reverse-geocoding state from coordinates
 geolocator = Nominatim(user_agent="smart_crm_ps_crm")
 
-# ── Delhi Specific Manager Config ─────────────────────────────
+# ── Delhi Zone Config & Manager Config ─────────────────────────────
 
+DELHI_ZONE_CONFIG = [
+    {
+        "id": "south",
+        "name": "South Delhi",
+        "keywords": ["south delhi", "saket", "gk", "greater kailash", "hauz khas",
+                     "vasant vihar", "malviya nagar", "defence colony", "mehrauli",
+                     "chhatarpur", "qutub"],
+    },
+    {
+        "id": "central_new",
+        "name": "Central & New Delhi",
+        "keywords": ["central delhi", "new delhi", "connaught place", "cp",
+                     "karol bagh", "daryaganj", "civil lines", "paharganj",
+                     "india gate", "rajpath", "chandni chowk"],
+    },
+    {
+        "id": "east_shahdara",
+        "name": "East Delhi & Shahdara",
+        "keywords": ["east delhi", "shahdara", "laxmi nagar", "preet vihar",
+                     "mayur vihar", "gandhi nagar", "anand vihar", "vivek vihar",
+                     "dilshad garden", "seelampur"],
+    },
+    {
+        "id": "west",
+        "name": "West Delhi",
+        "keywords": ["west delhi", "rajouri garden", "punjabi bagh", "janakpuri",
+                     "patel nagar", "tilak nagar", "vikaspuri", "dwarka",
+                     "uttam nagar", "najafgarh"],
+    },
+    {
+        "id": "north_nw",
+        "name": "North & North-West Delhi",
+        "keywords": ["north delhi", "north west delhi", "north-west delhi",
+                     "rohini", "model town", "narela", "delhi university",
+                     "du campus", "burari", "pitampura", "azadpur", "timarpur"],
+    },
+]
+
+# 10 managers — 2 per zone (zone-based IDs)
 MOCK_MANAGERS = [
-    # Delhi (5 managers)
-    {"id": "MGR-DEL-01", "name": "Sanjay Sharma",  "state": "Delhi"},
-    {"id": "MGR-DEL-02", "name": "Meena Kumari",   "state": "Delhi"},
-    {"id": "MGR-DEL-03", "name": "Rajesh Tyagi",   "state": "Delhi"},
-    {"id": "MGR-DEL-04", "name": "Anita Singh",    "state": "Delhi"},
-    {"id": "MGR-DEL-05", "name": "Amit Goel",      "state": "Delhi"},
+    # South Delhi
+    {"id": "MGR-DEL-S01", "name": "Sanjay Sharma",  "state": "Delhi", "zone": "south"},
+    {"id": "MGR-DEL-S02", "name": "Kavita Mehra",   "state": "Delhi", "zone": "south"},
+    # Central & New Delhi
+    {"id": "MGR-DEL-C01", "name": "Meena Kumari",   "state": "Delhi", "zone": "central_new"},
+    {"id": "MGR-DEL-C02", "name": "Vikram Khanna",  "state": "Delhi", "zone": "central_new"},
+    # East Delhi & Shahdara
+    {"id": "MGR-DEL-E01", "name": "Rajesh Tyagi",   "state": "Delhi", "zone": "east_shahdara"},
+    {"id": "MGR-DEL-E02", "name": "Pooja Verma",    "state": "Delhi", "zone": "east_shahdara"},
+    # West Delhi
+    {"id": "MGR-DEL-W01", "name": "Anita Singh",    "state": "Delhi", "zone": "west"},
+    {"id": "MGR-DEL-W02", "name": "Rakesh Gupta",   "state": "Delhi", "zone": "west"},
+    # North & North-West Delhi
+    {"id": "MGR-DEL-N01", "name": "Amit Goel",      "state": "Delhi", "zone": "north_nw"},
+    {"id": "MGR-DEL-N02", "name": "Sunita Devi",    "state": "Delhi", "zone": "north_nw"},
 ]
 
 
-def assign_manager_to_complaint(complaint_state: str) -> dict:
-    """Assigns the manager with the least active complaints for the given state."""
+def detect_zone_from_complaint(address: str = "", coordinates: dict = None) -> str:
+    """Detects which Delhi zone a complaint belongs to based on address keywords or GPS coords."""
+    if address:
+        lower = address.lower()
+        for zone in DELHI_ZONE_CONFIG:
+            if any(kw in lower for kw in zone["keywords"]):
+                return zone["id"]
+
+    if coordinates and isinstance(coordinates, dict):
+        lat = coordinates.get("lat") or coordinates.get("latitude")
+        lng = coordinates.get("lng") or coordinates.get("longitude")
+        if lat is not None and lng is not None:
+            lat, lng = float(lat), float(lng)
+            # 2D bounding boxes for each zone (order matters — check specific zones before default)
+            # North & NW: upper part of Delhi
+            if lat >= 28.72:
+                return "north_nw"
+            # South: lower part of Delhi
+            if lat <= 28.56:
+                return "south"
+            # East & Shahdara: east side, but only beyond Yamuna river (~77.28 lng)
+            if lng >= 77.28:
+                return "east_shahdara"
+            # West: west side of Delhi
+            if lng <= 77.08:
+                return "west"
+            # Central & New Delhi: everything else in the middle band
+            # (lat 28.56–28.72, lng 77.08–77.28)
+
+    return "central_new"  # default zone
+
+
+def assign_manager_to_complaint(complaint_state: str, address: str = "", coordinates: dict = None) -> dict:
+    """Assigns the least-loaded manager from the correct zone for the given complaint."""
     # 1. Get managers for this state
     state_managers = [m for m in MOCK_MANAGERS if m["state"].lower() == complaint_state.lower()]
 
     if not state_managers:
         return {"id": "SYSTEM", "name": "SystemAdmin"}
 
-    # 2. Count active (non-resolved) complaints per manager
+    # 2. Detect zone and filter managers by zone
+    zone_id = detect_zone_from_complaint(address, coordinates)
+    zone_managers = [m for m in state_managers if m.get("zone") == zone_id]
+
+    # Fallback to all state managers if no zone match
+    if not zone_managers:
+        zone_managers = state_managers
+
+    # 3. Count active (non-resolved) complaints per manager
     manager_workloads = []
-    for mgr in state_managers:
+    for mgr in zone_managers:
         try:
             resp = databases.list_documents(
                 DATABASE_ID, COLLECTION_ID,
@@ -51,7 +139,7 @@ def assign_manager_to_complaint(complaint_state: str) -> dict:
             count = 0
         manager_workloads.append((mgr, count))
 
-    # 3. Pick the manager with the fewest active complaints
+    # 4. Pick the manager with the fewest active complaints
     best_manager = min(manager_workloads, key=lambda x: x[1])[0]
     return best_manager
 
@@ -261,11 +349,16 @@ async def create_complaint(body: ComplaintCreate):
         
         # Use frontend-provided manager if available, otherwise auto-assign
         if body.assignedManagerName and body.assignedManagerState:
-            # Use the manager specified by the frontend
-            assigned_manager = {"id": f"MGR-{body.assignedManagerState[:3].upper()}", "name": body.assignedManagerName}
+            # Look up the actual manager by name
+            found_mgr = next((m for m in MOCK_MANAGERS if m["name"] == body.assignedManagerName), None)
+            if found_mgr:
+                assigned_manager = found_mgr
+            else:
+                assigned_manager = {"id": f"MGR-{body.assignedManagerState[:3].upper()}", "name": body.assignedManagerName}
         else:
-            # Assign manager based on location (least-loaded manager for this state)
-            assigned_manager = assign_manager_to_complaint(state)
+            # Assign manager based on location (least-loaded manager for this zone)
+            coords_dict = body.coordinates if body.coordinates else None
+            assigned_manager = assign_manager_to_complaint(state, body.address or "", coords_dict)
 
         # Create payload without assignedManagerName and assignedManagerState (Appwrite doesn't have these fields)
         payload_dict = body.model_dump()

@@ -2,6 +2,7 @@ import { useNavigate } from "react-router";
 import { motion } from "motion/react";
 import { useState, useEffect, useMemo } from "react";
 import { appwriteService } from "../../appwriteService";
+import DelhiZoneMap from "../../components/admin/DelhiZoneMap";
 import {
   TrendingUp,
   Clock,
@@ -478,6 +479,9 @@ export default function AdminOverview() {
           )}
         </div>
       </div>
+
+      {/* Delhi Zone Map */}
+      <DelhiZoneMap complaints={complaints} />
 
       {/* Manager Workload (live) + Escalations */}
       <div className="grid lg:grid-cols-2 gap-6">

@@ -21,18 +21,10 @@ import {
   Wrench,
 } from "lucide-react";
 
-const MOCK_MANAGERS = [
-  { id: "MGR-DEL-01", name: "Sanjay Sharma", state: "Delhi" },
-  { id: "MGR-DEL-02", name: "Meena Kumari", state: "Delhi" },
-  { id: "MGR-DEL-03", name: "Rajesh Tyagi", state: "Delhi" },
-  { id: "MGR-DEL-04", name: "Anita Singh", state: "Delhi" },
-  { id: "MGR-DEL-05", name: "Amit Goel", state: "Delhi" },
-  { id: "MGR-UP-01", name: "Yash Pal", state: "Uttar Pradesh" },
-  { id: "MGR-UP-02", name: "Priti Yadav", state: "Uttar Pradesh" },
-  { id: "MGR-UP-03", name: "Manoj Mishra", state: "Uttar Pradesh" },
-  { id: "MGR-UP-04", name: "Renu Devi", state: "Uttar Pradesh" },
-  { id: "MGR-UP-05", name: "Suresh Chandra", state: "Uttar Pradesh" },
-];
+import { MOCK_ADMIN_MANAGERS } from "../utils/adminInsights";
+
+// Use the shared manager list as the single source of truth
+const MOCK_MANAGERS = MOCK_ADMIN_MANAGERS;
 
 const statusColors: Record<string, string> = {
   Submitted: "bg-slate-100 text-slate-600",

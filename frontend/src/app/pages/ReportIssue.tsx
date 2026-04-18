@@ -24,7 +24,7 @@ import { toPng } from "html-to-image";
 import { appwriteService } from "../appwriteService";
 import { account } from "../appwrite";
 
-// Delhi Specific Manager Mapping
+// Delhi Specific Manager Mapping (synced with backend zone-based IDs)
 const MANAGER_STATE_MAP: {
   keywords: string[];
   state: string;
@@ -46,11 +46,11 @@ const MANAGER_STATE_MAP: {
       "janakpuri",
     ],
     managers: [
-      { id: "MGR-DEL-01", name: "Sanjay Sharma" },
-      { id: "MGR-DEL-02", name: "Meena Kumari" },
-      { id: "MGR-DEL-03", name: "Rajesh Tyagi" },
-      { id: "MGR-DEL-04", name: "Anita Singh" },
-      { id: "MGR-DEL-05", name: "Amit Goel" },
+      { id: "MGR-DEL-S01", name: "Sanjay Sharma" },
+      { id: "MGR-DEL-C01", name: "Meena Kumari" },
+      { id: "MGR-DEL-E01", name: "Rajesh Tyagi" },
+      { id: "MGR-DEL-W01", name: "Anita Singh" },
+      { id: "MGR-DEL-N01", name: "Amit Goel" },
     ],
   },
 ];
@@ -277,13 +277,12 @@ export default function ReportIssue() {
     </div>
   );
 
-  // Geofence boundaries for allowed service area (Delhi-NCR + Uttar Pradesh)
-  // Excludes Bihar and other states
+  // Geofence boundaries for Delhi NCT only
   const GEOFENCE_BOUNDS = {
-    minLat: 26.5, // South boundary (exclude Bihar)
-    maxLat: 31.0, // North boundary (include UP)
-    minLng: 76.5, // West boundary
-    maxLng: 80.5, // East boundary (include UP)
+    minLat: 28.39, // South boundary of Delhi
+    maxLat: 28.89, // North boundary of Delhi
+    minLng: 76.84, // West boundary of Delhi
+    maxLng: 77.35, // East boundary of Delhi
   };
 
   const isLocationAllowed = (lat: number, lng: number): boolean => {
@@ -291,22 +290,8 @@ export default function ReportIssue() {
     return lat >= minLat && lat <= maxLat && lng >= minLng && lng <= maxLng;
   };
 
-  const getLocationErrorMessage = (lat: number, lng: number): string => {
-    const { minLat, maxLat, minLng, maxLng } = GEOFENCE_BOUNDS;
-
-    if (lat < minLat) {
-      return "❌ This location is outside our service area (too far south - possibly Bihar). Please select a location within Delhi-NCR or Uttar Pradesh.";
-    }
-    if (lat > maxLat) {
-      return "❌ This location is outside our service area (too far north). Please select a location within Delhi-NCR or Uttar Pradesh.";
-    }
-    if (lng < minLng) {
-      return "❌ This location is outside our service area (too far west). Please select a location within Delhi-NCR or Uttar Pradesh.";
-    }
-    if (lng > maxLng) {
-      return "❌ This location is outside our service area (too far east). Please select a location within Delhi-NCR or Uttar Pradesh.";
-    }
-    return "This location is outside our service area.";
+  const getLocationErrorMessage = (_lat: number, _lng: number): string => {
+    return "❌ This location is outside Delhi. Please select a location within Delhi NCT.";
   };
 
   // Initialize Leaflet map when map picker opens
@@ -326,7 +311,17 @@ export default function ReportIssue() {
         mapInstanceRef.current.remove();
       }
 
-      const map = L.map("map").setView([defaultLat, defaultLng], defaultZoom);
+      // Delhi NCT bounds — restrict map to Delhi only
+      const delhiBounds = L.latLngBounds(
+        [28.39, 76.84], // SW corner
+        [28.89, 77.35], // NE corner
+      );
+
+      const map = L.map("map", {
+        maxBounds: delhiBounds.pad(0.1), // small padding so edges aren't cut off
+        maxBoundsViscosity: 1.0, // prevent panning outside Delhi
+        minZoom: 10, // prevent zooming out too far
+      }).setView([defaultLat, defaultLng], defaultZoom);
 
       L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
         attribution:
@@ -665,7 +660,7 @@ export default function ReportIssue() {
     try {
       const searchTerm = `${searchQuery}`;
       const response = await fetch(
-        `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(searchTerm)}&limit=5&viewbox=76.5,26.5,80.5,31.0&bounded=1`,
+        `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(searchTerm)}&limit=5&viewbox=76.84,28.39,77.35,28.89&bounded=1`,
       );
       const data = await response.json();
 
