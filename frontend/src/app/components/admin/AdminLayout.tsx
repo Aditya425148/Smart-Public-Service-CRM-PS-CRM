@@ -7,11 +7,7 @@ import {
   Settings,
   Users,
   Shield,
-  MapPin,
-  Menu,
   LogOut,
-  ChevronRight,
-  AlertTriangle,
 } from "lucide-react";
 import AdminAIAssistant from "./AdminAIAssistant";
 
@@ -189,6 +185,8 @@ export default function AdminLayout() {
 
         <AdminAIAssistant />
       </div>
+
+      <AdminAIAssistant />
     </div>
   );
 }
