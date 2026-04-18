@@ -10,44 +10,7 @@ import {
   ChevronRight,
   MapPin,
 } from "lucide-react";
-
-const MOCK_MANAGERS = [
-  {
-    id: "MGR-DEL-S01",
-    name: "Sanjay Sharma",
-    state: "Delhi",
-    zone: "South Delhi",
-    email: "sanjay@civicpulse.com",
-  },
-  {
-    id: "MGR-DEL-C01",
-    name: "Meena Kumari",
-    state: "Delhi",
-    zone: "Central & New Delhi",
-    email: "meena@civicpulse.com",
-  },
-  {
-    id: "MGR-DEL-E01",
-    name: "Rajesh Tyagi",
-    state: "Delhi",
-    zone: "East Delhi & Shahdara",
-    email: "rajesh@civicpulse.com",
-  },
-  {
-    id: "MGR-DEL-W01",
-    name: "Anita Singh",
-    state: "Delhi",
-    zone: "West Delhi",
-    email: "anita@civicpulse.com",
-  },
-  {
-    id: "MGR-DEL-N01",
-    name: "Amit Goel",
-    state: "Delhi",
-    zone: "North & North-West Delhi",
-    email: "amit@civicpulse.com",
-  },
-];
+import { MOCK_ADMIN_MANAGERS } from "../../utils/adminInsights";
 
 const STATUS_COLORS: Record<string, string> = {
   Submitted: "bg-slate-100 text-slate-600",
@@ -71,7 +34,7 @@ export default function AdminManagers() {
   const [complaints, setComplaints] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedMgr, setSelectedMgr] = useState<
-    (typeof MOCK_MANAGERS)[0] | null
+    (typeof MOCK_ADMIN_MANAGERS)[0] | null
   >(null);
   const [drawerOpen, setDrawerOpen] = useState(false);
 
@@ -85,7 +48,7 @@ export default function AdminManagers() {
 
   // Compute per-manager stats from live complaints
   const managerStats = useMemo(() => {
-    return MOCK_MANAGERS.map((mgr) => {
+    return MOCK_ADMIN_MANAGERS.map((mgr) => {
       const mine = complaints.filter((c) => c.assignedManagerId === mgr.id);
       const active = mine.filter(
         (c) => !["Resolved", "Closed"].includes(c.status),
@@ -120,7 +83,7 @@ export default function AdminManagers() {
       );
   }, [complaints, selectedMgr]);
 
-  const openDrawer = (mgr: (typeof MOCK_MANAGERS)[0]) => {
+  const openDrawer = (mgr: (typeof MOCK_ADMIN_MANAGERS)[0]) => {
     setSelectedMgr(mgr);
     setDrawerOpen(true);
   };
@@ -143,7 +106,7 @@ export default function AdminManagers() {
         {[
           {
             label: "Total Managers",
-            value: MOCK_MANAGERS.length,
+            value: MOCK_ADMIN_MANAGERS.length,
             color: "text-sky-600",
           },
           {
