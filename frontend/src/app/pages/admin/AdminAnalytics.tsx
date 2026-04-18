@@ -993,14 +993,16 @@ export default function AdminAnalytics() {
       }))
       .sort((a, b) => b.totalComplaints - a.totalComplaints);
 
-    const zoneStatsMap: Record<DelhiZoneId, { totalHours: number; count: number }> =
-      DELHI_ZONE_CONFIG.reduce(
-        (acc, zone) => {
-          acc[zone.id] = { totalHours: 0, count: 0 };
-          return acc;
-        },
-        {} as Record<DelhiZoneId, { totalHours: number; count: number }>,
-      );
+    const zoneStatsMap: Record<
+      DelhiZoneId,
+      { totalHours: number; count: number }
+    > = DELHI_ZONE_CONFIG.reduce(
+      (acc, zone) => {
+        acc[zone.id] = { totalHours: 0, count: 0 };
+        return acc;
+      },
+      {} as Record<DelhiZoneId, { totalHours: number; count: number }>,
+    );
 
     filteredComplaints.forEach((c) => {
       if (!["Resolved", "Closed"].includes(c.status)) return;
@@ -1008,7 +1010,8 @@ export default function AdminAnalytics() {
 
       const created = new Date(c.createdAt).getTime();
       const updated = new Date(c.updatedAt).getTime();
-      if (Number.isNaN(created) || Number.isNaN(updated) || updated < created) return;
+      if (Number.isNaN(created) || Number.isNaN(updated) || updated < created)
+        return;
 
       const zoneId = inferDelhiZone(c);
       zoneStatsMap[zoneId].totalHours += (updated - created) / (1000 * 60 * 60);
@@ -1019,7 +1022,9 @@ export default function AdminAnalytics() {
       zone: zone.name,
       avgTime:
         zoneStatsMap[zone.id].count > 0
-          ? Math.round(zoneStatsMap[zone.id].totalHours / zoneStatsMap[zone.id].count)
+          ? Math.round(
+              zoneStatsMap[zone.id].totalHours / zoneStatsMap[zone.id].count,
+            )
           : 0,
       target: 72,
     }));
@@ -1119,14 +1124,18 @@ export default function AdminAnalytics() {
             label: "Solved",
             value: `${summaryCounts.solved}`,
             target: "Higher is better",
-            ok: summaryCounts.solved >= Math.max(1, Math.round(summaryCounts.received * 0.5)),
+            ok:
+              summaryCounts.solved >=
+              Math.max(1, Math.round(summaryCounts.received * 0.5)),
             desc: "Resolved / closed",
           },
           {
             label: "Pending",
             value: `${summaryCounts.pending}`,
             target: "Lower is better",
-            ok: summaryCounts.pending <= Math.max(3, Math.round(summaryCounts.received * 0.4)),
+            ok:
+              summaryCounts.pending <=
+              Math.max(3, Math.round(summaryCounts.received * 0.4)),
             desc: "Still open",
           },
           {
@@ -1284,86 +1293,86 @@ export default function AdminAnalytics() {
 
       {/* Area Stats Table */}
       <div className="bg-white/88 backdrop-blur-xl rounded-[1.85rem] border border-white shadow-[0_18px_45px_rgba(148,163,184,0.14)] overflow-hidden">
-          <div className="p-5 border-b border-slate-100">
-            <h3 className="text-base font-[700] text-slate-900">
-              Area Performance Breakdown
-            </h3>
-          </div>
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="bg-slate-50 border-b border-slate-100">
-                  <th className="text-left px-4 py-3 text-xs font-[700] text-slate-500 uppercase tracking-wider">
-                    Area
-                  </th>
-                  <th className="text-right px-4 py-3 text-xs font-[700] text-slate-500 uppercase tracking-wider">
-                    Received
-                  </th>
-                  <th className="text-right px-4 py-3 text-xs font-[700] text-slate-500 uppercase tracking-wider">
-                    Solved
-                  </th>
-                  <th className="text-right px-4 py-3 text-xs font-[700] text-slate-500 uppercase tracking-wider">
-                    Pending
-                  </th>
-                  <th className="text-right px-4 py-3 text-xs font-[700] text-slate-500 uppercase tracking-wider">
-                    Avg Time
-                  </th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-50">
-                {areaStats.map((w) => (
-                  <tr
-                    key={w.area}
-                    className="hover:bg-slate-50 transition-colors"
-                  >
-                    <td className="px-4 py-3 font-[600] text-slate-800">
-                      {w.area}
-                    </td>
-                    <td className="px-4 py-3 text-right text-slate-600">
-                      {w.totalComplaints}
-                    </td>
-                    <td className="px-4 py-3 text-right">
-                      <span className="text-emerald-600 font-[600]">
-                        {w.resolved}
-                      </span>
-                      <span className="text-slate-400 text-xs ml-1">
-                        ({Math.round((w.resolved / w.totalComplaints) * 100)}%)
-                      </span>
-                    </td>
-                    <td className="px-4 py-3 text-right">
-                      <span className="text-rose-600 font-[600]">
-                        {Math.max(0, w.totalComplaints - w.resolved)}
-                      </span>
-                    </td>
-                    <td className="px-4 py-3 text-right">
-                      <span
-                        className={
-                          w.avgResolutionHours > 72
-                            ? "text-red-600 font-[600]"
-                            : w.avgResolutionHours > 48
-                              ? "text-amber-600 font-[600]"
-                              : "text-emerald-600 font-[600]"
-                        }
-                      >
-                        {w.avgResolutionHours}h
-                      </span>
-                    </td>
-                  </tr>
-                ))}
-                {areaStats.length === 0 && (
-                  <tr>
-                    <td
-                      colSpan={5}
-                      className="px-4 py-8 text-center text-sm text-slate-400"
+        <div className="p-5 border-b border-slate-100">
+          <h3 className="text-base font-[700] text-slate-900">
+            Area Performance Breakdown
+          </h3>
+        </div>
+        <div className="overflow-x-auto">
+          <table className="w-full text-sm">
+            <thead>
+              <tr className="bg-slate-50 border-b border-slate-100">
+                <th className="text-left px-4 py-3 text-xs font-[700] text-slate-500 uppercase tracking-wider">
+                  Area
+                </th>
+                <th className="text-right px-4 py-3 text-xs font-[700] text-slate-500 uppercase tracking-wider">
+                  Received
+                </th>
+                <th className="text-right px-4 py-3 text-xs font-[700] text-slate-500 uppercase tracking-wider">
+                  Solved
+                </th>
+                <th className="text-right px-4 py-3 text-xs font-[700] text-slate-500 uppercase tracking-wider">
+                  Pending
+                </th>
+                <th className="text-right px-4 py-3 text-xs font-[700] text-slate-500 uppercase tracking-wider">
+                  Avg Time
+                </th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-slate-50">
+              {areaStats.map((w) => (
+                <tr
+                  key={w.area}
+                  className="hover:bg-slate-50 transition-colors"
+                >
+                  <td className="px-4 py-3 font-[600] text-slate-800">
+                    {w.area}
+                  </td>
+                  <td className="px-4 py-3 text-right text-slate-600">
+                    {w.totalComplaints}
+                  </td>
+                  <td className="px-4 py-3 text-right">
+                    <span className="text-emerald-600 font-[600]">
+                      {w.resolved}
+                    </span>
+                    <span className="text-slate-400 text-xs ml-1">
+                      ({Math.round((w.resolved / w.totalComplaints) * 100)}%)
+                    </span>
+                  </td>
+                  <td className="px-4 py-3 text-right">
+                    <span className="text-rose-600 font-[600]">
+                      {Math.max(0, w.totalComplaints - w.resolved)}
+                    </span>
+                  </td>
+                  <td className="px-4 py-3 text-right">
+                    <span
+                      className={
+                        w.avgResolutionHours > 72
+                          ? "text-red-600 font-[600]"
+                          : w.avgResolutionHours > 48
+                            ? "text-amber-600 font-[600]"
+                            : "text-emerald-600 font-[600]"
+                      }
                     >
-                      No area data found in the selected date range.
-                    </td>
-                  </tr>
-                )}
-              </tbody>
-            </table>
-          </div>
+                      {w.avgResolutionHours}h
+                    </span>
+                  </td>
+                </tr>
+              ))}
+              {areaStats.length === 0 && (
+                <tr>
+                  <td
+                    colSpan={5}
+                    className="px-4 py-8 text-center text-sm text-slate-400"
+                  >
+                    No area data found in the selected date range.
+                  </td>
+                </tr>
+              )}
+            </tbody>
+          </table>
         </div>
       </div>
+    </div>
   );
 }

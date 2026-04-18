@@ -219,8 +219,7 @@ export default function AdminAIAssistant() {
       Object.entries(categoryMap).sort((a, b) => b[1] - a[1])[0]?.[0] ||
       "No data";
     const hotspotArea =
-      Object.entries(areaMap).sort((a, b) => b[1] - a[1])[0]?.[0] ||
-      "No data";
+      Object.entries(areaMap).sort((a, b) => b[1] - a[1])[0]?.[0] || "No data";
 
     return {
       total: complaints.length,
@@ -258,7 +257,10 @@ export default function AdminAIAssistant() {
     const botMsg: ChatMessage = {
       id: messageIdRef.current++,
       from: "bot",
-      text: buildAdminReply(trimmed, complaints.length ? opsStats : defaultStats),
+      text: buildAdminReply(
+        trimmed,
+        complaints.length ? opsStats : defaultStats,
+      ),
     };
 
     setMessages((prev) => [...prev, userMsg, botMsg]);
@@ -285,10 +287,13 @@ export default function AdminAIAssistant() {
           <div className="bg-gradient-to-r from-violet-700 to-indigo-700 px-4 py-3 text-white">
             <div className="flex items-center gap-2">
               <Bot className="h-5 w-5" />
-              <div className="font-bold tracking-tight">Civic AI Admin Assistant</div>
+              <div className="font-bold tracking-tight">
+                Civic AI Admin Assistant
+              </div>
             </div>
             <div className="mt-1 text-xs text-violet-100">
-              Ask about queue, SLA, manager performance, and operational analytics.
+              Ask about queue, SLA, manager performance, and operational
+              analytics.
             </div>
           </div>
 

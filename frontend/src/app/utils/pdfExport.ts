@@ -6,7 +6,7 @@ import jsPDF from "jspdf";
 export const exportToPDF = async (
   elementId: string,
   fileName: string,
-  title: string
+  title: string,
 ) => {
   try {
     const element = document.getElementById(elementId);
@@ -76,7 +76,7 @@ export const exportDataToPDF = async (
     logoPath?: string;
     footerSignature?: string;
     footerNote?: string;
-  }
+  },
 ) => {
   try {
     const pdf = new jsPDF({
@@ -142,7 +142,7 @@ export const exportDataToPDF = async (
         `Generated: ${new Date().toLocaleString()}`,
         pageWidth - (logoDataUrl ? 34 : marginX),
         13,
-        { align: "right" }
+        { align: "right" },
       );
 
       if (logoDataUrl) {
@@ -204,7 +204,8 @@ export const exportDataToPDF = async (
     };
 
     const drawPageFooter = (pageNo: number, totalPages: number) => {
-      const signature = options?.footerSignature || "Prepared for CivicPulse Admin";
+      const signature =
+        options?.footerSignature || "Prepared for CivicPulse Admin";
       const footerNote =
         options?.footerNote || "Digitally generated report - Confidential";
 
@@ -215,9 +216,14 @@ export const exportDataToPDF = async (
 
       pdf.setFont(undefined, "normal");
       pdf.text(footerNote, marginX, pageHeight - 2.5);
-      pdf.text(`Page ${pageNo} of ${totalPages}`, pageWidth - marginX, pageHeight - 2.5, {
-        align: "right",
-      });
+      pdf.text(
+        `Page ${pageNo} of ${totalPages}`,
+        pageWidth - marginX,
+        pageHeight - 2.5,
+        {
+          align: "right",
+        },
+      );
     };
 
     // Create table data
@@ -227,7 +233,7 @@ export const exportDataToPDF = async (
         if (value === null || value === undefined) return "";
         if (typeof value === "object") return JSON.stringify(value);
         return String(value).substring(0, maxCellChars);
-      })
+      }),
     );
 
     const columnHeaders = columns.map((col) => col.label);
@@ -251,7 +257,7 @@ export const exportDataToPDF = async (
     const totalWeight = rawWeights.reduce((sum, w) => sum + w, 0) || 1;
 
     const columnWidths = rawWeights.map(
-      (w) => minColWidth + (w / totalWeight) * Math.max(0, weightedWidth)
+      (w) => minColWidth + (w / totalWeight) * Math.max(0, weightedWidth),
     );
 
     const columnStarts = columnWidths.reduce<number[]>((starts, width, idx) => {
@@ -269,15 +275,15 @@ export const exportDataToPDF = async (
       pdf.setFont(undefined, "bold");
       pdf.setDrawColor(203, 213, 225);
 
-      const resolvedHeaders = columnHeaders.map(
-        (header, idx) => String(header || `Column ${idx + 1}`)
+      const resolvedHeaders = columnHeaders.map((header, idx) =>
+        String(header || `Column ${idx + 1}`),
       );
       const headerLines = resolvedHeaders.map((header, idx) =>
-        pdf.splitTextToSize(header, columnWidths[idx] - 4)
+        pdf.splitTextToSize(header, columnWidths[idx] - 4),
       );
       const maxHeaderLines = headerLines.reduce(
         (max, lines) => Math.max(max, lines.length),
-        1
+        1,
       );
       const headerHeight = Math.max(9, 4 + maxHeaderLines * lineHeight);
 
@@ -302,11 +308,11 @@ export const exportDataToPDF = async (
 
     tableData.forEach((row, rowIdx) => {
       const wrappedCells = row.map((cell, colIdx) =>
-        pdf.splitTextToSize(cell, columnWidths[colIdx] - 4)
+        pdf.splitTextToSize(cell, columnWidths[colIdx] - 4),
       );
       const maxLines = wrappedCells.reduce(
         (max, lines) => Math.max(max, lines.length),
-        1
+        1,
       );
       const rowHeight = Math.max(7.5, 3 + maxLines * lineHeight);
 

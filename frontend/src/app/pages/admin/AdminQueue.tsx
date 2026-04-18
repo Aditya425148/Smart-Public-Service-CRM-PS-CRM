@@ -169,13 +169,13 @@ export default function AdminQueue() {
               try {
                 setIsExporting(true);
                 const breachedCount = filtered.filter(
-                  (c) => c.slaRemainingHours < 0
+                  (c) => c.slaRemainingHours < 0,
                 ).length;
                 const atRiskCount = filtered.filter(
-                  (c) => c.slaRemainingHours >= 0 && c.slaRemainingHours < 12
+                  (c) => c.slaRemainingHours >= 0 && c.slaRemainingHours < 12,
                 ).length;
                 const onTrackCount = filtered.filter(
-                  (c) => c.slaRemainingHours >= 12
+                  (c) => c.slaRemainingHours >= 12,
                 ).length;
 
                 const columns = [
@@ -210,7 +210,8 @@ export default function AdminQueue() {
                   "complaint-queue",
                   "Complaint Queue Report",
                   {
-                    subtitle: "Operational snapshot for complaint monitoring and SLA tracking",
+                    subtitle:
+                      "Operational snapshot for complaint monitoring and SLA tracking",
                     generatedBy: "Admin Portal",
                     logoPath: "/logo.svg",
                     filters: [
@@ -232,7 +233,7 @@ export default function AdminQueue() {
                     footerSignature: "Prepared for CivicPulse Admin",
                     footerNote: "Digitally generated complaint queue report",
                     maxCellChars: 36,
-                  }
+                  },
                 );
                 toast.success("Export completed successfully");
               } catch (error) {
