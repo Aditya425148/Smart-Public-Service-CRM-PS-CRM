@@ -1,5 +1,6 @@
 import os
 import httpx
+import json
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
 from typing import List, Optional
@@ -7,7 +8,7 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
-router = APIRouter(prefix="/ai", tags=["AI"])
+router = APIRouter(prefix="/api/ai", tags=["AI"])
 
 GROQ_API_KEY = os.getenv("GROQ_API_KEY")
 GROQ_API_URL = "https://api.groq.com/openai/v1/chat/completions"
@@ -16,6 +17,20 @@ class ChatRequest(BaseModel):
     message: str
     portal_type: str = "citizen" # citizen, manager, worker
     history: Optional[List[dict]] = []
+
+class WorkerSummary(BaseModel):
+    id: str
+    name: str
+    rating: float
+    activeTasks: int
+    area: Optional[str] = "Unknown"
+
+class SmartAssignRequest(BaseModel):
+    complaintId: str
+    category: str
+    description: str
+    address: str
+    workers: List[WorkerSummary]
 
 SYSTEM_PROMPTS = {
     "citizen": """You are the CivicPulse Delhi AI Assistant. Your goal is to help citizens of Delhi report and track public service issues.
@@ -88,3 +103,68 @@ async def chat_with_ai(request: ChatRequest):
             raise HTTPException(status_code=e.response.status_code, detail=f"Groq API Error: {e.response.text}")
         except Exception as e:
             raise HTTPException(status_code=500, detail=f"Internal Server Error: {str(e)}")
+
+@router.post("/smart-assign")
+async def smart_assign(request: SmartAssignRequest):
+    if not GROQ_API_KEY:
+        raise HTTPException(status_code=500, detail="GROQ_API_KEY not configured")
+
+    prompt = f"""You are a Public Service Operations Expert. Your task is to assign the BEST field worker for a new complaint.
+    
+    Complaint Details:
+    - ID: {request.complaintId}
+    - Category: {request.category}
+    - Description: {request.description}
+    - Location: {request.address}
+    
+    Available Workers:
+    """
+    for w in request.workers:
+        prompt += f"- ID: {w.id}, Name: {w.name}, Rating: {w.rating}, Active Tasks: {w.activeTasks}, Primary Area: {w.area}\n"
+    
+    prompt += """
+    Guidelines for selection:
+    1. **Expertise**: Match the complaint category to the worker's experience if implied.
+    2. **Workload (CRITICAL)**: STRONGLY prioritize workers with fewer active tasks to ensure fast resolution and fairness. A worker with lower workload must be preferred even over a higher-rated worker if the gap in active tasks is more than 1.
+    3. **Performance**: Consider higher ratings as a secondary factor.
+    4. **Location**: Workers whose primary area matches the complaint location should be prioritized.
+    
+    Respond STRICTLY in JSON format with two keys:
+    - "recommendedWorkerId": The ID of the best worker.
+    - "reasoning": A brief (1-2 sentence) explanation of why this worker was chosen. DO NOT mention that you are an AI or using AI.
+    """
+
+    async with httpx.AsyncClient() as client:
+        try:
+            response = await client.post(
+                GROQ_API_URL,
+                headers={
+                    "Authorization": f"Bearer {GROQ_API_KEY}",
+                    "Content-Type": "application/json"
+                },
+                json={
+                    "model": "llama-3.3-70b-versatile",
+                    "messages": [
+                        {"role": "system", "content": "You are a logistics and operations expert. Your primary goal is fair and efficient workload distribution. Respond only in valid JSON."},
+                        {"role": "user", "content": prompt}
+                    ],
+                    "temperature": 0.3,
+                    "response_format": {"type": "json_object"}
+                },
+                timeout=20.0
+            )
+            response.raise_for_status()
+            data = response.json()
+            # Parse the JSON string from choices[0].message.content
+            ai_data = json.loads(data["choices"][0]["message"]["content"])
+            return ai_data
+        except Exception as e:
+            print(f"SMART_ASSIGN_ERROR: {str(e)}")
+            # Fallback logic if AI fails: Simplistic load balancing
+            if not request.workers:
+                raise HTTPException(status_code=400, detail="No workers available for assignment")
+            best_worker = min(request.workers, key=lambda w: (w.activeTasks, -w.rating))
+            return {
+                "recommendedWorkerId": best_worker.id,
+                "reasoning": "Selected based on lowest workload and highest rating."
+            }

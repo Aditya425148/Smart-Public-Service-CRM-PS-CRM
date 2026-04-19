@@ -32,10 +32,9 @@ function initials(name: string) {
 
 export default function AdminManagers() {
   const [complaints, setComplaints] = useState<any[]>([]);
+  const [managers, setManagers] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
-  const [selectedMgr, setSelectedMgr] = useState<
-    (typeof MOCK_ADMIN_MANAGERS)[0] | null
-  >(null);
+  const [selectedMgr, setSelectedMgr] = useState<any | null>(null);
   const [drawerOpen, setDrawerOpen] = useState(false);
 
   useEffect(() => {
@@ -43,12 +42,17 @@ export default function AdminManagers() {
       setComplaints(data);
       setLoading(false);
     });
+
+    appwriteService.getManagers()
+      .then(setManagers)
+      .catch(console.error);
+
     return () => unsub();
   }, []);
 
   // Compute per-manager stats from live complaints
   const managerStats = useMemo(() => {
-    return MOCK_ADMIN_MANAGERS.map((mgr) => {
+    return managers.map((mgr) => {
       const mine = complaints.filter((c) => c.assignedManagerId === mgr.id);
       const active = mine.filter(
         (c) => !["Resolved", "Closed"].includes(c.status),
@@ -71,7 +75,7 @@ export default function AdminManagers() {
         slaBreached,
       };
     });
-  }, [complaints]);
+  }, [complaints, managers]);
 
   const selectedMgrComplaints = useMemo(() => {
     if (!selectedMgr) return [];
@@ -106,7 +110,7 @@ export default function AdminManagers() {
         {[
           {
             label: "Total Managers",
-            value: MOCK_ADMIN_MANAGERS.length,
+            value: managers.length,
             color: "text-sky-600",
           },
           {
@@ -345,15 +349,14 @@ export default function AdminManagers() {
                       >
                         <div className="flex items-start gap-3">
                           <div
-                            className={`mt-0.5 flex-shrink-0 w-2 h-2 rounded-full ${
-                              c.escalated
+                            className={`mt-0.5 flex-shrink-0 w-2 h-2 rounded-full ${c.escalated
                                 ? "bg-red-500"
                                 : (c.slaRemainingHours ?? 1) < 0
                                   ? "bg-amber-500"
                                   : ["Resolved", "Closed"].includes(c.status)
                                     ? "bg-emerald-500"
                                     : "bg-sky-400"
-                            }`}
+                              }`}
                           />
                           <div className="flex-1 min-w-0">
                             <div className="flex items-center gap-2 flex-wrap">
@@ -394,7 +397,7 @@ export default function AdminManagers() {
                             )}
                             <div className="flex items-center gap-3 mt-1.5">
                               {(c.slaRemainingHours ?? 1) < 0 &&
-                              !["Resolved", "Closed"].includes(c.status) ? (
+                                !["Resolved", "Closed"].includes(c.status) ? (
                                 <span className="flex items-center gap-0.5 text-[10px] font-[700] text-red-500">
                                   <AlertTriangle className="w-2.5 h-2.5" />{" "}
                                   {Math.abs(c.slaRemainingHours)}h overdue

@@ -5,7 +5,7 @@ from typing import Optional
 from fastapi import APIRouter, HTTPException, Query as FastAPIQuery
 from pydantic import BaseModel
 from appwrite.query import Query
-from appwrite_client import databases, DATABASE_ID, COLLECTION_ID
+from appwrite_client import databases, DATABASE_ID, COLLECTION_ID, MANAGERS_COLLECTION_ID
 from geopy.geocoders import Nominatim
 
 router = APIRouter(prefix="/api/complaints", tags=["complaints"])
@@ -15,27 +15,26 @@ geolocator = Nominatim(user_agent="smart_crm_ps_crm")
 
 # ── Delhi Specific Manager Config ─────────────────────────────
 
-MOCK_MANAGERS = [
-    # Delhi (5 managers)
-    {"id": "MGR-DEL-01", "name": "Sanjay Sharma",  "state": "Delhi"},
-    {"id": "MGR-DEL-02", "name": "Meena Kumari",   "state": "Delhi"},
-    {"id": "MGR-DEL-03", "name": "Rajesh Tyagi",   "state": "Delhi"},
-    {"id": "MGR-DEL-04", "name": "Anita Singh",    "state": "Delhi"},
-    {"id": "MGR-DEL-05", "name": "Amit Goel",      "state": "Delhi"},
-]
-
-
 def assign_manager_to_complaint(complaint_state: str) -> dict:
     """Assigns the manager with the least active complaints for the given state."""
-    # 1. Get managers for this state
-    state_managers = [m for m in MOCK_MANAGERS if m["state"].lower() == complaint_state.lower()]
+    try:
+        # 1. Get managers for this state from Appwrite
+        resp = databases.list_documents(
+            DATABASE_ID, MANAGERS_COLLECTION_ID,
+            queries=[Query.equal("state", complaint_state), Query.limit(100)]
+        )
+        state_managers = resp.get("documents", [])
+    except Exception as e:
+        print(f"DB_MANAGER_FETCH_ERROR: {e}")
+        state_managers = []
 
     if not state_managers:
         return {"id": "SYSTEM", "name": "SystemAdmin"}
 
     # 2. Count active (non-resolved) complaints per manager
     manager_workloads = []
-    for mgr in state_managers:
+    for mgr_doc in state_managers:
+        mgr = {"id": mgr_doc["$id"], "name": mgr_doc["name"]}
         try:
             resp = databases.list_documents(
                 DATABASE_ID, COLLECTION_ID,
@@ -208,11 +207,14 @@ async def list_complaints(
     lng: Optional[float] = None,
     radius: Optional[float] = 5.0,  # default 5km radius
     managerId: Optional[str] = None,
+    assignedTo: Optional[str] = None,
 ):
     try:
         queries = [Query.order_desc("createdAt"), Query.limit(100)]
         if managerId:
             queries.append(Query.equal("assignedManagerId", managerId))
+        if assignedTo:
+            queries.append(Query.equal("assignedTo", assignedTo))
 
         resp = databases.list_documents(DATABASE_ID, COLLECTION_ID, queries=queries)
         complaints = [_map_doc(d) for d in resp["documents"]]
@@ -240,7 +242,11 @@ async def list_complaints(
 @router.get("/managers")
 async def get_managers():
     """Returns the list of all available managers."""
-    return MOCK_MANAGERS
+    try:
+        resp = databases.list_documents(DATABASE_ID, MANAGERS_COLLECTION_ID, queries=[Query.limit(100)])
+        return [{"id": d["$id"], "name": d["name"], "state": d["state"]} for d in resp["documents"]]
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
 
 
 @router.post("", status_code=201)
@@ -394,9 +400,11 @@ async def update_share_card(complaint_id: str, body: ShareCardUpdate):
 async def assign_manager(complaint_id: str, body: AssignManager):
     """Assign a complaint to a specific manager."""
     try:
-        # Validate manager exists
-        manager = next((m for m in MOCK_MANAGERS if m["id"] == body.managerId), None)
-        if not manager:
+        # Validate manager exists in DB
+        try:
+            mgr_doc = databases.get_document(DATABASE_ID, MANAGERS_COLLECTION_ID, body.managerId)
+            manager = {"id": mgr_doc["$id"], "name": mgr_doc["name"]}
+        except Exception:
             raise HTTPException(status_code=400, detail="Manager not found")
         
         doc = databases.get_document(DATABASE_ID, COLLECTION_ID, complaint_id)

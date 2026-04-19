@@ -189,7 +189,7 @@ const categories = [
 const features = [
   {
     icon: Zap,
-    title: "AI Priority Scoring",
+    title: "Smart Priority Scoring",
     desc: "Every complaint is instantly scored using location sensitivity, image confidence, and category weight — ensuring critical issues are fast-tracked automatically.",
     color: "text-violet-500",
     bg: "bg-violet-50",
@@ -233,11 +233,11 @@ const steps = [
   {
     step: "01",
     title: "Report in 60 Seconds",
-    desc: "Open the app, snap a photo. AI suggests the category. GPS auto-fills your location. Hit submit — your Complaint ID arrives instantly.",
+    desc: "Open the app, snap a photo. System suggests the category. GPS auto-fills your location. Hit submit — your Complaint ID arrives instantly.",
   },
   {
     step: "02",
-    title: "AI Routes & Prioritizes",
+    title: "Smart Routing & Workflow",
     desc: "Our engine scores your complaint, checks for duplicates, notifies nearby citizens, and routes it to the right department — all within seconds.",
   },
   {
@@ -524,11 +524,10 @@ export default function LandingPage() {
     >
       {/* Navbar */}
       <nav
-        className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${
-          scrolled
-            ? "bg-white/95 backdrop-blur-md shadow-sm border-b border-slate-100"
-            : "bg-transparent"
-        }`}
+        className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${scrolled
+          ? "bg-white/95 backdrop-blur-md shadow-sm border-b border-slate-100"
+          : "bg-transparent"
+          }`}
       >
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between h-16">
@@ -552,9 +551,8 @@ export default function LandingPage() {
                     onClick={() => {
                       scrollToSection(item.toLowerCase().replace(/ /g, "-"));
                     }}
-                    className={`text-sm font-[500] transition-colors hover:text-blue-400 ${
-                      scrolled ? "text-slate-600" : "text-white/80"
-                    }`}
+                    className={`text-sm font-[500] transition-colors hover:text-blue-400 ${scrolled ? "text-slate-600" : "text-white/80"
+                      }`}
                   >
                     {item}
                   </button>
@@ -565,11 +563,10 @@ export default function LandingPage() {
             <div className="hidden md:flex items-center gap-3">
               <button
                 onClick={() => navigate("/login")}
-                className={`text-sm font-[600] px-4 py-2 rounded-lg border transition-colors ${
-                  scrolled
-                    ? "text-blue-600 border-blue-600 hover:bg-blue-50"
-                    : "text-white border-white/30 hover:bg-white/10"
-                }`}
+                className={`text-sm font-[600] px-4 py-2 rounded-lg border transition-colors ${scrolled
+                  ? "text-blue-600 border-blue-600 hover:bg-blue-50"
+                  : "text-white border-white/30 hover:bg-white/10"
+                  }`}
               >
                 Sign In
               </button>
@@ -651,7 +648,7 @@ export default function LandingPage() {
               className="inline-flex items-center gap-2 bg-blue-600/20 border border-blue-500/30 text-blue-300 text-xs font-[600] px-3 py-1.5 rounded-full mb-6 backdrop-blur-sm"
             >
               <Zap className="w-3 h-3" />
-              AI-Powered Civic Intelligence Platform
+              Smart Civic Intelligence Platform
             </motion.div>
 
             <motion.h1
@@ -744,7 +741,7 @@ export default function LandingPage() {
           {Array(4)
             .fill([
               "🚀 Delhi NCR resolved 1,240 complaints this month",
-              "⚡ AI prioritized 42 critical issues in Central Delhi",
+              "⚡ System prioritized 42 critical issues in Central Delhi",
               "🛠️ Pothole on Ring Road fixed in 14 hours",
               "🔍 94% SLA compliance across all Delhi wards",
               "🏆 Top Ward: Delhi-West Division",
@@ -1293,7 +1290,7 @@ export default function LandingPage() {
                 </span>
               </div>
               <p className="text-slate-500 text-sm leading-relaxed mb-6">
-                AI-Powered Civic Intelligence & SLA Enforcement Platform.
+                Smart Civic Intelligence & SLA Enforcement Platform.
                 Building more responsive governments, one fix at a time.
               </p>
               <div className="flex gap-3">
@@ -1312,7 +1309,7 @@ export default function LandingPage() {
               {
                 title: "Platform",
                 links: [
-                  { label: "Features & AI", id: "features" },
+                  { label: "Features", id: "features" },
                   { label: "Community", id: "leaderboard" },
                   { label: "For Officials", id: "for-officials" },
                   { label: "Leaderboard", id: "leaderboard" },

@@ -12,6 +12,8 @@ PROJECT_ID    = os.getenv("APPWRITE_PROJECT_ID", "")
 API_KEY       = os.getenv("APPWRITE_API_KEY", "")
 DATABASE_ID   = os.getenv("APPWRITE_DATABASE_ID", "civicpulse_db")
 COLLECTION_ID = os.getenv("APPWRITE_COLLECTION_ID", "complaints")
+WORKERS_COLLECTION_ID = "workers"
+MANAGERS_COLLECTION_ID = "managers"
 BUCKET_ID     = os.getenv("APPWRITE_BUCKET_ID", "complaint_photos")
 
 client = Client()
