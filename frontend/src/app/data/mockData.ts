@@ -43,6 +43,7 @@ export interface Complaint {
   isDuplicate?: boolean;
   escalated?: boolean;
   state?: string;
+  photos?: string[];
   timeline: TimelineEvent[];
 }
 

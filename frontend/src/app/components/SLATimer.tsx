@@ -83,7 +83,10 @@ export const SLATimer: React.FC<SLATimerProps> = ({
     }
 
     return (
-        <div className={`flex items-center gap-2 px-3 py-1.5 rounded-xl border ${bgColor} ${borderColor} ${textColor} transition-colors duration-500`}>
+        <div
+            className={`flex items-center gap-2 px-3 py-1.5 rounded-xl border ${bgColor} ${borderColor} ${textColor} transition-colors duration-500 cursor-help`}
+            title={`Deadline: ${new Date(deadline).toLocaleString()}`}
+        >
             {showIcon && (isOverdue ? <AlertCircle size={14} /> : <Clock size={14} />)}
             <div className="flex flex-col">
                 <span className="text-[9px] font-black uppercase tracking-tighter leading-none mb-0.5">

@@ -18,6 +18,7 @@ import {
   Smartphone,
   Zap,
   Map,
+  ShieldCheck,
 } from "lucide-react";
 import {
   PieChart,
@@ -387,53 +388,61 @@ export default function ManagerOverview() {
   return (
     <div className="max-w-7xl mx-auto space-y-8 pb-12">
       {/* 1. Header & Manager Profile Section */}
-      <div className="bg-white rounded-[2.5rem] border border-slate-100 p-8 shadow-sm">
-        <div className="flex flex-col lg:flex-row justify-between gap-8">
-          <div className="flex items-start gap-6">
-            <div className="w-20 h-20 rounded-3xl bg-gradient-to-br from-sky-500 to-indigo-600 flex items-center justify-center text-white text-2xl font-bold shadow-lg shadow-sky-100">
-              {manager.name
-                ?.split(" ")
-                .map((n: string) => n[0])
-                .join("") || "M"}
+      <div className="bg-white rounded-[2.5rem] border border-slate-100 p-10 shadow-sm relative overflow-hidden">
+        {/* Background Accent */}
+        <div className="absolute top-0 right-0 w-64 h-64 bg-sky-50/50 rounded-full -mr-20 -mt-20 blur-3xl pointer-events-none" />
+
+        <div className="flex flex-col lg:flex-row justify-between gap-10 relative z-10">
+          <div className="flex items-center gap-8">
+            <div className="relative">
+              <div className="w-24 h-24 rounded-[2rem] bg-gradient-to-br from-white via-sky-50 to-blue-100 flex items-center justify-center text-sky-700 text-3xl font-bold shadow-xl shadow-sky-100/50 border border-white">
+                {manager.name
+                  ?.split(" ")
+                  .map((n: string) => n[0])
+                  .join("") || "M"}
+              </div>
+              <div className="absolute -bottom-1 -right-1 w-8 h-8 rounded-full bg-emerald-500 border-4 border-white flex items-center justify-center shadow-lg">
+                <Check size={14} className="text-white" />
+              </div>
             </div>
-            <div className="space-y-1">
-              <h1 className="text-3xl font-[800] text-slate-900 tracking-tight">
-                {manager.name || "Manager"}
-              </h1>
-              <div className="flex flex-wrap gap-4 text-sm font-medium text-slate-500">
-                <span className="flex items-center gap-1.5 bg-slate-50 px-3 py-1 rounded-full">
-                  <Mail size={14} className="text-sky-500" /> {manager.email}
+            <div className="space-y-2">
+              <div className="flex items-center gap-3">
+                <h1 className="text-4xl font-semibold text-slate-900 tracking-tight">
+                  {manager.name || "Manager"}
+                </h1>
+                <span className="px-3 py-1 bg-sky-100 text-sky-700 text-[10px] font-bold rounded-full uppercase tracking-wider">
+                  Senior Overseer
                 </span>
-                <span className="flex items-center gap-1.5 bg-slate-50 px-3 py-1 rounded-full">
-                  <Smartphone size={14} className="text-emerald-500" />{" "}
+              </div>
+              <div className="flex flex-wrap gap-4 text-sm font-medium text-slate-500">
+                <span className="flex items-center gap-2">
+                  <Mail size={16} className="text-slate-300" /> {manager.email}
+                </span>
+                <span className="h-1 w-1 rounded-full bg-slate-200 mt-2" />
+                <span className="flex items-center gap-2">
+                  <Smartphone size={16} className="text-slate-300" />{" "}
                   {manager.phone}
                 </span>
               </div>
             </div>
           </div>
 
-          <div className="lg:w-96 bg-slate-50 rounded-3xl p-6 border border-slate-100">
-            <div className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-3 flex items-center gap-2">
-              <MapPin size={12} /> Official Jurisdiction
+          <div className="lg:w-[400px] bg-slate-50/50 rounded-[2rem] p-6 border border-slate-100 backdrop-blur-sm">
+            <div className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-4 flex items-center gap-2">
+              <MapPin size={12} className="text-sky-600" /> Official Jurisdiction
             </div>
-            <div className="space-y-3">
-              <div>
-                <div className="text-xs font-bold text-slate-500 mb-0.5">
-                  Primary State
-                </div>
-                <div className="text-base font-bold text-slate-900">
-                  {manager.managedState}
-                </div>
+            <div className="space-y-4">
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-semibold text-slate-500">Primary State</span>
+                <span className="text-sm font-bold text-slate-900">{manager.managedState}</span>
               </div>
-              <div>
-                <div className="text-xs font-bold text-slate-500 mb-1.5">
-                  Assigned Areas
-                </div>
-                <div className="flex flex-wrap gap-1.5">
+              <div className="space-y-2">
+                <span className="text-xs font-semibold text-slate-500">Assigned Operational Areas</span>
+                <div className="flex flex-wrap gap-2">
                   {manager.managedAreas.map((area: string) => (
                     <span
                       key={area}
-                      className="px-2.5 py-1 bg-white border border-slate-200 rounded-lg text-xs font-bold text-slate-700"
+                      className="px-3 py-1 bg-white border border-slate-200/60 rounded-full text-xs font-semibold text-slate-700 shadow-sm"
                     >
                       {area}
                     </span>
@@ -448,33 +457,34 @@ export default function ManagerOverview() {
       {/* 2. Auto-Assignment Banner */}
       {complaints.filter((c) => c.status === "Submitted").length > 0 && (
         <motion.div
-          initial={{ opacity: 0, y: -10 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="bg-gradient-to-r from-amber-50 to-orange-50 rounded-[2rem] border-2 border-amber-200 p-6 shadow-sm"
+          initial={{ opacity: 0, scale: 0.99 }}
+          animate={{ opacity: 1, scale: 1 }}
+          className="bg-gradient-to-br from-white via-amber-50/50 to-orange-50/30 rounded-[2.5rem] border border-amber-100 p-7 shadow-sm relative overflow-hidden"
         >
-          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-            <div className="flex items-start gap-4">
-              <div className="w-12 h-12 rounded-full bg-amber-100 flex items-center justify-center flex-shrink-0">
-                <AlertCircle className="text-amber-600" size={24} />
+          <div className="absolute top-0 right-0 w-32 h-32 bg-amber-200/10 rounded-full -mr-16 -mt-16 blur-2xl" />
+
+          <div className="flex flex-col sm:flex-row items-center justify-between gap-6 relative z-10">
+            <div className="flex items-center gap-5">
+              <div className="w-14 h-14 rounded-2xl bg-white border border-amber-100 flex items-center justify-center shadow-sm">
+                <Zap size={24} className="text-amber-600" />
               </div>
               <div>
-                <h3 className="font-bold text-slate-900">
+                <h3 className="font-semibold text-slate-900 text-lg">
                   {complaints.filter((c) => c.status === "Submitted").length}{" "}
-                  New Complaints Waiting
+                  Operations pending dispatch
                 </h3>
-                <p className="text-sm text-slate-600 mt-1">
-                  Use auto-assign to efficiently distribute tasks to your field
-                  workers
+                <p className="text-sm text-slate-500 font-medium">
+                  Intelligent auto-assignment will optimize field staff distribution based on proximity.
                 </p>
               </div>
             </div>
             <button
               onClick={handleAutoAssignAll}
               disabled={autoAssigning}
-              className="flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-amber-600 to-orange-600 hover:from-amber-700 hover:to-orange-700 text-white font-bold rounded-2xl transition-all shadow-lg shadow-amber-600/20 disabled:opacity-50 flex-shrink-0 whitespace-nowrap"
+              className="px-8 py-4 bg-amber-600 hover:bg-amber-700 text-white text-sm font-semibold rounded-full transition-all shadow-lg shadow-amber-200 active:scale-95 disabled:opacity-50 flex items-center gap-2"
             >
-              <Zap size={18} />{" "}
-              {autoAssigning ? "Assigning..." : "Auto Assign All"}
+              {autoAssigning ? "Processing..." : "Commence auto-dispatch"}
+              {!autoAssigning && <ChevronRight size={16} />}
             </button>
           </div>
         </motion.div>
@@ -526,35 +536,42 @@ export default function ManagerOverview() {
         </div>
 
         <div className="bg-white rounded-[2.5rem] border border-slate-100 p-8 shadow-sm">
-          <h2 className="text-xl font-bold text-slate-900 mb-6 flex items-center gap-3">
-            <Users className="text-emerald-500" /> Field Force
+          <h2 className="text-lg font-semibold text-slate-900 mb-6 flex items-center gap-2">
+            <Users className="text-sky-600" size={20} /> Field force status
           </h2>
-          <div className="space-y-4 max-h-[300px] overflow-y-auto pr-2 custom-scrollbar">
+          <div className="space-y-3 max-h-[300px] overflow-y-auto pr-2 custom-scrollbar">
             {stateWorkers.map((worker) => (
               <div
                 key={worker.id}
-                className="flex items-center justify-between p-4 rounded-2xl bg-slate-50 border border-slate-100"
+                className="flex items-center justify-between p-4 rounded-[20px] bg-slate-50/50 border border-slate-100 hover:border-sky-100 hover:bg-sky-50/30 transition-all group"
               >
                 <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-xl bg-white flex items-center justify-center font-bold text-slate-700 shadow-sm">
-                    {worker.name[0]}
+                  <div className="w-10 h-10 rounded-full bg-white border border-slate-200 flex items-center justify-center font-bold text-sky-700 shadow-sm group-hover:scale-105 transition-transform">
+                    {worker.name.split(' ').map((n: string) => n[0]).join('')}
                   </div>
                   <div>
-                    <div className="text-sm font-bold text-slate-900">
+                    <div className="text-sm font-semibold text-slate-900">
                       {worker.name}
                     </div>
-                    <div className="text-[10px] font-bold text-slate-400 uppercase tracking-tighter">
-                      Rating: {worker.rating} ⭐
+                    <div className="flex items-center gap-2">
+                      <div className="text-[10px] font-medium text-slate-500">
+                        {worker.area}
+                      </div>
+                      <div className="h-0.5 w-0.5 rounded-full bg-slate-300" />
+                      <div className="text-[10px] font-bold text-amber-600">
+                        {worker.rating} ⭐
+                      </div>
                     </div>
                   </div>
                 </div>
-                <div
-                  className={`px-2 py-1 rounded-lg text-[9px] font-bold uppercase tracking-wider ${worker.status === "Available"
-                    ? "bg-emerald-100 text-emerald-700"
-                    : "bg-amber-100 text-amber-700"
-                    }`}
-                >
-                  {worker.status}
+                <div className="text-right">
+                  <div className="text-[10px] font-bold text-slate-900">{worker.activeTasks || 0} active</div>
+                  <div className={`text-[10px] font-semibold uppercase tracking-wider ${worker.status === "Available"
+                    ? "text-emerald-600"
+                    : "text-amber-600"
+                    }`}>
+                    {worker.status}
+                  </div>
                 </div>
               </div>
             ))}
@@ -564,11 +581,10 @@ export default function ManagerOverview() {
 
       {/* 4. Pending Review Section */}
       {complaints.filter((c) => c.status === "Pending Review").length > 0 && (
-        <div className="bg-gradient-to-br from-purple-50 to-pink-50 border border-purple-200 rounded-[2.5rem] p-8">
-          <h2 className="text-lg font-bold text-purple-900 mb-4 flex items-center gap-2">
-            <AlertCircle size={20} className="text-purple-600" />
-            Work Pending Review (
-            {complaints.filter((c) => c.status === "Pending Review").length})
+        <div className="bg-gradient-to-br from-white via-indigo-50/30 to-sky-50/30 border border-slate-100 rounded-[2.5rem] p-8">
+          <h2 className="text-lg font-semibold text-slate-900 mb-6 flex items-center gap-2">
+            <AlertCircle size={20} className="text-amber-500" />
+            Verification Pipeline ({complaints.filter((c) => c.status === "Pending Review").length})
           </h2>
           <div className="grid gap-4 md:grid-cols-2">
             {complaints
@@ -576,39 +592,34 @@ export default function ManagerOverview() {
               .map((complaint) => (
                 <motion.div
                   key={complaint.id}
-                  initial={{ opacity: 0, y: 10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  className="bg-white rounded-2xl border border-purple-200 p-5 cursor-pointer hover:shadow-md transition-all"
+                  initial={{ opacity: 0, scale: 0.98 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  className="bg-white rounded-3xl border border-slate-100 p-5 cursor-pointer hover:border-sky-200 hover:shadow-md transition-all group"
                   onClick={() => {
                     setSelectedReview(complaint);
                     setShowReviewModal(true);
                   }}
                 >
-                  <div className="flex items-start justify-between mb-3">
-                    <div>
-                      <span className="px-2 py-1 bg-slate-900 text-white text-[9px] font-black rounded-md">
+                  <div className="flex items-start justify-between mb-4">
+                    <div className="space-y-1">
+                      <span className="px-2.5 py-1 bg-amber-50 text-amber-600 text-[10px] font-bold rounded-full uppercase tracking-tighter">
                         {complaint.category}
                       </span>
-                      <p className="font-bold text-slate-900 mt-2 text-sm">
+                      <p className="font-semibold text-slate-900 mt-2 text-sm leading-tight">
                         {complaint.address}
                       </p>
                     </div>
-                    <span className="px-2 py-1 bg-purple-100 text-purple-700 text-[10px] font-bold rounded-full">
-                      {complaint.assignedTo || "Unknown"}
-                    </span>
+                    <div className="text-right">
+                      <span className="block text-[9px] font-bold text-slate-400 uppercase tracking-widest">Technician</span>
+                      <span className="text-[10px] font-bold text-slate-600">
+                        {complaint.assignedTo?.split(' ')[0]}
+                      </span>
+                    </div>
                   </div>
-                  <p className="text-xs text-slate-600 line-clamp-2 mb-3">
-                    {complaint.description}
-                  </p>
                   <button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      setSelectedReview(complaint);
-                      setShowReviewModal(true);
-                    }}
-                    className="w-full py-2 bg-purple-600 hover:bg-purple-700 text-white text-xs font-bold rounded-lg transition"
+                    className="w-full py-2.5 bg-slate-50 text-slate-600 text-[11px] font-semibold rounded-full transition-all uppercase tracking-wider group-hover:bg-sky-600 group-hover:text-white"
                   >
-                    Review Resolution
+                    Assess Resolution
                   </button>
                 </motion.div>
               ))}
@@ -654,50 +665,53 @@ export default function ManagerOverview() {
               )
               .map((complaint) => (
                 <motion.div
-                  initial={{ opacity: 0, y: 10 }}
-                  animate={{ opacity: 1, y: 0 }}
+                  initial={{ opacity: 0, scale: 0.98 }}
+                  animate={{ opacity: 1, scale: 1 }}
                   key={complaint.id}
                   onClick={() => setSelectedComplaint(complaint)}
-                  className={`cursor-pointer rounded-3xl border p-5 transition-all ${selectedComplaint?.id === complaint.id
-                    ? "border-sky-500 bg-sky-50/30 shadow-md ring-1 ring-sky-500/10"
-                    : "border-slate-100 bg-white hover:border-slate-200 shadow-sm"
+                  className={`relative cursor-pointer rounded-3xl border p-5 transition-all overflow-hidden ${selectedComplaint?.id === complaint.id
+                    ? "border-sky-200 bg-sky-50 shadow-md ring-1 ring-sky-200/50"
+                    : "border-slate-100 bg-white hover:border-slate-200 hover:shadow-sm"
                     }`}
                 >
-                  <div className="flex items-start justify-between mb-4">
+                  <div className="flex items-start justify-between mb-3">
                     <div className="space-y-1">
                       <div className="flex items-center gap-2">
-                        <span className="px-2 py-0.5 bg-slate-900 text-white text-[9px] font-black rounded-md tracking-tighter uppercase">
+                        <span className="text-[10px] font-bold text-sky-700 bg-sky-50 px-2 py-0.5 rounded-full uppercase tracking-tighter">
                           {complaint.category}
                         </span>
-                        <span className="text-[10px] font-bold text-slate-400 tracking-wider font-mono">
-                          #{complaint.id}
+                        <span className="text-[10px] font-medium text-slate-400 font-mono tracking-wider">
+                          #{complaint.id.slice(0, 8)}
                         </span>
                       </div>
-                      <h3 className="font-bold text-slate-900 line-clamp-1">
+                      <h3 className="font-semibold text-slate-900 text-sm leading-snug">
                         {complaint.address}
                       </h3>
                     </div>
                     <div
-                      className={`px-2.5 py-1 rounded-full text-[10px] font-black uppercase tracking-wider ${complaint.status === "Assigned"
-                        ? "bg-amber-100 text-amber-700"
+                      className={`px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider ${complaint.status === "Assigned"
+                        ? "bg-amber-50 text-amber-600"
                         : complaint.status === "In Progress"
-                          ? "bg-blue-100 text-blue-700"
-                          : "bg-sky-100 text-sky-700"
+                          ? "bg-blue-50 text-blue-600"
+                          : "bg-slate-50 text-slate-600"
                         }`}
                     >
                       {complaint.status}
                     </div>
                   </div>
 
-                  <p className="text-sm text-slate-500 line-clamp-2 mb-4 leading-relaxed font-medium">
+                  <p className="text-xs text-slate-500 line-clamp-2 mb-4 leading-relaxed font-medium">
                     {complaint.description}
                   </p>
 
-                  <div className="flex items-center justify-between pt-4 border-t border-slate-100">
+                  <div className="flex items-center justify-between pt-4 border-t border-slate-50">
                     <div className="flex items-center gap-4">
-                      <div className="flex items-center gap-1.5 text-[10px] text-slate-400 font-bold uppercase">
+                      <div className="flex items-center gap-1.5 text-[10px] text-slate-400 font-semibold uppercase">
                         <Clock size={12} />
-                        {new Date(complaint.createdAt).toLocaleDateString()}
+                        {new Date(complaint.createdAt).toLocaleDateString([], { month: 'short', day: 'numeric' })}
+                      </div>
+                      <div className="text-[10px] font-bold text-sky-600 uppercase">
+                        P{complaint.priorityScore ? (complaint.priorityScore * 10).toFixed(0) : '0'}
                       </div>
                     </div>
                     {complaint.status === "Submitted" ? (
@@ -707,27 +721,15 @@ export default function ManagerOverview() {
                           setSelectedComplaint(complaint);
                           setShowAssignModal(true);
                         }}
-                        className="px-4 py-2 bg-sky-600 hover:bg-sky-700 text-white text-[11px] font-bold rounded-xl flex items-center gap-1.5 transition-all shadow-lg shadow-sky-600/20"
+                        className="px-4 py-2 bg-sky-700 hover:bg-sky-800 text-white text-[11px] font-semibold rounded-full transition-all shadow-lg shadow-sky-100 uppercase tracking-wider"
                       >
-                        Dispatch Help <ChevronRight size={14} />
+                        Dispatch
                       </button>
                     ) : (
-                      <div className="flex items-center gap-2">
-                        <SLATimer
-                          deadline={complaint.slaDeadline || complaint.createdAt}
-                          status={complaint.status}
-                        />
-                        <button
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            setSelectedComplaint(complaint);
-                            setShowAssignModal(true);
-                          }}
-                          className="px-3 py-1.5 bg-white border border-slate-200 hover:border-red-200 hover:text-red-600 text-slate-500 text-[10px] font-black rounded-xl transition-all uppercase tracking-tighter"
-                        >
-                          Reassign
-                        </button>
-                      </div>
+                      <SLATimer
+                        deadline={complaint.slaDeadline}
+                        status={complaint.status}
+                      />
                     )}
                   </div>
                 </motion.div>
@@ -735,56 +737,149 @@ export default function ManagerOverview() {
           </div>
         </div>
 
-        {/* Issue Details View */}
+        {/* 5. Issue Details View - REFINED SOFT THEME */}
         <div className="hidden lg:block">
           {selectedComplaint ? (
             <motion.div
-              initial={{ opacity: 0, x: 20 }}
-              animate={{ opacity: 1, x: 0 }}
-              className="sticky top-24 rounded-[2.5rem] border border-slate-100 bg-white p-8 shadow-lg shadow-slate-200/50"
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              key={selectedComplaint.id}
+              className="sticky top-24 rounded-[2.5rem] border border-slate-200 bg-white shadow-xl shadow-slate-200/30 overflow-hidden"
             >
-              <div className="flex items-center justify-between mb-8">
-                <h2 className="text-xl font-black text-slate-900 flex items-center gap-3">
-                  Ticket Overview
+              {/* Header: Soft Gradient */}
+              <div className="bg-gradient-to-br from-white via-sky-50 to-blue-50 px-8 py-7 border-b border-slate-100">
+                <div className="flex items-center justify-between mb-3">
+                  <span className="inline-flex items-center rounded-full bg-white px-3 py-1 text-[10px] font-bold text-sky-700 ring-1 ring-sky-100 uppercase tracking-wider">
+                    {selectedComplaint.category}
+                  </span>
+                  <span
+                    className="text-[10px] font-medium text-slate-400 font-mono tracking-widest cursor-help hover:text-sky-600 transition-colors"
+                    title={selectedComplaint.id}
+                  >
+                    #{selectedComplaint.id.slice(0, 12)}...
+                  </span>
+                </div>
+                <h2 className="text-2xl font-semibold tracking-tight text-slate-900 leading-tight">
+                  {selectedComplaint.subcategory || selectedComplaint.category}
                 </h2>
-                <div className="bg-slate-50 px-3 py-1.5 rounded-xl text-[10px] font-black text-slate-400 uppercase tracking-widest">
-                  Active Issue
+                <div className="mt-4 flex items-center gap-3">
+                  <div className={`px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider ${selectedComplaint.status === 'Submitted' ? 'bg-slate-100 text-slate-700' :
+                    selectedComplaint.status === 'Assigned' ? 'bg-sky-100 text-sky-700' :
+                      'bg-emerald-100 text-emerald-700'
+                    }`}>
+                    {selectedComplaint.status}
+                  </div>
+                  <div className="text-[10px] font-medium text-slate-400">
+                    Priority Score: <span className="text-slate-900 font-bold">{(selectedComplaint.priorityScore || 0).toFixed(2)}</span>
+                  </div>
                 </div>
               </div>
 
-              <div className="space-y-8">
+              <div className="p-8 space-y-8">
+                {/* Visual Evidence (if any) */}
+                {selectedComplaint.photos && selectedComplaint.photos.length > 0 && (
+                  <div className="relative group rounded-3xl overflow-hidden border border-slate-100 aspect-video bg-slate-50">
+                    <img
+                      src={selectedComplaint.photos[0]}
+                      alt="Evidence"
+                      className="w-full h-full object-cover"
+                    />
+                  </div>
+                )}
+
                 <div className="grid grid-cols-2 gap-4">
-                  <div className="rounded-2xl bg-slate-50/80 p-4 border border-slate-100">
-                    <div className="text-[10px] font-black uppercase text-slate-400 mb-1 tracking-widest">
-                      Citizen
-                    </div>
-                    <div className="text-sm font-bold text-slate-900">
+                  <div className="p-4 rounded-2xl border border-slate-100 bg-white shadow-sm font-medium">
+                    <div className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Citizen Reporter</div>
+                    <div className="text-slate-900 text-sm flex items-center gap-2">
                       {selectedComplaint.reporterName}
+                      <span className="px-2 py-0.5 bg-sky-50 text-sky-700 text-[9px] rounded-full font-bold">Tier {selectedComplaint.reporterTier || 1}</span>
                     </div>
                   </div>
-                  <div className="rounded-2xl bg-slate-50/80 p-4 border border-slate-100">
-                    <div className="text-[10px] font-black uppercase text-slate-400 mb-1 tracking-widest">
-                      Territory
-                    </div>
-                    <div className="text-sm font-bold text-slate-900">
-                      {manager.managedState}
-                    </div>
+                  <div className="p-4 rounded-2xl border border-slate-100 bg-white shadow-sm font-medium">
+                    <div className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Operational Area</div>
+                    <div className="text-slate-900 text-sm">{selectedComplaint.area || manager.managedAreas[0]}</div>
                   </div>
+                  {selectedComplaint.assignedTo && (
+                    <div className="p-4 rounded-2xl border border-slate-100 bg-white shadow-sm font-medium col-span-2">
+                      <div className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Assigned Worker</div>
+                      <div className="text-slate-900 text-sm flex items-center gap-2">
+                        <div className="w-6 h-6 rounded-full bg-sky-100 flex items-center justify-center text-[10px] font-bold text-sky-700">
+                          {selectedComplaint.assignedTo.split(' ').map(n => n[0]).join('')}
+                        </div>
+                        {selectedComplaint.assignedTo}
+                      </div>
+                    </div>
+                  )}
                 </div>
 
-                <div>
-                  <div className="text-[10px] font-black uppercase text-slate-400 mb-3 tracking-widest px-1">
-                    Evidence Narrative
-                  </div>
-                  <div className="text-sm text-slate-600 leading-relaxed bg-slate-50/50 p-5 rounded-2xl border border-slate-100 font-medium italic">
+
+                {/* Evidence Narrative */}
+                <div className="space-y-3">
+                  <h3 className="text-[11px] font-bold text-slate-900 px-1">Evidence Narrative</h3>
+                  <div className="p-5 rounded-2xl bg-sky-50/50 text-slate-700 text-sm leading-relaxed font-medium italic border border-sky-100/50">
                     "{selectedComplaint.description}"
                   </div>
                 </div>
 
-                <div className="space-y-3 pt-4">
-                  <button className="w-full flex items-center justify-center gap-3 rounded-2xl bg-slate-900 py-4 text-sm font-black text-white transition hover:bg-black shadow-xl shadow-slate-900/20 group">
-                    <Phone size={18} className="group-hover:shake" /> Contact
-                    Citizen
+                {/* Real-time SLA Tracking */}
+                <div className="p-5 rounded-3xl border border-slate-100 bg-white shadow-sm flex items-center justify-between">
+                  <div className="space-y-1">
+                    <div className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">SLA Deadline</div>
+                    <div className="text-xs font-semibold text-slate-900">
+                      {new Date(selectedComplaint.slaDeadline).toLocaleString([], {
+                        month: 'short',
+                        day: 'numeric',
+                        hour: '2-digit',
+                        minute: '2-digit',
+                        second: '2-digit'
+                      })}
+                    </div>
+                  </div>
+                  <SLATimer deadline={selectedComplaint.slaDeadline} status={selectedComplaint.status} />
+                </div>
+
+                {/* Operational History */}
+                {selectedComplaint.timeline && selectedComplaint.timeline.length > 0 && (
+                  <div className="space-y-4">
+                    <h3 className="text-[11px] font-bold text-slate-900 px-1">Operational History</h3>
+                    <div className="space-y-6 pl-4 border-l border-slate-100 ml-1">
+                      {selectedComplaint.timeline.slice(0, 3).map((event: any, i: number) => (
+                        <div key={i} className="relative">
+                          <div className="absolute -left-[21px] top-1.5 w-2 h-2 rounded-full bg-sky-200 ring-4 ring-white" />
+                          <div className="text-[11px] font-semibold text-slate-900">{event.status}</div>
+                          <div className="text-[10px] text-slate-400 font-medium">
+                            {event.actor} • {new Date(event.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* Command Actions */}
+                <div className="pt-6 space-y-4">
+                  <div className="grid grid-cols-2 gap-3">
+                    <button className="flex items-center justify-center gap-2 py-3 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-semibold transition-all">
+                      <Phone size={14} /> Contact
+                    </button>
+                    <button className="flex items-center justify-center gap-2 py-3 rounded-full bg-white border border-slate-200 hover:bg-slate-50 text-slate-700 text-xs font-semibold transition-all shadow-sm">
+                      <Mail size={14} /> Email
+                    </button>
+                  </div>
+                  <button
+                    onClick={() => {
+                      if (selectedComplaint.status === 'Submitted') {
+                        setShowAssignModal(true);
+                      } else {
+                        setShowReassignModal(true);
+                      }
+                    }}
+                    className={`w-full py-4 rounded-full text-sm font-semibold text-white shadow-lg shadow-sky-100 transition-all active:scale-[0.98] ${selectedComplaint.status === 'Submitted'
+                      ? 'bg-sky-700 hover:bg-sky-800'
+                      : 'bg-amber-600 hover:bg-amber-700'
+                      }`}
+                  >
+                    {selectedComplaint.status === 'Submitted' ? 'Dispatch field force' : 'Reassign command'}
                   </button>
                 </div>
               </div>
@@ -812,44 +907,44 @@ export default function ManagerOverview() {
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
-              className="absolute inset-0 bg-slate-950/20 backdrop-blur-sm"
+              className="absolute inset-0 bg-slate-900/10 backdrop-blur-sm"
               onClick={() => setShowAssignModal(false)}
             />
             <motion.div
-              initial={{ scale: 0.95, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-              exit={{ scale: 0.95, opacity: 0 }}
-              className="relative w-full max-w-md rounded-[2rem] bg-white p-6 shadow-2xl"
+              initial={{ scale: 0.95, opacity: 0, y: 10 }}
+              animate={{ scale: 1, opacity: 1, y: 0 }}
+              exit={{ scale: 0.95, opacity: 0, y: 10 }}
+              className="relative w-full max-w-md rounded-[2.5rem] bg-white p-8 shadow-2xl border border-slate-100"
             >
-              <h3 className="text-xl font-bold text-slate-900 mb-2">
-                Assign Worker
+              <h3 className="text-2xl font-semibold text-slate-900 mb-2">
+                Dispatch field force
               </h3>
-              <p className="text-sm text-slate-500 mb-6">
-                Available workers for this area
+              <p className="text-sm font-medium text-slate-500 mb-8">
+                Available personnel for <span className="text-sky-700 font-bold">{selectedComplaint?.area || manager.managedAreas[0]}</span>
               </p>
 
-              <div className="space-y-3 max-h-[300px] overflow-y-auto pr-2">
+              <div className="space-y-3 max-h-[350px] overflow-y-auto pr-2 custom-scrollbar">
                 {stateWorkers.map((worker: Worker) => (
                   <button
                     key={worker.id}
                     onClick={() => handleAssign(worker)}
-                    className="w-full flex items-center justify-between p-4 rounded-2xl border border-slate-100 bg-slate-50/50 hover:bg-sky-50 hover:border-sky-100 transition-all text-left group"
+                    className="w-full flex items-center justify-between p-4 rounded-3xl border border-slate-50 bg-slate-50/50 hover:bg-sky-50 hover:border-sky-100 transition-all text-left group"
                   >
-                    <div>
-                      <div className="font-bold text-slate-900 group-hover:text-sky-700">
-                        {worker.name}
+                    <div className="flex items-center gap-4">
+                      <div className="w-10 h-10 rounded-full bg-white border border-slate-200 flex items-center justify-center font-bold text-sky-700 shadow-sm group-hover:scale-105 transition-transform">
+                        {worker.name.split(' ').map((n: string) => n[0]).join('')}
                       </div>
-                      <div className="text-xs text-slate-500">
-                        Rating: {worker.rating} ⭐
+                      <div>
+                        <div className="font-semibold text-slate-900 group-hover:text-sky-800 transition-colors">
+                          {worker.name}
+                        </div>
+                        <div className="text-[11px] font-medium text-slate-500 flex items-center gap-2">
+                          {worker.rating} ⭐ <span className="h-1 w-1 rounded-full bg-slate-300" /> {worker.area}
+                        </div>
                       </div>
                     </div>
                     <div className="flex items-center gap-2">
-                      <span
-                        className={`h-2 w-2 rounded-full ${worker.status === "Available" ? "bg-emerald-500" : "bg-amber-500"}`}
-                      ></span>
-                      <span className="text-xs font-semibold text-slate-500">
-                        {worker.status}
-                      </span>
+                      <div className={`h-2 w-2 rounded-full ${worker.status === "Available" ? "bg-emerald-500" : "bg-amber-500"} animate-pulse`} />
                     </div>
                   </button>
                 ))}
@@ -857,9 +952,9 @@ export default function ManagerOverview() {
 
               <button
                 onClick={() => setShowAssignModal(false)}
-                className="mt-6 w-full py-3 text-sm font-bold text-slate-500 hover:text-slate-900 transition"
+                className="mt-8 w-full py-4 text-sm font-semibold text-slate-400 hover:text-slate-600 transition-colors"
               >
-                Cancel
+                Cancel dispatch
               </button>
             </motion.div>
           </div>
@@ -874,111 +969,94 @@ export default function ManagerOverview() {
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
-              className="absolute inset-0 bg-slate-950/20 backdrop-blur-sm"
+              className="absolute inset-0 bg-slate-900/10 backdrop-blur-sm"
               onClick={() => {
                 setShowReviewModal(false);
                 setReviewAction(null);
               }}
             />
             <motion.div
-              initial={{ scale: 0.95, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-              exit={{ scale: 0.95, opacity: 0 }}
-              className="relative max-w-lg w-full bg-gradient-to-br from-white to-slate-50 rounded-3xl p-8 shadow-2xl border border-purple-200"
+              initial={{ scale: 0.95, opacity: 0, y: 10 }}
+              animate={{ scale: 1, opacity: 1, y: 0 }}
+              exit={{ scale: 0.95, opacity: 0, y: 10 }}
+              className="relative max-w-lg w-full bg-white rounded-[2.5rem] p-10 shadow-2xl border border-slate-100"
             >
-              <h3 className="text-2xl font-bold text-slate-900 mb-2">
-                Review Work Submission
-              </h3>
-              <p className="text-sm text-slate-500 mb-6">
-                Submitted by:{" "}
-                <span className="font-semibold text-slate-900">
-                  {selectedReview.assignedTo}
-                </span>
-              </p>
-
-              <div className="bg-slate-50 rounded-2xl p-6 mb-6 border border-slate-100">
-                <div className="mb-4">
-                  <p className="text-xs font-bold text-slate-500 uppercase mb-2">
-                    Location
-                  </p>
-                  <p className="text-sm font-semibold text-slate-900">
-                    {selectedReview.address}
-                  </p>
-                </div>
-
-                <div className="mb-4">
-                  <p className="text-xs font-bold text-slate-500 uppercase mb-2">
-                    Issue
-                  </p>
-                  <p className="text-sm text-slate-700">
-                    {selectedReview.description}
-                  </p>
-                </div>
-
+              <div className="flex items-center justify-between mb-8">
                 <div>
-                  <p className="text-xs font-bold text-slate-500 uppercase mb-2">
-                    Work Submitted
+                  <h3 className="text-2xl font-semibold text-slate-900">
+                    Review resolution
+                  </h3>
+                  <p className="text-sm font-medium text-slate-500 mt-1">
+                    Technician: <span className="text-slate-900 font-bold">{selectedReview.assignedTo}</span>
                   </p>
-                  <p className="text-sm text-slate-700 italic">
-                    "
-                    {selectedReview.timeline?.[
-                      selectedReview.timeline.length - 1
-                    ]?.note || "Work completed and submitted for review"}
-                    "
+                </div>
+                <div className="w-12 h-12 rounded-2xl bg-sky-50 flex items-center justify-center">
+                  <ShieldCheck className="text-sky-600" size={24} />
+                </div>
+              </div>
+
+              <div className="space-y-6 mb-8">
+                <div className="p-5 rounded-3xl bg-slate-50 border border-slate-100">
+                  <div className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-2">Location & Issue</div>
+                  <p className="text-sm font-semibold text-slate-900 mb-1">{selectedReview.address}</p>
+                  <p className="text-xs text-slate-500 leading-relaxed italic">"{selectedReview.description}"</p>
+                </div>
+
+                <div className="p-5 rounded-3xl bg-indigo-50/30 border border-indigo-100/50">
+                  <div className="text-[10px] font-bold text-indigo-400 uppercase tracking-widest mb-2">Work Submission Note</div>
+                  <p className="text-sm text-slate-700 italic font-medium leading-relaxed">
+                    "{selectedReview.timeline?.[selectedReview.timeline.length - 1]?.note || "Work completed and submitted for review"}"
                   </p>
                 </div>
               </div>
 
               {!reviewAction ? (
-                <div className="space-y-3">
+                <div className="grid grid-cols-2 gap-3">
                   <button
                     onClick={() => setReviewAction("approve")}
-                    className="w-full py-3 px-4 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-xl transition flex items-center justify-center gap-2"
+                    className="py-4 px-4 bg-sky-700 hover:bg-sky-800 text-white font-semibold rounded-full shadow-lg shadow-sky-100 transition-all flex items-center justify-center gap-2"
                   >
-                    <Check size={18} /> Approve Work
+                    <Check size={18} /> Approve
                   </button>
                   <button
                     onClick={() => setReviewAction("reject")}
-                    className="w-full py-3 px-4 bg-red-600 hover:bg-red-700 text-white font-bold rounded-xl transition"
+                    className="py-4 px-4 bg-white border border-slate-200 hover:bg-slate-50 text-slate-700 font-semibold rounded-full transition-all"
                   >
-                    Reject & Return to Worker
+                    Flag issues
                   </button>
                   <button
                     onClick={() => {
                       setShowReviewModal(false);
                       setReviewAction(null);
                     }}
-                    className="w-full py-3 px-4 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold rounded-xl transition"
+                    className="col-span-2 mt-2 py-3 text-sm font-semibold text-slate-400 hover:text-slate-600 transition-colors"
                   >
-                    Cancel
+                    Cancel review
                   </button>
                 </div>
               ) : (
                 <div className="space-y-4">
-                  <div className="bg-blue-50 border border-blue-200 rounded-xl p-4">
-                    <p className="text-sm text-blue-900">
+                  <div className="bg-sky-50/50 border border-sky-100 p-4 rounded-2xl">
+                    <p className="text-sm text-sky-800 font-medium">
                       {reviewAction === "approve"
-                        ? "✓ Approving this work will mark it as resolved. The citizen can then submit feedback."
-                        : "✓ Rejecting this work will mark it as rejected. The assigned worker will be notified."}
+                        ? "Confirming this will mark the operation as resolved and notify the citizen."
+                        : "Rejecting this will return the ticket to operational status and alert the field force."}
                     </p>
                   </div>
                   <button
                     onClick={() => handleReviewDecision(reviewAction)}
-                    className={`w-full py-3 px-4 text-white font-bold rounded-xl transition flex items-center justify-center gap-2 ${reviewAction === "approve"
-                      ? "bg-emerald-600 hover:bg-emerald-700"
-                      : "bg-red-600 hover:bg-red-700"
+                    className={`w-full py-4 text-white font-semibold rounded-full shadow-lg transition-all ${reviewAction === "approve"
+                      ? "bg-sky-700 hover:bg-sky-800 shadow-sky-100"
+                      : "bg-amber-600 hover:bg-amber-700 shadow-amber-100"
                       }`}
                   >
-                    <Check size={18} />
-                    {reviewAction === "approve"
-                      ? "Confirm Approval"
-                      : "Confirm Rejection"}
+                    {reviewAction === "approve" ? "Confirm approval" : "Confirm rejection"}
                   </button>
                   <button
                     onClick={() => setReviewAction(null)}
-                    className="w-full py-2 text-slate-600 hover:text-slate-900 font-semibold transition"
+                    className="w-full py-2 text-sm font-semibold text-slate-400 hover:text-slate-600"
                   >
-                    Back
+                    Go back
                   </button>
                 </div>
               )}
@@ -995,58 +1073,61 @@ export default function ManagerOverview() {
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
-              className="absolute inset-0 bg-slate-950/20 backdrop-blur-sm"
+              className="absolute inset-0 bg-slate-900/10 backdrop-blur-sm"
               onClick={() => setShowReassignModal(false)}
             />
             <motion.div
-              initial={{ scale: 0.95, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-              exit={{ scale: 0.95, opacity: 0 }}
-              className="relative w-full max-w-md rounded-[2rem] bg-gradient-to-br from-white to-slate-50 p-6 shadow-2xl border border-red-200"
+              initial={{ scale: 0.95, opacity: 0, y: 10 }}
+              animate={{ scale: 1, opacity: 1, y: 0 }}
+              exit={{ scale: 0.95, opacity: 0, y: 10 }}
+              className="relative w-full max-w-md rounded-[2.5rem] bg-white p-8 shadow-2xl border border-slate-100"
             >
-              <h3 className="text-xl font-bold text-slate-900 mb-2">
-                Assign New Worker
+              <h3 className="text-2xl font-semibold text-slate-900 mb-2">
+                Reassign command
               </h3>
-              <p className="text-sm text-slate-600 mb-6">
-                Ticket rejected from {selectedReview.assignedTo}. Select a
-                different worker to reassign.
+              <p className="text-sm font-medium text-slate-500 mb-6">
+                Ticket rejected from <span className="text-slate-900 font-bold">{selectedReview.assignedTo}</span>. Select an alternative technician.
               </p>
 
-              <div className="bg-red-50 border border-red-200 rounded-xl p-3 mb-6">
-                <p className="text-xs text-red-900 font-semibold">
-                  📍 {selectedReview.address}
+              <div className="bg-amber-50/50 border border-amber-100 rounded-2xl p-4 mb-8 flex items-center gap-3">
+                <AlertCircle className="text-amber-600" size={16} />
+                <p className="text-xs text-amber-900 font-semibold truncate flex-1">
+                  {selectedReview.address}
                 </p>
               </div>
 
-              <div className="space-y-3 max-h-[300px] overflow-y-auto pr-2">
+              <div className="space-y-3 max-h-[350px] overflow-y-auto pr-2 custom-scrollbar">
                 {stateWorkers
-                  .filter((w) => w.name !== selectedReview.assignedTo) // Don't show the rejected worker
+                  .filter((w) => w.name !== selectedReview.assignedTo)
                   .map((worker: Worker) => (
                     <button
                       key={worker.id}
                       onClick={() => handleReassignWorker(worker)}
-                      className="w-full flex items-center justify-between p-4 rounded-2xl border border-slate-100 bg-slate-50/50 hover:bg-emerald-50 hover:border-emerald-200 transition-all text-left group"
+                      className="w-full flex items-center justify-between p-4 rounded-3xl border border-slate-50 bg-slate-50/50 hover:bg-emerald-50 hover:border-emerald-100 transition-all text-left group"
                     >
-                      <div>
-                        <div className="font-bold text-slate-900 group-hover:text-emerald-700">
-                          {worker.name}
+                      <div className="flex items-center gap-4">
+                        <div className="w-10 h-10 rounded-full bg-white border border-slate-200 flex items-center justify-center font-bold text-emerald-700 shadow-sm group-hover:scale-105 transition-transform">
+                          {worker.name.split(' ').map((n: string) => n[0]).join('')}
                         </div>
-                        <div className="text-xs text-slate-500">
-                          Rating: {worker.rating} ⭐ • {worker.status}
+                        <div>
+                          <div className="font-semibold text-slate-900 group-hover:text-emerald-800 transition-colors">
+                            {worker.name}
+                          </div>
+                          <div className="text-[11px] font-medium text-slate-500">
+                            {worker.rating} ⭐ • {worker.status}
+                          </div>
                         </div>
                       </div>
-                      <div className="text-emerald-600 group-hover:text-emerald-700">
-                        →
-                      </div>
+                      <ChevronRight size={14} className="text-slate-300 group-hover:text-emerald-600 group-hover:translate-x-1 transition-all" />
                     </button>
                   ))}
               </div>
 
               <button
                 onClick={() => setShowReassignModal(false)}
-                className="mt-6 w-full py-3 text-sm font-bold text-slate-500 hover:text-slate-900 transition"
+                className="mt-8 w-full py-4 text-sm font-semibold text-slate-400 hover:text-slate-600 transition-colors"
               >
-                Cancel Reassignment
+                Cancel reassignment
               </button>
             </motion.div>
           </div>
