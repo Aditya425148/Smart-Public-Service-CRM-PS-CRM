@@ -81,6 +81,7 @@ export default function ManagerOverview() {
   }, [managerId, navigate]);
 
   const [complaints, setComplaints] = useState<Complaint[]>([]);
+  const [workers, setWorkers] = useState<any[]>([]);
   const [selectedComplaint, setSelectedComplaint] = useState<Complaint | null>(
     null,
   );
@@ -116,6 +117,13 @@ export default function ManagerOverview() {
       });
   }, [manager]);
 
+  useEffect(() => {
+    if (!manager) return;
+    appwriteService.getWorkers(manager.managedState)
+      .then(setWorkers)
+      .catch(console.error);
+  }, [manager]);
+
   // Statistics Calculation
   const stats = useMemo(() => {
     const total = complaints.length;
@@ -138,13 +146,7 @@ export default function ManagerOverview() {
   }, [complaints]);
 
   // Workers assigned to this manager's state
-  const stateWorkers = useMemo(
-    () =>
-      manager
-        ? mockWorkers.filter((w: Worker) => w.state === manager.managedState)
-        : [],
-    [manager],
-  );
+  const stateWorkers = useMemo(() => workers, [workers]);
 
   // Auto-assignment logic - smart worker selection
   const autoAssignWorker = (complaint: Complaint): Worker | null => {
@@ -159,7 +161,7 @@ export default function ManagerOverview() {
     return sorted[0];
   };
 
-  // Auto-assign all submitted complaints
+  // Auto-assign all submitted complaints using AI
   const handleAutoAssignAll = async () => {
     const submittedComplaints = complaints.filter(
       (c) => c.status === "Submitted",
@@ -170,43 +172,58 @@ export default function ManagerOverview() {
       return;
     }
 
+    if (stateWorkers.length === 0) {
+      toast.error("No workers available in your state");
+      return;
+    }
+
     setAutoAssigning(true);
-    let assigned = 0;
+    let assignedCount = 0;
 
+    // We'll process them one by one for better feedback, though batching would be faster
     for (const complaint of submittedComplaints) {
-      const worker = autoAssignWorker(complaint);
-      if (worker) {
-        try {
-          // Update complaint status to Assigned
-          await api.patch(`/api/complaints/${complaint.id}/status`, {
-            status: "Assigned",
-            note: `Auto-assigned to ${worker.name}`,
-            actor: manager?.name || "Manager",
-            assignedTo: worker.name,
-          });
+      try {
+        const result = await appwriteService.smartAssignWorker({
+          complaintId: complaint.id,
+          category: complaint.category,
+          description: complaint.description || "",
+          address: complaint.address,
+          workers: stateWorkers.map(w => ({
+            id: w.id,
+            name: w.name,
+            rating: w.rating,
+            activeTasks: w.activeTasks || 0,
+            area: w.area
+          }))
+        });
 
-          assigned++;
+        const selectedWorker = stateWorkers.find(w => w.id === result.recommendedWorkerId);
+        if (!selectedWorker) continue;
 
-          // Update local state
-          setComplaints((prev) =>
-            prev.map((c) =>
-              c.id === complaint.id
-                ? {
-                    ...c,
-                    status: "Assigned",
-                    assignedTo: worker.name,
-                  }
-                : c,
-            ),
-          );
-        } catch (error) {
-          console.error("Assignment error:", error);
-        }
+        await api.patch(`/api/complaints/${complaint.id}/status`, {
+          status: "Assigned",
+          note: `Smart Auto-assigned: ${result.reasoning}`,
+          actor: manager?.name || "Manager",
+          assignedTo: selectedWorker.name,
+        });
+
+        assignedCount++;
+
+        // Update local state immediately for feedback
+        setComplaints((prev) =>
+          prev.map((c) =>
+            c.id === complaint.id
+              ? { ...c, status: "Assigned", assignedTo: selectedWorker.name }
+              : c,
+          ),
+        );
+      } catch (error) {
+        console.error("Smart assignment error:", error);
       }
     }
 
     setAutoAssigning(false);
-    toast.success(`Auto-assigned ${assigned} complaints`);
+    toast.success(`Successfully assigned ${assignedCount} complaints`);
   };
 
   const handleAssign = (worker: Worker) => {
@@ -526,11 +543,10 @@ export default function ManagerOverview() {
                   </div>
                 </div>
                 <div
-                  className={`px-2 py-1 rounded-lg text-[9px] font-bold uppercase tracking-wider ${
-                    worker.status === "Available"
-                      ? "bg-emerald-100 text-emerald-700"
-                      : "bg-amber-100 text-amber-700"
-                  }`}
+                  className={`px-2 py-1 rounded-lg text-[9px] font-bold uppercase tracking-wider ${worker.status === "Available"
+                    ? "bg-emerald-100 text-emerald-700"
+                    : "bg-amber-100 text-amber-700"
+                    }`}
                 >
                   {worker.status}
                 </div>
@@ -636,11 +652,10 @@ export default function ManagerOverview() {
                   animate={{ opacity: 1, y: 0 }}
                   key={complaint.id}
                   onClick={() => setSelectedComplaint(complaint)}
-                  className={`cursor-pointer rounded-3xl border p-5 transition-all ${
-                    selectedComplaint?.id === complaint.id
-                      ? "border-sky-500 bg-sky-50/30 shadow-md ring-1 ring-sky-500/10"
-                      : "border-slate-100 bg-white hover:border-slate-200 shadow-sm"
-                  }`}
+                  className={`cursor-pointer rounded-3xl border p-5 transition-all ${selectedComplaint?.id === complaint.id
+                    ? "border-sky-500 bg-sky-50/30 shadow-md ring-1 ring-sky-500/10"
+                    : "border-slate-100 bg-white hover:border-slate-200 shadow-sm"
+                    }`}
                 >
                   <div className="flex items-start justify-between mb-4">
                     <div className="space-y-1">
@@ -657,13 +672,12 @@ export default function ManagerOverview() {
                       </h3>
                     </div>
                     <div
-                      className={`px-2.5 py-1 rounded-full text-[10px] font-black uppercase tracking-wider ${
-                        complaint.status === "Assigned"
-                          ? "bg-amber-100 text-amber-700"
-                          : complaint.status === "In Progress"
-                            ? "bg-blue-100 text-blue-700"
-                            : "bg-sky-100 text-sky-700"
-                      }`}
+                      className={`px-2.5 py-1 rounded-full text-[10px] font-black uppercase tracking-wider ${complaint.status === "Assigned"
+                        ? "bg-amber-100 text-amber-700"
+                        : complaint.status === "In Progress"
+                          ? "bg-blue-100 text-blue-700"
+                          : "bg-sky-100 text-sky-700"
+                        }`}
                     >
                       {complaint.status}
                     </div>
@@ -932,11 +946,10 @@ export default function ManagerOverview() {
                   </div>
                   <button
                     onClick={() => handleReviewDecision(reviewAction)}
-                    className={`w-full py-3 px-4 text-white font-bold rounded-xl transition flex items-center justify-center gap-2 ${
-                      reviewAction === "approve"
-                        ? "bg-emerald-600 hover:bg-emerald-700"
-                        : "bg-red-600 hover:bg-red-700"
-                    }`}
+                    className={`w-full py-3 px-4 text-white font-bold rounded-xl transition flex items-center justify-center gap-2 ${reviewAction === "approve"
+                      ? "bg-emerald-600 hover:bg-emerald-700"
+                      : "bg-red-600 hover:bg-red-700"
+                      }`}
                   >
                     <Check size={18} />
                     {reviewAction === "approve"

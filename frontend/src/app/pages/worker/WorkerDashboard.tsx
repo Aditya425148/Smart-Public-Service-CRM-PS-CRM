@@ -62,18 +62,13 @@ export default function WorkerDashboard() {
 
   useEffect(() => {
     if (!worker) return;
-    
+
     // Fetch assigned complaints
     api
-      .get<any>("/api/complaints")
+      .get<any>(`/api/complaints?assignedTo=${encodeURIComponent(worker.name)}`)
       .then((data) => {
         // Filter for Assigned and In Progress complaints
         const workerTasks = (Array.isArray(data) ? data : [])
-          .filter(
-            (c: any) =>
-              c.status === "Assigned" ||
-              c.status === "In Progress"
-          )
           .map((c: any) => ({
             id: c.id,
             category: c.category || "Other",
@@ -89,38 +84,12 @@ export default function WorkerDashboard() {
             timeline: c.timeline || [],
           }))
           .sort((a: any, b: any) => b.priority - a.priority);
-        
+
         setTasks(workerTasks);
       })
-      .catch(() => {
-        // Fallback: mock data
-        const mockTasks: WorkerTask[] = [
-          {
-            id: "CRM-2024-00125",
-            category: "Pothole",
-            address: "123 Main Street, Delhi",
-            description: "Large pothole on main road causing accidents",
-            status: "Assigned",
-            createdAt: new Date().toISOString(),
-            citizenName: "Rajesh Kumar",
-            citizenPhone: "+919876543210",
-            priority: 0.55,
-            distance: 1.2,
-          },
-          {
-            id: "CRM-2024-00126",
-            category: "Streetlight",
-            address: "456 Oak Lane, Delhi",
-            description: "Street light not working at night for 2 weeks",
-            status: "In Progress",
-            createdAt: new Date(Date.now() - 3600000).toISOString(),
-            citizenName: "Priya Sharma",
-            citizenPhone: "+919876543211",
-            priority: 0.3,
-            distance: 2.5,
-          },
-        ];
-        setTasks(mockTasks);
+      .catch((err) => {
+        console.error("Failed to fetch worker tasks:", err);
+        setTasks([]); // Empty tasks instead of mock data
       })
       .finally(() => setLoading(false));
   }, [worker]);
@@ -295,11 +264,10 @@ export default function WorkerDashboard() {
               <button
                 key={f}
                 onClick={() => setFilter(f)}
-                className={`px-4 py-2 rounded-lg font-medium text-sm transition-all ${
-                  filter === f
+                className={`px-4 py-2 rounded-lg font-medium text-sm transition-all ${filter === f
                     ? "bg-sky-600 text-white shadow-lg shadow-sky-600/20"
                     : "bg-white border border-slate-200 text-slate-700 hover:bg-slate-50"
-                }`}
+                  }`}
               >
                 {f.charAt(0).toUpperCase() + f.slice(1)}
               </button>
@@ -343,11 +311,10 @@ export default function WorkerDashboard() {
                   exit={{ opacity: 0, x: -20 }}
                   key={task.id}
                   onClick={() => setSelectedTask(task)}
-                  className={`cursor-pointer rounded-2xl border p-5 transition-all ${
-                    selectedTask?.id === task.id
+                  className={`cursor-pointer rounded-2xl border p-5 transition-all ${selectedTask?.id === task.id
                       ? "border-sky-500 bg-sky-50 shadow-md"
                       : "border-slate-100 bg-white hover:border-slate-200 hover:shadow-md"
-                  }`}
+                    }`}
                 >
                   <div className="flex items-start justify-between gap-4 mb-4">
                     <div className="flex-1">
@@ -367,11 +334,10 @@ export default function WorkerDashboard() {
                       </p>
                     </div>
                     <div
-                      className={`px-3 py-1 rounded-lg text-[10px] font-bold whitespace-nowrap ${
-                        task.status === "In Progress"
+                      className={`px-3 py-1 rounded-lg text-[10px] font-bold whitespace-nowrap ${task.status === "In Progress"
                           ? "bg-amber-100 text-amber-700"
                           : "bg-sky-100 text-sky-700"
-                      }`}
+                        }`}
                     >
                       {task.status}
                     </div>
@@ -513,11 +479,10 @@ export default function WorkerDashboard() {
                   {selectedTask.address}
                 </h2>
                 <div
-                  className={`inline-block px-3 py-1.5 rounded-lg text-xs font-bold ${
-                    selectedTask.status === "In Progress"
+                  className={`inline-block px-3 py-1.5 rounded-lg text-xs font-bold ${selectedTask.status === "In Progress"
                       ? "bg-amber-100 text-amber-700"
                       : "bg-sky-100 text-sky-700"
-                  }`}
+                    }`}
                 >
                   {selectedTask.status}
                 </div>

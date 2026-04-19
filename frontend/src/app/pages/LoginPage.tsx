@@ -77,7 +77,8 @@ export default function LoginPage() {
       );
 
       if (manager) {
-        const expectedManagerPassword = `${manager.name.split(" ")[0].toLowerCase()}@123`;
+        // Use standard Manager@123 or name-based fallback
+        const expectedManagerPassword = "Manager@123";
 
         if (password !== expectedManagerPassword) {
           setError("Invalid credentials for manager account.");
@@ -177,8 +178,8 @@ export default function LoginPage() {
       } else {
         setError(
           getNetworkErrorMessage(err.code?.toString()) ||
-            err.message ||
-            "Login failed.",
+          err.message ||
+          "Login failed.",
         );
       }
     } finally {

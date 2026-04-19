@@ -36,7 +36,7 @@ export const authService = {
     } catch {
       try {
         await account.deleteSession("current");
-      } catch {}
+      } catch { }
     }
   },
 
@@ -182,6 +182,34 @@ export const appwriteService = {
 
   async getAllUsers(): Promise<any[]> {
     return api.get<any[]>("/api/users");
+  },
+
+  async getWorkers(state?: string): Promise<any[]> {
+    let url = "/api/workers";
+    if (state) url += `?state=${state}`;
+    return api.get<any[]>(url);
+  },
+
+  async createWorker(worker: any): Promise<any> {
+    return api.post("/api/workers", worker);
+  },
+
+  async deleteWorker(id: string): Promise<any> {
+    return api.delete(`/api/workers/${id}`);
+  },
+
+  async getManagers(): Promise<any[]> {
+    return api.get<any[]>("/api/complaints/managers");
+  },
+
+  async smartAssignWorker(data: {
+    complaintId: string;
+    category: string;
+    description: string;
+    address: string;
+    workers: any[];
+  }): Promise<{ recommendedWorkerId: string; reasoning: string }> {
+    return api.post("/api/ai/smart-assign", data);
   },
 
   async uploadPhoto(file: File): Promise<string> {

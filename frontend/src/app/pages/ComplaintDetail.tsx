@@ -19,15 +19,9 @@ import {
   Download,
   Camera,
   Wrench,
+  Share2,
 } from "lucide-react";
 
-const MOCK_MANAGERS = [
-  { id: "MGR-DEL-01", name: "Sanjay Sharma", state: "Delhi" },
-  { id: "MGR-DEL-02", name: "Meena Kumari", state: "Delhi" },
-  { id: "MGR-DEL-03", name: "Rajesh Tyagi", state: "Delhi" },
-  { id: "MGR-DEL-04", name: "Anita Singh", state: "Delhi" },
-  { id: "MGR-DEL-05", name: "Amit Goel", state: "Delhi" },
-];
 
 const statusColors: Record<string, string> = {
   Submitted: "bg-slate-100 text-slate-600",
@@ -60,9 +54,18 @@ export default function ComplaintDetail() {
   const [isSubmittingRating, setIsSubmittingRating] = useState(false);
   const [currentUser, setCurrentUser] = useState<any>(null);
   const shareCardRef = useRef<HTMLDivElement>(null);
-  const [showReassignModal, setShowReassignModal] = useState(false);
-  const [selectedReassignManager, setSelectedReassignManager] = useState("");
   const [isReassigning, setIsReassigning] = useState(false);
+  const [showReassignModal, setShowReassignModal] = useState(false);
+  const [selectedReassignManager, setSelectedReassignManager] =
+    useState<string>("");
+  const [managers, setManagers] = useState<any[]>([]);
+
+  useEffect(() => {
+    appwriteService
+      .getManagers()
+      .then(setManagers)
+      .catch(console.error);
+  }, []);
 
   useEffect(() => {
     account
@@ -446,9 +449,8 @@ export default function ComplaintDetail() {
       <div className="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden">
         {/* Top Banner */}
         <div
-          className={`p-5 border-b border-slate-100 flex items-center justify-between flex-wrap gap-3 ${
-            complaint.escalated ? "bg-red-50" : "bg-white"
-          }`}
+          className={`p-5 border-b border-slate-100 flex items-center justify-between flex-wrap gap-3 ${complaint.escalated ? "bg-red-50" : "bg-white"
+            }`}
         >
           <div>
             <div className="flex items-center gap-3 mb-1">
@@ -516,13 +518,12 @@ export default function ComplaintDetail() {
             </div>
             <div className="grid grid-cols-2 gap-3">
               <div
-                className={`flex flex-col items-center justify-center p-3 rounded-xl border border-dashed transition-all ${
-                  complaint.priorityScore >= 0.75
-                    ? "bg-red-50 text-red-600 border-red-200 shadow-sm shadow-red-500/10"
-                    : complaint.priorityScore >= 0.4
-                      ? "bg-amber-50 text-amber-600 border-amber-200"
-                      : "bg-slate-50 text-slate-600 border-slate-200"
-                }`}
+                className={`flex flex-col items-center justify-center p-3 rounded-xl border border-dashed transition-all ${complaint.priorityScore >= 0.75
+                  ? "bg-red-50 text-red-600 border-red-200 shadow-sm shadow-red-500/10"
+                  : complaint.priorityScore >= 0.4
+                    ? "bg-amber-50 text-amber-600 border-amber-200"
+                    : "bg-slate-50 text-slate-600 border-slate-200"
+                  }`}
               >
                 <div className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">
                   Issue Priority
@@ -621,26 +622,24 @@ export default function ComplaintDetail() {
 
             {/* SLA */}
             <div
-              className={`rounded-xl p-4 border transition-all ${
-                isOverdue
-                  ? "bg-red-50 border-red-100"
-                  : complaint.status === "Submitted"
+              className={`rounded-xl p-4 border transition-all ${isOverdue
+                ? "bg-red-50 border-red-100"
+                : complaint.status === "Submitted"
+                  ? "bg-amber-50 border-amber-100"
+                  : complaint.slaRemainingHours < complaint.slaHours * 0.25
                     ? "bg-amber-50 border-amber-100"
-                    : complaint.slaRemainingHours < complaint.slaHours * 0.25
-                      ? "bg-amber-50 border-amber-100"
-                      : "bg-emerald-50 border-emerald-100"
-              }`}
+                    : "bg-emerald-50 border-emerald-100"
+                }`}
             >
               <div className="flex items-center justify-between mb-3">
                 <div className="flex items-center gap-2">
                   <Clock
-                    className={`w-4 h-4 ${
-                      isOverdue
-                        ? "text-red-500"
-                        : complaint.status === "Submitted"
-                          ? "text-amber-500"
-                          : "text-emerald-600"
-                    }`}
+                    className={`w-4 h-4 ${isOverdue
+                      ? "text-red-500"
+                      : complaint.status === "Submitted"
+                        ? "text-amber-500"
+                        : "text-emerald-600"
+                      }`}
                   />
                   <span className="text-xs font-[700] text-slate-700 uppercase tracking-wider">
                     SLA status
@@ -857,24 +856,22 @@ export default function ComplaintDetail() {
               <div key={s} className="flex items-center min-w-0">
                 <div className="flex flex-col items-center min-w-[64px]">
                   <div
-                    className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-[700] border-2 ${
-                      done
-                        ? "bg-emerald-500 border-emerald-500 text-white"
-                        : active
-                          ? "bg-orange-500 border-orange-500 text-white ring-4 ring-orange-100"
-                          : "bg-white border-slate-200 text-slate-400"
-                    }`}
+                    className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-[700] border-2 ${done
+                      ? "bg-emerald-500 border-emerald-500 text-white"
+                      : active
+                        ? "bg-orange-500 border-orange-500 text-white ring-4 ring-orange-100"
+                        : "bg-white border-slate-200 text-slate-400"
+                      }`}
                   >
                     {done ? <CheckCircle className="w-4 h-4" /> : i + 1}
                   </div>
                   <span
-                    className={`text-[10px] mt-1 text-center font-[500] whitespace-nowrap ${
-                      active
-                        ? "text-orange-700"
-                        : done
-                          ? "text-emerald-600"
-                          : "text-slate-400"
-                    }`}
+                    className={`text-[10px] mt-1 text-center font-[500] whitespace-nowrap ${active
+                      ? "text-orange-700"
+                      : done
+                        ? "text-emerald-600"
+                        : "text-slate-400"
+                      }`}
                   >
                     {s}
                   </span>
@@ -994,14 +991,13 @@ export default function ComplaintDetail() {
               Select a manager to reassign:
             </p>
             <div className="space-y-2 mb-5 max-h-64 overflow-y-auto">
-              {MOCK_MANAGERS.map((mgr) => (
+              {managers.map((mgr) => (
                 <label
                   key={mgr.id}
-                  className={`flex items-center gap-3 p-3 rounded-xl border cursor-pointer transition-all ${
-                    selectedReassignManager === mgr.id
-                      ? "bg-violet-50 border-violet-200"
-                      : "border-slate-100 hover:bg-slate-50"
-                  }`}
+                  className={`flex items-center gap-3 p-3 rounded-xl border cursor-pointer transition-all ${selectedReassignManager === mgr.id
+                    ? "bg-violet-50 border-violet-200"
+                    : "border-slate-100 hover:bg-slate-50"
+                    }`}
                 >
                   <input
                     type="radio"
@@ -1033,7 +1029,7 @@ export default function ComplaintDetail() {
 
                   setIsReassigning(true);
                   try {
-                    const manager = MOCK_MANAGERS.find(
+                    const manager = managers.find(
                       (m) => m.id === selectedReassignManager,
                     );
                     if (!manager) {

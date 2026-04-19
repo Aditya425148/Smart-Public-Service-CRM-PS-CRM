@@ -19,6 +19,7 @@ import {
   Worker,
   Manager,
 } from "../../data/mockData";
+import { appwriteService } from "../../appwriteService";
 import { account } from "../../appwrite";
 import { motion, AnimatePresence } from "motion/react";
 import { toast } from "sonner";
@@ -40,64 +41,73 @@ export default function ManagerWorkers() {
     account
       .get()
       .then((user) => {
-        const mockConfig = mockManagers.find(
-          (m: Manager) => m.email.toLowerCase() === user.email.toLowerCase(),
-        );
-        const managerData = {
-          ...user,
-          managedState: mockConfig?.managedState || "Delhi",
-          managedAreas: mockConfig?.managedAreas || ["North Delhi"],
-        };
-        setManager(managerData);
+        // Find manager config or use defaults
+        appwriteService.getManagers().then(mgrs => {
+          const mockConfig = mgrs.find(
+            (m: any) => m.email?.toLowerCase() === user.email?.toLowerCase(),
+          );
+          const managerData = {
+            ...user,
+            id: mockConfig?.id || "MGR-DEL-01",
+            managedState: mockConfig?.state || "Delhi",
+            managedAreas: ["North Delhi", "Central Delhi"], // Fallback areas
+          };
+          setManager(managerData);
 
-        // Load initial workers for this manager
-        const initialWorkers = mockWorkers.filter(
-          (w) =>
-            w.state === managerData.managedState &&
-            managerData.managedAreas.some(
-              (area) =>
-                w.area.toLowerCase().includes(area.toLowerCase()) ||
-                area.toLowerCase().includes(w.area.toLowerCase()),
-            ),
-        );
-        setWorkers(initialWorkers);
+          // Load initial workers for this manager/state
+          appwriteService.getWorkers(managerData.managedState)
+            .then(setWorkers)
+            .catch(console.error);
+        });
       })
       .catch(() => {
         // Fallback
-        const fallback = mockManagers[0];
-        setManager(fallback);
-        setWorkers(
-          mockWorkers.filter((w) => w.state === fallback.managedState),
-        );
+        appwriteService.getManagers().then(mgrs => {
+          const fallback = mgrs[0] || { id: "MGR-DEL-01", name: "Manager", state: "Delhi" };
+          setManager(fallback);
+          appwriteService.getWorkers(fallback.state || fallback.managedState)
+            .then(setWorkers)
+            .catch(console.error);
+        });
       });
   }, []);
 
-  const handleAddWorker = (e: React.FormEvent) => {
+  const handleAddWorker = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!newWorker.name || !newWorker.phone || !newWorker.area) {
       toast.error("Please fill all fields");
       return;
     }
 
-    const workerToAdd: Worker = {
-      id: "WKR-" + Math.random().toString(36).substr(2, 9).toUpperCase(),
-      name: newWorker.name,
-      phone: newWorker.phone,
-      state: manager.managedState,
-      area: newWorker.area,
-      status: "Available",
-      rating: newWorker.rating,
-    };
+    try {
+      const workerToAdd = {
+        name: newWorker.name,
+        phone: newWorker.phone,
+        state: manager.managedState || manager.state,
+        area: newWorker.area,
+        status: "Available",
+        rating: newWorker.rating,
+      };
 
-    setWorkers((prev) => [workerToAdd, ...prev]);
-    setShowAddModal(false);
-    setNewWorker({ name: "", phone: "", area: "", rating: 4.5 });
-    toast.success(newWorker.name + " added to field force");
+      const created = await appwriteService.createWorker(workerToAdd);
+      setWorkers((prev) => [created, ...prev]);
+      setShowAddModal(false);
+      setNewWorker({ name: "", phone: "", area: "", rating: 4.5 });
+      toast.success(newWorker.name + " added to field force");
+    } catch (error) {
+      toast.error("Failed to add worker");
+      console.error(error);
+    }
   };
 
-  const removeWorker = (id: string) => {
-    setWorkers((prev) => prev.filter((w) => w.id !== id));
-    toast.info("Worker removed from your list");
+  const removeWorker = async (id: string) => {
+    try {
+      await appwriteService.deleteWorker(id);
+      setWorkers((prev) => prev.filter((w) => w.id !== id));
+      toast.info("Worker removed from your list");
+    } catch (error) {
+      toast.error("Failed to remove worker");
+    }
   };
 
   if (!manager)
