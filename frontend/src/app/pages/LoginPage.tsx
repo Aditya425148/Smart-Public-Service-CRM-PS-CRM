@@ -71,105 +71,50 @@ export default function LoginPage() {
       setError("");
       setIsLoading(true);
 
-      // Check if this is a manager demo account FIRST (before official email check)
-      const manager = mockManagers.find(
-        (m) => m.email.toLowerCase() === email.toLowerCase(),
-      );
+      // 1. Authenticate with Appwrite Auth
+      await authService.loginWithEmail(email, password);
 
-      if (manager) {
-        // Use standard Manager@123 or name-based fallback
-        const expectedManagerPassword = "Manager@123";
-
-        if (password !== expectedManagerPassword) {
-          setError("Invalid credentials for manager account.");
-          setIsLoading(false);
-          return;
-        }
-
-        // Mock manager login (using anonymous auth for backend connection)
-        await authService.loginAnonymous();
-        sessionStorage.setItem("session_role", "manager");
-        // Save the email override for ManagerLayout to pick up the correct name
-        localStorage.setItem("manager_email_override", email);
-        navigate(`/manager/${manager.id}`, { replace: true });
-        return;
-      }
-
-      // Check if this is a worker demo account BEFORE official email enforcement
-      console.log(
-        "Checking worker credentials. Total workers:",
-        workerCredentials.length,
-      );
-      console.log("Looking for email:", email.toLowerCase());
-      console.log(
-        "Available worker emails:",
-        workerCredentials.map((w) => w.email.toLowerCase()),
-      );
-
-      const worker = workerCredentials.find(
-        (w) => w.email.toLowerCase() === email.toLowerCase(),
-      );
-
-      console.log("Worker found:", !!worker);
-
-      if (worker) {
-        console.log("Worker found:", worker.name);
-        // Verify worker password
-        if (password !== worker.password) {
-          console.log(
-            "Password mismatch. Entered:",
-            password,
-            "Expected:",
-            worker.password,
-          );
-          setError("Invalid credentials for worker account.");
-          setIsLoading(false);
-          return;
-        }
-        // Mock worker login (using anonymous auth for backend connection)
-        console.log("Attempting anonymous login...");
-        try {
-          await authService.loginAnonymous();
-          console.log("Anonymous login successful");
-        } catch (anonErr: any) {
-          console.error("Anonymous login failed:", anonErr);
-          setError(
-            "Authentication failed: " + (anonErr.message || "Unknown error"),
-          );
-          setIsLoading(false);
-          return;
-        }
-        // Store worker info in session for later use
-        sessionStorage.setItem("session_role", "worker");
-        sessionStorage.setItem("workerData", JSON.stringify(worker));
-        console.log("Worker data stored in sessionStorage");
-        navigate("/worker", { replace: true });
-        return;
-      }
-
-      // --- Official Credentials Enforcement (after checking demo accounts) ---
-      const isOfficialAdmin =
-        email.toLowerCase().trim() === OFFICIAL_ADMIN_EMAIL;
-
-      if (isOfficialAdmin && password !== "admin123456") {
-        setError("Invalid credentials for official account.");
+      // 2. Get the logged in user's profile and labels
+      const user = await authService.getCurrentUser();
+      if (!user) {
+        setError("Failed to retrieve user profile after login.");
         setIsLoading(false);
         return;
       }
 
-      // Official admin login
-      if (isOfficialAdmin) {
-        await authService.loginWithEmail(email, password);
-        sessionStorage.setItem("session_role", "admin");
-        navigate("/admin", { replace: true });
-        return;
-      }
+      const labels = user.labels || [];
+      console.log("Logged in user labels:", labels);
 
-      // Check if this is a regular user in Appwrite
-      await authService.loginWithEmail(email, password);
-      sessionStorage.setItem("session_role", "citizen");
-      // Redirect based on email
-      navigate("/dashboard", { replace: true });
+      // 3. Determine role based on labels (prioritize admin > manager > worker)
+      let role = "citizen";
+      if (labels.includes("admin")) role = "admin";
+      else if (labels.includes("manager")) role = "manager";
+      else if (labels.includes("worker")) role = "worker";
+
+      sessionStorage.setItem("session_role", role);
+
+      // 4. Redirect based on role
+      if (role === "admin") {
+        navigate("/admin", { replace: true });
+      } else if (role === "manager") {
+        // Find manager ID from mockManagers if email matches (for legacy routing) or just use manager route
+        const manager = mockManagers.find(m => m.email.toLowerCase() === email.toLowerCase());
+        const mgrPath = manager ? `/manager/${manager.id}` : "/manager";
+        navigate(mgrPath, { replace: true });
+      } else if (role === "worker") {
+        // Populate workerData for WorkerDashboard
+        // Check if there's a mock worker first for rich data, otherwise use Auth data
+        const workerCred = workerCredentials.find(w => w.email.toLowerCase() === email.toLowerCase());
+        const workerData = workerCred ? workerCred : {
+          name: user.name,
+          email: user.email,
+          id: user.$id
+        };
+        sessionStorage.setItem("workerData", JSON.stringify(workerData));
+        navigate("/worker", { replace: true });
+      } else {
+        navigate("/dashboard", { replace: true });
+      }
     } catch (err: any) {
       console.error("Login error:", err);
       // Handle specific Appwrite error codes if needed

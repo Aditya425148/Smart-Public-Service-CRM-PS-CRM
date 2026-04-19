@@ -12,6 +12,7 @@ import { motion, AnimatePresence } from "motion/react";
 import { toast } from "sonner";
 import { api } from "../../api";
 import { account } from "../../appwrite";
+import { SLATimer } from "../../components/SLATimer";
 import { Complaint } from "../../data/mockData";
 
 interface WorkerTask {
@@ -27,6 +28,7 @@ interface WorkerTask {
   distance?: number;
   coordinates?: { lat: number; lng: number };
   timeline?: any[];
+  slaDeadline?: string;
 }
 
 export default function WorkerDashboard() {
@@ -82,6 +84,7 @@ export default function WorkerDashboard() {
             distance: c.distance_km,
             coordinates: c.coordinates,
             timeline: c.timeline || [],
+            slaDeadline: c.slaDeadline,
           }))
           .sort((a: any, b: any) => b.priority - a.priority);
 
@@ -265,8 +268,8 @@ export default function WorkerDashboard() {
                 key={f}
                 onClick={() => setFilter(f)}
                 className={`px-4 py-2 rounded-lg font-medium text-sm transition-all ${filter === f
-                    ? "bg-sky-600 text-white shadow-lg shadow-sky-600/20"
-                    : "bg-white border border-slate-200 text-slate-700 hover:bg-slate-50"
+                  ? "bg-sky-600 text-white shadow-lg shadow-sky-600/20"
+                  : "bg-white border border-slate-200 text-slate-700 hover:bg-slate-50"
                   }`}
               >
                 {f.charAt(0).toUpperCase() + f.slice(1)}
@@ -312,8 +315,8 @@ export default function WorkerDashboard() {
                   key={task.id}
                   onClick={() => setSelectedTask(task)}
                   className={`cursor-pointer rounded-2xl border p-5 transition-all ${selectedTask?.id === task.id
-                      ? "border-sky-500 bg-sky-50 shadow-md"
-                      : "border-slate-100 bg-white hover:border-slate-200 hover:shadow-md"
+                    ? "border-sky-500 bg-sky-50 shadow-md"
+                    : "border-slate-100 bg-white hover:border-slate-200 hover:shadow-md"
                     }`}
                 >
                   <div className="flex items-start justify-between gap-4 mb-4">
@@ -333,13 +336,20 @@ export default function WorkerDashboard() {
                         {task.description}
                       </p>
                     </div>
-                    <div
-                      className={`px-3 py-1 rounded-lg text-[10px] font-bold whitespace-nowrap ${task.status === "In Progress"
+                    <div className="flex flex-col items-end gap-2">
+                      <div
+                        className={`px-3 py-1 rounded-lg text-[10px] font-bold whitespace-nowrap ${task.status === "In Progress"
                           ? "bg-amber-100 text-amber-700"
                           : "bg-sky-100 text-sky-700"
-                        }`}
-                    >
-                      {task.status}
+                          }`}
+                      >
+                        {task.status}
+                      </div>
+                      <SLATimer
+                        deadline={task.slaDeadline || task.createdAt}
+                        status={task.status}
+                        showIcon={false}
+                      />
                     </div>
                   </div>
 
@@ -480,8 +490,8 @@ export default function WorkerDashboard() {
                 </h2>
                 <div
                   className={`inline-block px-3 py-1.5 rounded-lg text-xs font-bold ${selectedTask.status === "In Progress"
-                      ? "bg-amber-100 text-amber-700"
-                      : "bg-sky-100 text-sky-700"
+                    ? "bg-amber-100 text-amber-700"
+                    : "bg-sky-100 text-sky-700"
                     }`}
                 >
                   {selectedTask.status}

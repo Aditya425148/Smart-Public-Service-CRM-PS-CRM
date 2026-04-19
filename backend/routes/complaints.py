@@ -254,6 +254,7 @@ async def create_complaint(body: ComplaintCreate):
     try:
         now = datetime.now(UTC).isoformat()
         sla_hours = get_sla_hours(body.category)
+        sla_deadline = (datetime.now(UTC) + timedelta(hours=sla_hours)).isoformat()
         priority = calculate_priority(body.category)
         timeline = json.dumps([{
             "status": "Submitted", "timestamp": now,
@@ -295,6 +296,7 @@ async def create_complaint(body: ComplaintCreate):
             "priorityScore": float(priority),
             "slaHours": int(sla_hours),
             "slaRemainingHours": int(sla_hours),
+            "slaDeadline": sla_deadline,
             "coordinates": json.dumps(body.coordinates) if body.coordinates else None,
             "photos": json.dumps(body.photos) if body.photos else "[]",
             "state": state,

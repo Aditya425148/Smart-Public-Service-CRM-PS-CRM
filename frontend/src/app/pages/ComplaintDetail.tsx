@@ -21,6 +21,7 @@ import {
   Wrench,
   Share2,
 } from "lucide-react";
+import { SLATimer } from "../components/SLATimer";
 
 
 const statusColors: Record<string, string> = {
@@ -108,6 +109,7 @@ export default function ComplaintDetail() {
   const isOverdue =
     (complaint.slaRemainingHours || 0) < 0 &&
     !["Resolved", "Closed"].includes(complaint.status);
+
   const canEscalate = isOverdue || complaint.status === "Escalated";
   const canReopen = ["Resolved", "Closed"].includes(complaint.status);
 
@@ -621,82 +623,30 @@ export default function ComplaintDetail() {
             </div>
 
             {/* SLA */}
-            <div
-              className={`rounded-xl p-4 border transition-all ${isOverdue
-                ? "bg-red-50 border-red-100"
-                : complaint.status === "Submitted"
-                  ? "bg-amber-50 border-amber-100"
-                  : complaint.slaRemainingHours < complaint.slaHours * 0.25
-                    ? "bg-amber-50 border-amber-100"
-                    : "bg-emerald-50 border-emerald-100"
-                }`}
-            >
-              <div className="flex items-center justify-between mb-3">
+            <div className="rounded-xl p-4 border bg-slate-50 border-slate-100 shadow-sm">
+              <div className="flex items-center justify-between mb-4">
                 <div className="flex items-center gap-2">
-                  <Clock
-                    className={`w-4 h-4 ${isOverdue
-                      ? "text-red-500"
-                      : complaint.status === "Submitted"
-                        ? "text-amber-500"
-                        : "text-emerald-600"
-                      }`}
-                  />
+                  <Clock className="w-4 h-4 text-slate-400" />
                   <span className="text-xs font-[700] text-slate-700 uppercase tracking-wider">
-                    SLA status
+                    SLA Tracking
                   </span>
                 </div>
               </div>
 
-              <div className="space-y-1">
-                {isOverdue ? (
-                  <div className="text-xl font-[900] text-red-600">
-                    OVERDUE — {Math.abs(complaint.slaRemainingHours)}h
-                  </div>
-                ) : ["Resolved", "Closed"].includes(complaint.status) ? (
-                  <div className="text-xl font-[800] text-emerald-600">
-                    ✓ Resolved in time
-                  </div>
-                ) : complaint.status === "In Progress" ? (
-                  <div className="flex flex-col gap-1">
-                    <div className="text-2xl font-[900] text-emerald-600 flex items-center gap-2">
-                      {complaint.slaRemainingHours}h
-                      <span className="text-[10px] bg-emerald-100 px-2 py-0.5 rounded-full">
-                        WORKING
-                      </span>
-                    </div>
-                    <div className="w-full bg-slate-200 h-1 rounded-full overflow-hidden">
-                      <motion.div
-                        initial={{ width: 0 }}
-                        animate={{
-                          width: `${(complaint.slaRemainingHours / complaint.slaHours) * 100}%`,
-                        }}
-                        className="bg-emerald-500 h-full transition-all duration-1000"
-                      />
-                    </div>
-                  </div>
-                ) : complaint.status === "Submitted" ? (
-                  <div className="text-xl font-[900] text-amber-600">
-                    SLA START PENDING
-                  </div>
-                ) : (
-                  <div className="text-2xl font-[900] text-orange-700">
-                    {complaint.slaRemainingHours}h{" "}
-                    <span className="text-sm font-bold">remaining</span>
-                  </div>
-                )}
+              <div className="flex flex-col gap-4">
+                <SLATimer
+                  deadline={complaint.slaDeadline || complaint.createdAt}
+                  status={complaint.status}
+                />
 
-                <div className="pt-2 border-t border-black/5 mt-2">
+                <div className="pt-2 border-t border-slate-100">
                   <div className="flex justify-between items-center text-xs">
-                    <span className="text-slate-500 font-medium">
-                      Standard SLA
-                    </span>
-                    <span className="text-slate-900 font-bold">
-                      {complaint.slaHours} Hours
-                    </span>
+                    <span className="text-slate-500 font-medium">Standard SLA</span>
+                    <span className="text-slate-900 font-bold">{complaint.slaHours} Hours</span>
                   </div>
-                  <div className="text-[9px] text-slate-400 font-bold uppercase mt-1">
-                    * Resolution starts after assignment
-                  </div>
+                  <p className="text-[10px] text-slate-400 font-medium mt-1 uppercase italic">
+                    * Final resolution expected within this window
+                  </p>
                 </div>
               </div>
             </div>
@@ -1010,7 +960,7 @@ export default function ComplaintDetail() {
                   <div className="w-8 h-8 rounded-full bg-gradient-to-br from-sky-500 to-indigo-600 text-white flex items-center justify-center text-xs font-[700]">
                     {mgr.name
                       .split(" ")
-                      .map((n) => n[0])
+                      .map((n: string) => n[0])
                       .join("")}
                   </div>
                   <div className="flex-1">

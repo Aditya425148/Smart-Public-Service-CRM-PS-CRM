@@ -38,6 +38,7 @@ import { appwriteService } from "../../appwriteService";
 import { account } from "../../appwrite";
 import { api } from "../../api";
 import { toast } from "sonner";
+import { SLATimer } from "../../components/SLATimer";
 
 export default function ManagerOverview() {
   const { managerId } = useParams();
@@ -711,9 +712,21 @@ export default function ManagerOverview() {
                         Dispatch Help <ChevronRight size={14} />
                       </button>
                     ) : (
-                      <div className="flex items-center gap-2 text-xs font-bold text-emerald-600 bg-emerald-50 px-3 py-1.5 rounded-xl">
-                        <Check size={14} />
-                        <span>{complaint.assignedTo}</span>
+                      <div className="flex items-center gap-2">
+                        <SLATimer
+                          deadline={complaint.slaDeadline || complaint.createdAt}
+                          status={complaint.status}
+                        />
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setSelectedComplaint(complaint);
+                            setShowAssignModal(true);
+                          }}
+                          className="px-3 py-1.5 bg-white border border-slate-200 hover:border-red-200 hover:text-red-600 text-slate-500 text-[10px] font-black rounded-xl transition-all uppercase tracking-tighter"
+                        >
+                          Reassign
+                        </button>
                       </div>
                     )}
                   </div>

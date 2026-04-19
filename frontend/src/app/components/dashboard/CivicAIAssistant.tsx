@@ -246,7 +246,7 @@ export default function CivicAIAssistant({
           content: m.text,
         }));
 
-      const response = await fetch("http://localhost:8000/ai/chat", {
+      const response = await fetch("http://localhost:8000/api/ai/chat", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -319,8 +319,8 @@ export default function CivicAIAssistant({
               >
                 <div
                   className={`inline-block max-w-[90%] rounded-2xl px-3 py-2 text-sm leading-relaxed ${m.from === "user"
-                      ? "bg-sky-700 text-white"
-                      : "bg-slate-100 text-slate-800"
+                    ? "bg-sky-700 text-white"
+                    : "bg-slate-100 text-slate-800"
                     }`}
                 >
                   <ReactMarkdown
