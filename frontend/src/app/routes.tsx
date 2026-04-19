@@ -31,7 +31,7 @@ export const router = createBrowserRouter([
   { path: "/login", Component: LoginPage },
   { path: "/auth/callback", Component: OAuthCallback },
   {
-    element: <ProtectedRoute allowedRoles={["citizen", "admin", "manager"]} />,
+    element: <ProtectedRoute allowedRoles={["citizen"]} />,
     children: [
       {
         path: "/dashboard",

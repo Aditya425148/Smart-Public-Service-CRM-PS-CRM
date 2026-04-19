@@ -84,6 +84,25 @@ export default function CitizenHome() {
     account
       .get()
       .then((currentUser) => {
+        const labels = currentUser.labels || [];
+
+        // Safety Redirect: If a worker or manager lands here, send them to their portal
+        if (labels.includes("worker")) {
+          console.log("Worker detected in CitizenHome, redirecting...");
+          navigate("/worker", { replace: true });
+          return;
+        }
+        if (labels.includes("manager")) {
+          console.log("Manager detected in CitizenHome, redirecting...");
+          navigate("/manager", { replace: true });
+          return;
+        }
+        if (labels.includes("admin")) {
+          console.log("Admin detected in CitizenHome, redirecting...");
+          navigate("/admin", { replace: true });
+          return;
+        }
+
         const userData = {
           name:
             currentUser.name || currentUser.email?.split("@")[0] || "Citizen",
@@ -105,7 +124,7 @@ export default function CitizenHome() {
           appwriteService
             .getComplaintsByUser(userData.uid)
             .then((data) => setUserComplaints(data))
-            .catch(() => {});
+            .catch(() => { });
         };
 
         fetchAll();

@@ -51,20 +51,25 @@ export default function ProtectedRoute({ allowedRoles }: ProtectedRouteProps) {
   }
 
   // Check roles if specified
-  if (allowedRoles && allowedRoles.length > 0) {
-    const userRoles = user.labels || [];
-    const sessionRole = sessionStorage.getItem("session_role");
+  const userRoles = user.labels || [];
+  const sessionRole = sessionStorage.getItem("session_role");
 
-    const hasPermission =
-      allowedRoles.some((role) => userRoles.includes(role)) ||
-      (!!sessionRole && allowedRoles.includes(sessionRole));
+  // Combine all active roles. Default to 'citizen' for any authenticated user.
+  const activeRoles = [...userRoles];
+  if (sessionRole) activeRoles.push(sessionRole);
+  if (activeRoles.length === 0) activeRoles.push("citizen");
 
-    // Special case for "citizen" which is the default for any logged in user if not specifically restricted
-    const isCitizen = allowedRoles.includes("citizen") && user;
+  const hasPermission =
+    allowedRoles.some((role) => activeRoles.includes(role));
 
-    if (!hasPermission && !isCitizen) {
-      return <Navigate to="/dashboard" replace />;
-    }
+  if (!hasPermission) {
+    // Redirection strategy: isolate based on the highest role
+    if (activeRoles.includes("admin")) return <Navigate to="/admin" replace />;
+    if (activeRoles.includes("manager")) return <Navigate to="/manager" replace />;
+    if (activeRoles.includes("worker")) return <Navigate to="/worker" replace />;
+
+    // Final fallback for unauthorized citizens or other users
+    return <Navigate to="/dashboard" replace />;
   }
 
   return <Outlet />;

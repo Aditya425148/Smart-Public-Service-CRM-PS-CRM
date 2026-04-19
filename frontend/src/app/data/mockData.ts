@@ -43,7 +43,7 @@ export interface Complaint {
   isDuplicate?: boolean;
   escalated?: boolean;
   state?: string;
-  area?: string;
+  photos?: string[];
   timeline: TimelineEvent[];
 }
 
@@ -67,7 +67,6 @@ export interface Manager {
 }
 
 export const mockManagers: Manager[] = [
-  // --- DELHI MANAGERS (5) ---
   {
     id: "MGR-DEL-01",
     name: "Sanjay Sharma",
@@ -82,7 +81,7 @@ export const mockManagers: Manager[] = [
     email: "meena@civicpulse.com",
     phone: "+919810023456",
     managedState: "Delhi",
-    managedAreas: ["South Delhi", "Saket"],
+    managedAreas: ["New Delhi", "Chanakyapuri"],
   },
   {
     id: "MGR-DEL-03",
@@ -107,6 +106,54 @@ export const mockManagers: Manager[] = [
     phone: "+919810056789",
     managedState: "Delhi",
     managedAreas: ["Central Delhi", "Connaught Place"],
+  },
+  {
+    id: "MGR-DEL-06",
+    name: "Priya Sharma",
+    email: "priya@civicpulse.com",
+    phone: "+919810067890",
+    managedState: "Delhi",
+    managedAreas: ["North Delhi", "Civil Lines"],
+  },
+  {
+    id: "MGR-DEL-07",
+    name: "Vikram Singh",
+    email: "vikram@civicpulse.com",
+    phone: "+919810078901",
+    managedState: "Delhi",
+    managedAreas: ["North West Delhi", "Rohini"],
+  },
+  {
+    id: "MGR-DEL-08",
+    name: "Sunita Devi",
+    email: "sunita@civicpulse.com",
+    phone: "+919810089012",
+    managedState: "Delhi",
+    managedAreas: ["North East Delhi", "Karawal Nagar"],
+  },
+  {
+    id: "MGR-DEL-09",
+    name: "Rakesh Gupta",
+    email: "rakesh@civicpulse.com",
+    phone: "+919810090123",
+    managedState: "Delhi",
+    managedAreas: ["Shahdara", "Seelampur"],
+  },
+  {
+    id: "MGR-DEL-10",
+    name: "Kavita Reddy",
+    email: "kavita@civicpulse.com",
+    phone: "+919810101234",
+    managedState: "Delhi",
+    managedAreas: ["South East Delhi", "Okhla"],
+  },
+  {
+    id: "MGR-DEL-11",
+    name: "Suresh Kumar",
+    email: "suresh@civicpulse.com",
+    phone: "+919810112345",
+    managedState: "Delhi",
+    managedAreas: ["South West Delhi", "Najafgarh"],
   },
 ];
 
