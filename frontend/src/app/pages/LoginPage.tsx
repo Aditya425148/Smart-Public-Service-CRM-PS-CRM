@@ -19,12 +19,17 @@ export default function LoginPage() {
   const navigate = useNavigate();
   const location = useLocation();
   const [mode, setMode] = useState<
-    "choose" | "email-login" | "email-signup" | "manager-login"
+    "choose" | "email-login" | "email-signup" | "manager-login" | "admin-login"
   >("choose");
+
+  const OFFICIAL_ADMIN_EMAIL = "admin@civicpulse.com";
+  const OFFICIAL_ADMIN_PASSWORD = "admin123456";
 
   useEffect(() => {
     if (location.state?.role === "manager") {
       setMode("manager-login");
+    } else if (location.state?.role === "admin") {
+      setMode("admin-login");
     }
   }, [location.state]);
 
@@ -72,9 +77,17 @@ export default function LoginPage() {
       );
 
       if (manager) {
+        const expectedManagerPassword = `${manager.name.split(" ")[0].toLowerCase()}@123`;
+
+        if (password !== expectedManagerPassword) {
+          setError("Invalid credentials for manager account.");
+          setIsLoading(false);
+          return;
+        }
+
         // Mock manager login (using anonymous auth for backend connection)
-        // For demo purposes, we accept any password for these specific emails
         await authService.loginAnonymous();
+        sessionStorage.setItem("session_role", "manager");
         // Save the email override for ManagerLayout to pick up the correct name
         localStorage.setItem("manager_email_override", email);
         navigate(`/manager/${manager.id}`, { replace: true });
@@ -126,6 +139,7 @@ export default function LoginPage() {
           return;
         }
         // Store worker info in session for later use
+        sessionStorage.setItem("session_role", "worker");
         sessionStorage.setItem("workerData", JSON.stringify(worker));
         console.log("Worker data stored in sessionStorage");
         navigate("/worker", { replace: true });
@@ -134,8 +148,7 @@ export default function LoginPage() {
 
       // --- Official Credentials Enforcement (after checking demo accounts) ---
       const isOfficialAdmin =
-        email.toLowerCase().endsWith("@civicpulse.com") ||
-        email.toLowerCase() === "admin@civicpulse.com";
+        email.toLowerCase().trim() === OFFICIAL_ADMIN_EMAIL;
 
       if (isOfficialAdmin && password !== "admin123456") {
         setError("Invalid credentials for official account.");
@@ -143,28 +156,17 @@ export default function LoginPage() {
         return;
       }
 
-      // Automatically handle official admin login for demo/dev purposes
+      // Official admin login
       if (isOfficialAdmin) {
-        try {
-          // Force set a local storage flag to bypass role check if Appwrite labels fail
-          localStorage.setItem("is_admin_bypass", "true");
-          // Try to login if account exists
-          await authService.loginWithEmail(email, password);
-        } catch (authErr: any) {
-          // If account doesn't exist (401/404), create it and then login
-          console.log("Admin account missing or login failed, falling back...");
-          try {
-            await authService.loginAnonymous();
-          } catch (anonErr) {
-            console.error("Auth fallback failed:", anonErr);
-          }
-        }
+        await authService.loginWithEmail(email, password);
+        sessionStorage.setItem("session_role", "admin");
         navigate("/admin", { replace: true });
         return;
       }
 
       // Check if this is a regular user in Appwrite
       await authService.loginWithEmail(email, password);
+      sessionStorage.setItem("session_role", "citizen");
       // Redirect based on email
       navigate("/dashboard", { replace: true });
     } catch (err: any) {
@@ -213,6 +215,41 @@ export default function LoginPage() {
       return;
     }
     await handleEmailLogin();
+  };
+
+  const handleAdminLogin = async () => {
+    if (!email || !password) {
+      setError("Email and password are required.");
+      return;
+    }
+
+    if (email.toLowerCase().trim() !== OFFICIAL_ADMIN_EMAIL) {
+      setError("Only the official admin account can access this portal.");
+      return;
+    }
+
+    if (password !== OFFICIAL_ADMIN_PASSWORD) {
+      setError("Invalid credentials for official account.");
+      return;
+    }
+
+    try {
+      setError("");
+      setIsLoading(true);
+      await authService.loginWithEmail(email, password);
+      sessionStorage.setItem("session_role", "admin");
+      navigate("/admin", { replace: true });
+    } catch (err: any) {
+      setError(err?.message || "Official login failed.");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const fillAdminDemoCredentials = () => {
+    setEmail(OFFICIAL_ADMIN_EMAIL);
+    setPassword(OFFICIAL_ADMIN_PASSWORD);
+    setError("");
   };
 
   const handleDemoLogin = async (role: "citizen" | "admin" | "manager") => {
@@ -473,12 +510,22 @@ export default function LoginPage() {
             <Shield size={32} />
           </div>
           <h1 className="text-3xl font-[800] text-slate-900 tracking-tight">
-            {mode === "email-signup" ? "Create Account" : "Sign In"}
+            {mode === "email-signup"
+              ? "Create Account"
+              : mode === "manager-login"
+                ? "Manager Portal Login"
+                : mode === "admin-login"
+                  ? "Official Admin Login"
+                  : "Sign In"}
           </h1>
           <p className="text-slate-500 mt-2 font-[500]">
             {mode === "email-signup"
               ? "Join CivicPulse to start engaging with your community"
-              : "Secure access to community pulse"}
+              : mode === "manager-login"
+                ? "Manager-only portal access"
+                : mode === "admin-login"
+                  ? "Email and password access for admin only"
+                  : "Secure access to community pulse"}
           </p>
         </div>
 
@@ -495,39 +542,43 @@ export default function LoginPage() {
 
         <div className="space-y-6">
           {/* Google Sign In */}
-          <button
-            onClick={handleGoogleLogin}
-            disabled={isLoading}
-            className="w-full flex items-center justify-center gap-3 bg-white hover:bg-slate-50 text-slate-900 font-[600] py-4 rounded-2xl transition-all duration-200 border border-slate-200 shadow-sm disabled:opacity-50"
-          >
-            <svg className="w-5 h-5" viewBox="0 0 24 24">
-              <path
-                fill="#4285F4"
-                d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.32v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.1z"
-              />
-              <path
-                fill="#34A853"
-                d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"
-              />
-              <path
-                fill="#FBBC05"
-                d="M5.84 14.1c-.22-.66-.35-1.36-.35-2.1s.13-1.44.35-2.1V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l3.66-2.83z"
-              />
-              <path
-                fill="#EA4335"
-                d="M12 5.38c1.62 0 3.06.56 4.21 1.66l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.83c.87-2.6 3.3-4.53 12-4.53z"
-              />
-            </svg>
-            <span>Continue with Google</span>
-          </button>
+          {mode !== "admin-login" && mode !== "manager-login" && (
+            <>
+              <button
+                onClick={handleGoogleLogin}
+                disabled={isLoading}
+                className="w-full flex items-center justify-center gap-3 bg-white hover:bg-slate-50 text-slate-900 font-[600] py-4 rounded-2xl transition-all duration-200 border border-slate-200 shadow-sm disabled:opacity-50"
+              >
+                <svg className="w-5 h-5" viewBox="0 0 24 24">
+                  <path
+                    fill="#4285F4"
+                    d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.32v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.1z"
+                  />
+                  <path
+                    fill="#34A853"
+                    d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"
+                  />
+                  <path
+                    fill="#FBBC05"
+                    d="M5.84 14.1c-.22-.66-.35-1.36-.35-2.1s.13-1.44.35-2.1V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l3.66-2.83z"
+                  />
+                  <path
+                    fill="#EA4335"
+                    d="M12 5.38c1.62 0 3.06.56 4.21 1.66l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.83c.87-2.6 3.3-4.53 12-4.53z"
+                  />
+                </svg>
+                <span>Continue with Google</span>
+              </button>
 
-          <div className="relative flex items-center py-2">
-            <div className="flex-grow border-t border-slate-200"></div>
-            <span className="flex-shrink mx-4 text-slate-400 text-xs font-[600] uppercase tracking-widest">
-              OR
-            </span>
-            <div className="flex-grow border-t border-slate-200"></div>
-          </div>
+              <div className="relative flex items-center py-2">
+                <div className="flex-grow border-t border-slate-200"></div>
+                <span className="flex-shrink mx-4 text-slate-400 text-xs font-[600] uppercase tracking-widest">
+                  OR
+                </span>
+                <div className="flex-grow border-t border-slate-200"></div>
+              </div>
+            </>
+          )}
 
           <div className="space-y-4">
             {mode === "email-signup" && (
@@ -547,7 +598,11 @@ export default function LoginPage() {
 
             <div className="space-y-2">
               <label className="text-sm font-[600] text-slate-700 ml-1">
-                Email Address
+                {mode === "manager-login"
+                  ? "Manager Email"
+                  : mode === "admin-login"
+                    ? "Official Admin Email"
+                    : "Email Address"}
               </label>
               <div className="relative">
                 <div className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400">
@@ -565,7 +620,13 @@ export default function LoginPage() {
                     }
                   }}
                   className="w-full bg-slate-50 border border-slate-200 rounded-2xl pl-12 pr-4 py-3.5 text-slate-900 focus:outline-none focus:ring-4 focus:ring-sky-500/10 focus:border-sky-500 transition-all placeholder:text-slate-400"
-                  placeholder="hello@example.com"
+                  placeholder={
+                    mode === "manager-login"
+                      ? "manager_name@civicpulse.com"
+                      : mode === "admin-login"
+                        ? OFFICIAL_ADMIN_EMAIL
+                        : "hello@example.com"
+                  }
                 />
               </div>
             </div>
@@ -609,14 +670,27 @@ export default function LoginPage() {
               </div>
             </div>
 
+            {mode === "admin-login" && (
+              <button
+                type="button"
+                onClick={fillAdminDemoCredentials}
+                disabled={isLoading}
+                className="w-full border border-sky-200 bg-sky-50 hover:bg-sky-100 text-sky-700 font-[600] py-3 rounded-2xl transition-all duration-200 disabled:opacity-50"
+              >
+                Use Demo Credentials (Auto Fill)
+              </button>
+            )}
+
             <button
               type="button"
               onClick={
-                mode === "manager-login"
-                  ? handleManagerLogin
-                  : mode === "email-signup"
-                    ? handleEmailSignup
-                    : handleEmailLogin
+                mode === "admin-login"
+                  ? handleAdminLogin
+                  : mode === "manager-login"
+                    ? handleManagerLogin
+                    : mode === "email-signup"
+                      ? handleEmailSignup
+                      : handleEmailLogin
               }
               disabled={isLoading}
               className="w-full bg-sky-700 hover:bg-sky-800 text-white font-[600] py-4 rounded-2xl shadow-lg shadow-sky-900/10 transition-all duration-200 mt-4 disabled:opacity-50"
@@ -632,17 +706,29 @@ export default function LoginPage() {
           </div>
 
           <p className="text-center text-sm text-slate-500 mt-4">
-            {mode === "email-signup"
-              ? "Already have an account?"
-              : "Don't have an account?"}{" "}
+            {mode === "admin-login"
+              ? "Need citizen access?"
+              : mode === "email-signup"
+                ? "Already have an account?"
+                : "Don't have an account?"}{" "}
             <button
               type="button"
               onClick={() =>
-                setMode(mode === "email-signup" ? "choose" : "email-signup")
+                setMode(
+                  mode === "admin-login"
+                    ? "choose"
+                    : mode === "email-signup"
+                      ? "choose"
+                      : "email-signup",
+                )
               }
               className="text-sky-700 font-[600] hover:underline"
             >
-              {mode === "email-signup" ? "Sign In" : "Join CivicPulse"}
+              {mode === "admin-login"
+                ? "Back to Sign In"
+                : mode === "email-signup"
+                  ? "Sign In"
+                  : "Join CivicPulse"}
             </button>
           </p>
         </div>

@@ -1,12 +1,11 @@
 import React from "react";
 import { STATE_DATA } from "../data/mockData";
 import delhiIcon from "../assets/delhi-icon.svg";
-import upIcon from "../assets/up-icon.svg";
 
 const PLUS_PATTERN =
   "bg-[url('data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%2224%22%20height%3D%2224%22%3E%3Cpath%20d%3D%22M12%204v16M4%2012h16%22%20stroke%3D%22white%22%20stroke-width%3D%221.5%22%20fill%3D%22none%22%20opacity%3D%220.15%22%2F%3E%3C%2Fsvg%3E')]";
 
-const stateIcons = { delhi: delhiIcon, up: upIcon };
+const stateIcons = { delhi: delhiIcon };
 
 const StateSelectionView = ({ onSelectState }) => {
   const stateKeys = Object.keys(STATE_DATA);

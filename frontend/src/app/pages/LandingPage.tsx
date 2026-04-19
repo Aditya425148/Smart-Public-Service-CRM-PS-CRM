@@ -88,7 +88,7 @@ const Logo = ({
 const HERO_BG =
   "https://images.unsplash.com/photo-1760553120209-8e9d5d2493e3?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxzbWFydCUyMGNpdHklMjBhZXJpYWwlMjB2aWV3JTIwbGlnaHRzfGVufDF8fHx8MTc3MjYxNTc4NHww&ixlib=rb-4.1.0&q=80&w=1080";
 const COMMUNITY_IMG =
-  "https://images.unsplash.com/photo-1772590857118-76316e6ea731?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxjaXZpYyUyMGNvbW11bml0eSUyMHVyYmFuJTIwbmVpZ2hib3Job29kJTIwc3RyZWV0fGVufDF8fHx8MTc3MjYxNTc4NXww&ixlib=rb-4.1.0&q=80&w=1080";
+  "https://images.unsplash.com/photo-1518391846015-55a9cc003b25?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxjaXR5JTIwc3RyZWV0JTIwcmVwYWlyJTIwbXVuaWNpcGFsJTIwd29ya2VyfGVufDF8fHx8MTc3MjYxNTc4NXww&ixlib=rb-4.1.0&q=80&w=1080";
 const ANALYTICS_IMG =
   "https://images.unsplash.com/photo-1759661966728-4a02e3c6ed91?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxkYXRhJTIwYW5hbHl0aWNzJTIwZGFzaGJvYXJkJTIwdGVjaG5vbG9neXxlbnwxfHx8fDE3NzI2MDYyMDh8MA&ixlib=rb-4.1.0&q=80&w=1080";
 
@@ -251,23 +251,20 @@ const testimonials = [
   {
     name: "Anjali Desai",
     area: "Delhi, NCT",
-    text: "I reported a garbage overflow and it was cleared in 8 hours. The before/after card was amazing — I could track the progress live!",
+    text: "I submitted a garbage complaint with photos and immediately got a complaint ID. In My Complaints, I could follow each status update without guessing what happened.",
     rating: 5,
-    badge: "🔎 Verified Contributor",
   },
   {
     name: "Rajesh Kumar",
     area: "Dwarka, Delhi",
-    text: "Finally a platform where our complaints actually get tracked and resolved. The SLA countdown keeps officials accountable.",
+    text: "The Delhi-only location rule made the form clear for our area. After submission, I could see assignment progress and SLA-related status in the dashboard.",
     rating: 5,
-    badge: "🛠️ Problem Solver",
   },
   {
     name: "Priya Nair",
     area: "Rohini, Delhi",
-    text: "The AI category suggestion is spot on. I just pointed my phone at the pothole and it knew exactly what it was. Super fast reporting.",
+    text: "Reporting was straightforward: category, location, details, and photos. The timeline and report card made it easy to share updates with my family.",
     rating: 5,
-    badge: "🌱 First Reporter",
   },
 ];
 
@@ -449,7 +446,7 @@ export default function LandingPage() {
         </div>
       ),
     },
-      "Impact Strip": {
+    "Impact Strip": {
       title: "Delhi Governance Report",
       icon: BarChart3,
       desc: "Precision governance across Delhi NCT.",
@@ -464,7 +461,9 @@ export default function LandingPage() {
             </div>
           </div>
           <p className="text-xs text-slate-500 leading-relaxed">
-            CivicPulse Delhi is specifically optimized for the National Capital Territory, ensuring 100% GPS-verified resolution trails for all civic complaints.
+            CivicPulse Delhi is specifically optimized for the National Capital
+            Territory, ensuring 100% GPS-verified resolution trails for all
+            civic complaints.
           </p>
         </div>
       ),
@@ -898,36 +897,38 @@ export default function LandingPage() {
                 For Delhi Government Authorities
               </div>
               <h2 className="text-3xl md:text-4xl font-[800] text-slate-900 mb-6">
-                City-Wide Visibility.
+                Operational Visibility.
                 <br />
-                <span className="text-blue-600">Smart Governance.</span>
+                <span className="text-blue-600">
+                  Manager-Controlled Execution.
+                </span>
               </h2>
               <p className="text-slate-500 mb-8 leading-relaxed">
-                Nodal officers in the Delhi Government get a real-time
-                complaint queue, ward-specific SLA tracking, and heatmaps for the
-                National Capital Territory.
+                Government officials get live complaint queues, manager workload
+                visibility, status timelines, and SLA health indicators to run
+                day-to-day operations with clarity.
               </p>
               <div className="space-y-4">
                 {[
                   {
                     icon: BarChart3,
-                    title: "Live Analytics Dashboard",
-                    desc: "MTTA, MTTR, SLA compliance, breach count — all in real time",
+                    title: "Live Queue & KPI Overview",
+                    desc: "Track total, active, resolved, escalated complaints and SLA compliance in one place",
                   },
                   {
                     icon: Users,
-                    title: "Auto-Routing Engine",
-                    desc: "Complaints routed to nearest available officer by skill and workload",
+                    title: "Manager Assignment Controls",
+                    desc: "Auto-assign or manually assign complaints to field workers from manager workspace",
                   },
                   {
                     icon: AlertTriangle,
-                    title: "Escalation Automation",
-                    desc: "Auto-escalate to department head and city admin on SLA breach",
+                    title: "Escalation & Overdue Monitoring",
+                    desc: "Prioritize escalated and overdue complaints from dedicated admin and manager views",
                   },
                   {
                     icon: TrendingUp,
-                    title: "Predictive Alerts",
-                    desc: "Z-score anomaly detection when complaint volume spikes",
+                    title: "Transparent Status Timeline",
+                    desc: "Every status change is recorded with notes so officials can audit progress end-to-end",
                   },
                 ].map(({ icon: Icon, title, desc }) => (
                   <div key={title} className="flex gap-4">
@@ -1072,7 +1073,7 @@ export default function LandingPage() {
             >
               <img
                 src={COMMUNITY_IMG}
-                alt="Community"
+                alt="Municipal field work and issue resolution"
                 className="w-full h-96 object-cover rounded-2xl shadow-xl"
               />
               <div className="absolute -bottom-6 -right-6 bg-white rounded-2xl shadow-xl p-5 max-w-xs">
@@ -1082,10 +1083,10 @@ export default function LandingPage() {
                   </div>
                   <div>
                     <div className="text-sm font-[700] text-slate-900">
-                      Community Confirmation
+                      Live Complaint Tracking
                     </div>
                     <div className="text-xs text-slate-500">
-                      Issue verified by local residents
+                      Citizens can follow status updates till resolution
                     </div>
                   </div>
                 </div>
@@ -1113,37 +1114,38 @@ export default function LandingPage() {
             >
               <div className="inline-flex items-center gap-2 bg-orange-50 text-orange-600 text-xs font-[700] px-3 py-1.5 rounded-full mb-6 uppercase tracking-wider">
                 <Users className="w-3 h-3" />
-                Regional Network
+                Delhi Civic Network
               </div>
               <h2 className="text-3xl md:text-4xl font-[800] text-slate-900 mb-6">
-                Community-Led Civic Governance
+                What Actually Happens In CivicPulse
               </h2>
               <p className="text-slate-500 mb-8 leading-relaxed">
-                Our platform demonstrates how citizens can verify nearby issues
-                to boost priority and credibility. Residents of Delhi can
-                now visualize a better city together.
+                You report an issue in Delhi, it is routed to a manager, and
+                progress is tracked through clear status updates. Citizens can
+                see resolution progress, share report cards, and build impact on
+                the leaderboard.
               </p>
               <div className="space-y-4 mb-8">
                 {[
                   {
                     icon: "🌱",
-                    title: "Issue Reporter",
-                    desc: "File a verified complaint with GPS proof",
+                    title: "Report In Under 60 Seconds",
+                    desc: "Choose category, add location, photos, and submit with complaint ID",
                   },
                   {
-                    icon: "🔍",
-                    title: "Active Contributor",
-                    desc: "Verify issues reported in your area",
+                    icon: "🧭",
+                    title: "Manager Assignment",
+                    desc: "Complaints are assigned to Delhi managers and moved through workflow",
                   },
                   {
-                    icon: "🦸",
-                    title: "Regional Hero",
-                    desc: "Consistent reporting with high resolution impact",
+                    icon: "📌",
+                    title: "Status Timeline Visibility",
+                    desc: "Track Submitted, Assigned, In Progress, and Resolved updates",
                   },
                   {
                     icon: "🏆",
-                    title: "Regional Champion",
-                    desc: "Top contributor in jurisdiction for 3 months",
+                    title: "Impact & Leaderboard",
+                    desc: "Earn civic impact points and appear in community rankings",
                   },
                 ].map(({ icon, title, desc }) => (
                   <div
@@ -1212,9 +1214,6 @@ export default function LandingPage() {
                     </div>
                     <div className="text-xs text-slate-500">{t.area}</div>
                   </div>
-                  <span className="ml-auto text-xs bg-blue-50 text-blue-600 px-2 py-1 rounded-full font-[500]">
-                    {t.badge}
-                  </span>
                 </div>
               </motion.div>
             ))}
@@ -1245,9 +1244,8 @@ export default function LandingPage() {
               Ready to Make Delhi Better?
             </h2>
             <p className="text-slate-300 text-lg mb-10 max-w-2xl mx-auto">
-              Experience CivicPulse — a platform designed to report issues,
-              earn credits, and hold authorities accountable across the NCT of
-              Delhi.
+              Experience CivicPulse — a platform designed to report issues, earn
+              credits, and hold authorities accountable across the NCT of Delhi.
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
               <button
@@ -1258,7 +1256,7 @@ export default function LandingPage() {
                 <ArrowRight className="w-4 h-4" />
               </button>
               <button
-                onClick={() => navigate("/admin")}
+                onClick={() => navigate("/login", { state: { role: "admin" } })}
                 className="flex items-center justify-center gap-2 px-10 py-4 bg-white/10 hover:bg-white/20 text-white text-base font-[600] rounded-xl border border-white/20 backdrop-blur-sm transition-all"
               >
                 I'm a Municipal Official

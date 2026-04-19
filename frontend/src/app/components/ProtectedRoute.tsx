@@ -53,38 +53,16 @@ export default function ProtectedRoute({ allowedRoles }: ProtectedRouteProps) {
   // Check roles if specified
   if (allowedRoles && allowedRoles.length > 0) {
     const userRoles = user.labels || [];
-    // FOR DEVELOPER ACCESS: Allow anonymous users to bypass role checks if they are in a demo session
-    // Appwrite anonymous users usually have empty email and specific status.
-    // We check for absence of email or specific flag to allow demo access.
-    const isAnonymous =
-      !user.email || user.email === "" || user.status === false;
-
-    // BYPASS FOR LOCAL ADMIN DEMO
-    const isAdminBypass = localStorage.getItem("is_admin_bypass") === "true";
-
-    console.log("ProtectedRoute Check:", {
-      user,
-      allowedRoles,
-      userRoles,
-      isAnonymous,
-      isAdminBypass,
-    });
+    const sessionRole = sessionStorage.getItem("session_role");
 
     const hasPermission =
       allowedRoles.some((role) => userRoles.includes(role)) ||
-      isAnonymous ||
-      (allowedRoles.includes("admin") && isAdminBypass);
+      (!!sessionRole && allowedRoles.includes(sessionRole));
 
     // Special case for "citizen" which is the default for any logged in user if not specifically restricted
     const isCitizen = allowedRoles.includes("citizen") && user;
 
     if (!hasPermission && !isCitizen) {
-      console.warn(
-        "User does not have required roles:",
-        allowedRoles,
-        "User roles:",
-        userRoles,
-      );
       return <Navigate to="/dashboard" replace />;
     }
   }

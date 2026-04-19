@@ -27,11 +27,6 @@ const MOCK_MANAGERS = [
   { id: "MGR-DEL-03", name: "Rajesh Tyagi", state: "Delhi" },
   { id: "MGR-DEL-04", name: "Anita Singh", state: "Delhi" },
   { id: "MGR-DEL-05", name: "Amit Goel", state: "Delhi" },
-  { id: "MGR-UP-01", name: "Yash Pal", state: "Uttar Pradesh" },
-  { id: "MGR-UP-02", name: "Priti Yadav", state: "Uttar Pradesh" },
-  { id: "MGR-UP-03", name: "Manoj Mishra", state: "Uttar Pradesh" },
-  { id: "MGR-UP-04", name: "Renu Devi", state: "Uttar Pradesh" },
-  { id: "MGR-UP-05", name: "Suresh Chandra", state: "Uttar Pradesh" },
 ];
 
 const statusColors: Record<string, string> = {
